@@ -1,0 +1,22 @@
+<html>
+<body>
+
+<ul id="myList"><li>Coffee</li><li>Tea</li><li>Milk</li></ul>
+
+<p>Click the button to replace the first item in the the list.</p>
+
+<button onclick="myFunction()">Try it</button>
+
+<p>First create a new Text node called Water.<br>Then replace the first child node of the first list item, with the newly created text node.</p>
+<p><strong>Note:</strong> This example replaces only the Text node "Coffee" with a Text node "Water", not the entire LI element, which would also be an alternative when replacing nodes.</p>
+
+<script>
+function myFunction() {
+    var textnode = document.createTextNode("Water");
+    var item = document.getElementById("myList").childNodes[0];
+    item.replaceChild(textnode, item.childNodes[0]);
+}
+</script>
+
+</body>
+</html>
