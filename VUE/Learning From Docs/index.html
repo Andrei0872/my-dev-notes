@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>Document</title>
+</head>
+<body>
+    
+<div id="app">
+    {{ message }}
+</div>
+
+<!-- ================================================= -->
+
+<div id="app-2">
+    <span  v-bind:title="message">
+        Hover your mouse over me for a few seconds
+        to see my dynamically bound title!
+    </span>
+</div>
+
+<!-- ================================================= -->
+
+<div id="app-3">
+    <span v-if="seen">Now you see me</span>
+</div>
+
+<!-- ================================================= -->
+
+<div id="app-4">
+    <ol v-for="todo in todos">
+        <li>{{ todo.text }}</li>
+    </ol>
+</div>
+
+<!-- ================================================= -->
+
+<div id="app-5">
+    <p> {{ message }} </p>
+    <button v-on:click="reverseMessage">Reverse Message</button>
+</div>
+
+<!-- ================================================= -->
+
+<div id="app-6">
+    <p>{{ message }}</p>
+    <input type="text" v-model="message">
+</div>
+
+<!-- ================================================= -->
+<!-- *Components - Introduction -->
+
+<div id="app-7">
+    <todo-item
+        v-for="item in groceryList"
+        v-bind:todo="item"
+        v-bind:key="item.id"
+    ></todo-item>
+</div>
+
+<!-- ================================================= -->
+
+<script src="https://cdn.jsdelivr.net/npm/vue/dist/vue.js"></script>
+<script src="./main.js"></script>
+</body>
+</html>
