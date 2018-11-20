@@ -108,7 +108,7 @@
     <p>Using Method: "{{ reverseMessage() }}"</p>
     <hr>
     <!-- Computed vs Watchers -->
-    <p>First Name : {{ fname }}</p>
+    <p>First  Name : {{ fname }}</p>
     <input type="text" v-model="fname">
     <p>Last Name : {{ lname }}</p>
     <input type="text" v-model="lname">
@@ -221,8 +221,71 @@
     <button @click="toggleLoginType">Toggle Login Type</button>
     <!-- Label elements are still efficiently re-used, because they don't have key attributes -->
 </div>
+<hr><br>
+
+<!-- *List rendering -->
+<u id="list-example1">
+    <li v-for="(item, index) in items">
+        {{ parentMessage }} - {{ index }} - {{ item.message }}
+    </li>  
+</u>
+<!-- v-for Object -->
+<ul id="v-for-obj">
+    <li v-for="(value, key, index) in object">
+        {{ index }}. {{ key }} : {{ value }}
+    </li>
+</ul>
+
+<br><hr>
+
+<!-- ================================================= -->
+<!-- *Filtered Results -->
+
+<ul id="filtered">
+    <!-- Using Computed Properties -->
+    <li v-for="num in evenNumbers">{{ num }}</li>
+    <br><hr>
+    <!-- Using Method -->
+    <li v-for="num in even(numbers)">{{ num }}</li>
+    
+    <!-- Skip the execution of v-for: place `v-if` on a wrapper element -->
+    <template v-if="todos.length !== 3">
+        <li v-for="todo in todos">  
+            {{ todo }}
+        </li>
+    </template>
+    <p v-else-if="todos.length === 3 "> There are only 3 todos</p>
+    <p v-else> No todos left! </p>
+</ul>
+
+<br><br><hr><br><br>
+
+<div id="todo-list-example">
+    <form @submit.prevent="addNewTodo">
+        <label for="todo-item">Add New Item</label>
+        <input type="text" id="todo-item" placeholder="E.g Feed the dog" v-model="todoInput">
+        <button>Add</button>
+    </form>
+    <ul>
+        <li
+            is="todo-item"
+            v-for="(todo,index) in todos"
+            :key="todo.id"
+            :title="todo.title"
+            :status="todo.status"
+            @remove="todos.splice(index,1)"
+            @change-status="change(todo)"
+        ></li>
+    </ul>
+</div>
 
 
+
+<!-- ================================================= -->
+<!-- ================================================= -->
+<!-- ================================================= -->
+<!-- ================================================= -->
+<!-- ================================================= -->
 <!-- ================================================= -->
 <script src="https://cdn.jsdelivr.net/npm/axios@0.12.0/dist/axios.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/lodash@4.13.1/lodash.min.js"></script>

@@ -105,6 +105,16 @@ useful when you want to perfom asynchronous or expensive operations in respons t
 ### Controlling Reusable Elements
 
 ```key``` attr - unique values; don't reuse them
+when Vue is updating a list of elements rendered with ```v-for```, by default it uses an ```in-place patch``` strategy
+if the order has changed, instead of moving the DOM elems to match the order of items
+Vue will patch each element in-place and make sure it reflects what should be rendered at that particular index
+suitable when ```ur list render output does not rely on child componenent state or temporary DOM state(e.g form input value)```
+<br>
+to ```track``` each node's identity, and thus reuse and reorder existing elements, you need to ```provide an unique key```
+
+
+
+
 
 ----
 
@@ -116,3 +126,12 @@ useful when you want to perfom asynchronous or expensive operations in respons t
 ```v-if``` - it ensures that event listeners and child componentes inside the conditional block are ```properly destroyed``` and ```re-created``` during toggles
             - lazy : if the condition is false on initial render, it will not do anything
             - higher toggle costs
+<br>
+<br>
+
+```v-for``` has a higher priority than ```v-if``` ===> ```v-if``` will run on each iteration of the loop separately
+
+---
+
+```components``` have isolated scopes of their own. To pass data into the component, use ```props```
+

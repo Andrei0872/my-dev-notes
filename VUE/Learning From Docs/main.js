@@ -312,7 +312,143 @@ new Vue({
 
 // `key` attr - unique values; don't reuse them
 
+// ===========================================
+//* List rendering
+new Vue({
+    el: "#list-example1",
+    data : {
+        parentMessage: 'Parent',
+        items: [
+            { message : 'Foo' },
+            { message : 'Bar' },
+        ]
+    }
+});
 
+// v-for object
+new Vue({
+    el: "#v-for-obj",
+    data: {
+        object: {
+            firstName: 'Andrei',
+            lastName: 'Gatej',
+            age: 17
+        }
+    }
+});
+
+// ===========================================
+//* Array and Object mutation
+
+var vm = new Vue({
+    data: {
+        items: [1,2,3,4,5]
+    }
+});
+
+// vm.items[1] = 'x'; //! NOT reactive
+// vm.items.length = 2 //! NOT reactive
+// vm.items.splice(newLength) - 
+console.log(vm.items) 
+
+//? Vue.set(vm.items,indexOfItem, newValue);
+//? vm.items.slice(index,1,newValue)
+vm.$set(vm.items,0,'A'); // Alias for Vue.set()
+// console.log(vm.items)
+
+// Object Change Detection Caveats
+var vm = new Vue({
+    data: {
+      a: 1
+    }
+}); // vm.a - reactive
+
+vm.b = 2; //! NOT reactive
+
+// It's possible to add reactive properties to a nested object
+// Vue.set(object,key, value);
+
+// ===========================================
+//* Filtered Results
+new Vue({
+    el: "#filtered",
+    data: {
+        numbers: [1,2,3,4,5],
+        todos: ['one', 'two', 'three']
+    },
+    // Not feasible when having nested v-for loops
+    computed: {
+        evenNumbers: function() {
+            return this.numbers.filter(function(num) {
+                return num % 2 === 0;
+            });
+        }
+    },
+    methods: {
+        even: function(numbers) {
+            return numbers.filter(num => ! (num % 2) );
+        }
+    }
+});
+
+// ===========================================
+//* Todo List
+
+Vue.component('todo-item', {
+    template: '\
+        <li :class="{\'text-danger\': this.status}">\
+            {{ title }}\
+            <button @click="$emit(\'remove\')">Remove</button>\
+            <button @click="$emit(\'change-status\')">Change Status</button>\
+        </li>\
+    ',
+    props: ['title','status']
+});
+
+new Vue({
+    el: "#todo-list-example",
+    test: true,
+    data: {
+        todoInput: '',
+        todos: [
+            {
+            id: 1,
+            title: 'Do the dishes',
+            status: true
+            },
+            {
+            id: 2,
+            title: 'Take out the trash',
+            status: false
+            },
+            {
+            id: 3,
+            title: 'Mow the lawn',
+            status: true
+            }
+        ],
+        nextTodoId: 4
+    },
+    methods: {
+        addNewTodo: function () {
+            if(this.todoInput === '') {
+                return;
+            }
+            this.todos.push({
+                id: this.nextTodoId++,
+                title: this.todoInput,
+                status: false
+            });
+            this.todoInput = '';
+        },
+        change: function(item) {
+            item.status = !item.status;   
+        }
+    }
+});
+
+// ===========================================
+// ===========================================
 // ===========================================
 // ===========================================
 // ===========================================
