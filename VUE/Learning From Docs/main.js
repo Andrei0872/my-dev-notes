@@ -220,3 +220,99 @@ var app9 = new Vue({
 
 
 // ===========================================
+//* Class and Style
+
+new Vue({
+    el: "#class-example",
+    data: {
+        isActive: true,
+        hasError: false
+    }
+});
+
+// Bound object NOT inline
+new Vue({
+    el: "#class-example2",
+    data: {
+        classObj: {
+            static: true,
+            active: true,
+            'text-danger': true
+        }
+    }
+});
+
+// Using computed property
+new Vue({
+    el: "#class-example3",
+    data: {
+        isActive: true,
+        hasError: {
+            type: 'fatal'
+        }
+    },
+    computed: {
+        computedObjClass: function() {
+            return  {
+                static: true,
+                active: this.isActive ,
+                'text-danger': this.hasError && this.hasError.type === 'fatal'
+            }
+        }
+    }
+});
+
+// Array Syntax
+new Vue({
+    el: "#class-example4",
+    data: {
+        isActive: true,
+        'text-danger': true
+    }
+});
+
+// Inline Style
+new Vue({
+    el: "#style-example",
+    data : {
+        mainColor: 'blue',
+        mainSize: '30px',
+        baseStyles : {
+            'text-decoration': 'underline',
+            'letter-spacing': '2px'
+        }
+    }
+});
+
+// ===========================================
+
+//* Contidionals
+new Vue({
+    el: "#conditional",
+    data : {
+        type: 'D'
+    }
+});
+
+// ===========================================
+
+//* Controlling Reusable Elements with `key`
+new Vue({
+    el: "#reusable-key",
+    data: {
+        loginType: 'username'
+    },
+    methods: {
+        toggleLoginType: function () {
+            this.loginType = this.loginType === 'username' ? 'email':'username';
+            this.input = '';
+        }
+    }
+});
+
+// `key` attr - unique values; don't reuse them
+
+
+// ===========================================
+// ===========================================
+// ===========================================

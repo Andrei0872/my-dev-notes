@@ -100,3 +100,19 @@ however, it is ofter a ```better idea``` to use ```computed properties```
 
 useful when you want to perfom asynchronous or expensive operations in respons to changing data
 
+---
+
+### Controlling Reusable Elements
+
+```key``` attr - unique values; don't reuse them
+
+----
+
+```v-show``` -  the element will always be rendered and remain in the DOM;
+             -  only toggles the ```display``` CSS property of the element
+             - higher render costs
+             - recommended if you need to toggle something very often
+
+```v-if``` - it ensures that event listeners and child componentes inside the conditional block are ```properly destroyed``` and ```re-created``` during toggles
+            - lazy : if the condition is false on initial render, it will not do anything
+            - higher toggle costs

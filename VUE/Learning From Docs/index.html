@@ -6,6 +6,22 @@
     <meta http-equiv="X-UA-Compatible" content="ie=edge">
     <title>Document</title>
 </head>
+<style>
+    .static {
+        border: 1px solid black;
+        width: 75%;
+        padding: 10px;
+    }
+
+    .text-danger {
+        color:red;
+    }
+
+    .active {
+        border: 3px solid green;
+        box-shadow: 5px 5px 10px greenyellow;
+    }
+</style>
 <body>
     
 <div id="app">
@@ -111,6 +127,101 @@
     </p>
     <p>{{ answer }}</p>
 </div>
+<hr><br><br>
+<!-- ================================================= -->
+<!-- *Class and Style Bindings -->
+
+<div id="class-example">
+    <div class="static"
+        v-bind:class="{ active: isActive, 'text-danger': hasError }"
+    >
+        Some content here...
+    </div>
+    <br>
+</div>
+
+<div id="class-example2">
+    <!-- The bound oobj doesn't have to be inline -->
+    <div :class="classObj">
+        Some content
+    </div>
+</div>
+<br>
+<!-- Computed property -->
+<div id="class-example3">
+    <!-- The bound oobj doesn't have to be inline -->
+    <div :class="computedObjClass">
+        Some content
+    </div>
+</div>
+<br>
+<!-- Array Syntax -->
+<div id="class-example4">
+    <!-- The bound obj doesn't have to be inline -->
+    <div :class="[{active: isActive}, 'text-danger', {static: true}]">
+        Some content
+    </div>
+</div>
+<br>
+<!-- Styles -->
+<div id="style-example">
+    <div :style="{color: mainColor, 'font-size': mainSize}">
+        Some content
+    </div>
+    <div :style="[{color: mainColor}, {'font-size': mainSize}, baseStyles]">
+        Some Content with array syntax
+    </div>
+</div>
+
+<br>
+<!-- ================================================= -->
+<!-- *Conditional Rendering -->
+
+<div id="conditional">
+    <div v-if="type === 'A'">
+        A
+    </div>
+    <div v-else-if="type === 'B'">
+        B
+    </div>
+    <div v-else-if="type === 'C'">
+        C
+    </div>
+    <div v-else>
+        Not A/B/C
+    </div>
+</div>
+<hr>
+<br><br>
+
+<!-- *Controlling Reusable Elements with `key` -->
+<!-- Only the placeholder will be replaced -->
+<div id="reusable-key">
+    <template v-if="loginType === 'username'">
+        <label>Username</label>
+        <input placeholder="Enter your username" v-model="input">
+    </template>
+    <template v-else>
+        <label>Email</label>
+        <input placeholder="Enter your email">
+    </template>
+    <br>
+    <!-- If you add a `key` attr: these 2 elements are completely separate: DON'T REUSE THEM -->
+    <!-- As a result, inputs will be rendered from scratch each time you toggle -->
+    <!-- To see a better example, try typing something into the input fields, then toggle the login type -->
+    <!-- Then see if the value you typed is still in the input -->
+    <template v-if="loginType === 'username'">
+        <label>Username</label>
+        <input placeholder="Enter your username" key="username-input">
+    </template>
+    <template v-else>
+        <label>Email</label>
+        <input placeholder="Enter your email" key="email-input">
+    </template>
+    <button @click="toggleLoginType">Toggle Login Type</button>
+    <!-- Label elements are still efficiently re-used, because they don't have key attributes -->
+</div>
+
 
 <!-- ================================================= -->
 <script src="https://cdn.jsdelivr.net/npm/axios@0.12.0/dist/axios.min.js"></script>
