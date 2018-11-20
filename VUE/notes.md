@@ -46,3 +46,15 @@ the ```new values```
 props in "data" are only reactive if they existed when the instance was created
 Vue's instance properties and methods : prefixed with $
 
+4 steps 
+1. set up data observation,
+2. compile the template,
+3. mount the instance to the DOM,
+4. update the DOM when data changes
+
+
+---
+
+lifecycle hooks - give users the opportunity to add their own code at specific stages
+
+all lifecycles hooks are called with their ```this``` context
