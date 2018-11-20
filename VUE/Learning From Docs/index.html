@@ -58,10 +58,63 @@
         v-bind:todo="item"
         v-bind:key="item.id"
     ></todo-item>
+    <hr>
+    <span v-once> This will never change : {{ msg }}</span>
+    <hr>
+    <p>Using mustaches : {{ rawHTML }}</p>
+    <p>Using <strong>v-html</strong> directive: <span v-html="rawHTML"></span></p>
+    <hr>
+    <!-- if "isButtonDisabled" has the value of null, undefined or false, the disabled attr will not be included in the rendered btn elem -->
+    <button v-bind:disabled="isButtonDisabled">Button</button>
+    <hr>
+    {{ 1 + 1 }}
+    <br>
+    {{ ok ? "YES":"NO" }}
+    <br>
+    {{ msg.split``.reverse().join`` }}
+    <hr>
+    <!-- *Shorthands -->
+    <p v-bind:title="msg">Hover here!</p>
+    <p :title="msg">Hover here!</p>
+    <input type="text" v-model="msg">
+    <button v-on:click="showAlert">Button1</button>
+    <button @click="showAlert">Button2</button>
+    <hr>
+
 </div>
 
 <!-- ================================================= -->
+<!-- *Computed Properties and Watchers -->
 
+<div id="app-8">
+    <p>Original message: "{{ message }}"</p>
+    <p>Computed reversed message: "{{ reversedMessage }}"</p>
+    <p>Using Method: "{{ reverseMessage() }}"</p>
+    <hr>
+    <!-- Computed vs Watchers -->
+    <p>First Name : {{ fname }}</p>
+    <input type="text" v-model="fname">
+    <p>Last Name : {{ lname }}</p>
+    <input type="text" v-model="lname">
+    <p>Full Name : {{ fullname }}</p>
+    <p><strong>using computed properties:</strong> {{ fullNameComputed }}</p>
+    <p><strong>Using Getters && Setters: </strong> {{ fullNameUsingSetter }}</p>
+</div>
+<hr><br><br>
+<!-- ================================================= -->
+<!-- *Watchers -->
+
+<div id="watcher-example">
+    <p>
+        Ask a yes/no question:
+        <input type="text" v-model="question">
+    </p>
+    <p>{{ answer }}</p>
+</div>
+
+<!-- ================================================= -->
+<script src="https://cdn.jsdelivr.net/npm/axios@0.12.0/dist/axios.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/lodash@4.13.1/lodash.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/vue/dist/vue.js"></script>
 <script src="./main.js"></script>
 </body>
