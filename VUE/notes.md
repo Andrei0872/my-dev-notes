@@ -135,3 +135,21 @@ to ```track``` each node's identity, and thus reuse and reorder existing element
 
 ```components``` have isolated scopes of their own. To pass data into the component, use ```props```
 
+---
+
+### Event Handlers
+
+```$event``` - when you need to access the original DOM event in an inline statement handler
+
+
+#### Key modifiers
+
+1. .enter
+2. .tab
+3. .delete
+4. .esc
+5. .space
+6. up. ...
+<br>
+You can also ```define custom key modifier aliases``` : Vue.config.keyCodes.f1 = 112
+

@@ -263,7 +263,8 @@
 <div id="todo-list-example">
     <form @submit.prevent="addNewTodo">
         <label for="todo-item">Add New Item</label>
-        <input type="text" id="todo-item" placeholder="E.g Feed the dog" v-model="todoInput">
+        <!-- ALT + C -->
+        <input @keyup.alt.67="addNewTodo" type="text" id="todo-item" placeholder="E.g Feed the dog" v-model="todoInput">
         <button>Add</button>
     </form>
     <ul>
@@ -279,10 +280,30 @@
     </ul>
 </div>
 
-
+<br><br><hr><br><br>
 
 <!-- ================================================= -->
-<!-- ================================================= -->
+<!-- *Event handlers -->
+
+<div id="events">
+    <!-- self - the event will be triggered only if "event.target === the element itself" -->
+    <div :class="{static: true}" @click.self="showAlert($event)" class="container1">
+        <p>1</p>
+        <p>2</p>
+        <p>3</p>
+    </div>
+    <br>
+    <div :class="{static: true}" :style="{'border': '3px solid green'}" class="container1">
+        <div :style="{border:'1px solid black', padding:'10px', width: '75%', height: '60%'}">
+            <span :style="{display: block}">1</span>
+            <div :style="{border:'1px solid red'}" @click.capture="showAlert($event)">
+                <span>2</span>
+                <div :style="{border:'1px solid blue'}">3</div>
+            </p>
+        </div>
+    </div>
+</div>
+
 <!-- ================================================= -->
 <!-- ================================================= -->
 <!-- ================================================= -->
