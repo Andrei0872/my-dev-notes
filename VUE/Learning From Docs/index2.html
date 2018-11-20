@@ -8,6 +8,17 @@
 </head>
 <body>
 
+<!-- ============================================ -->
+<!-- *Form Input Bindings -->
+<div id="input">
+    <!-- sync after 'change' -->
+    <input type="text" v-model.lazy="inputText">
+    <p>Message : {{ inputText }}</p>
+    <br>
+    <!-- Automatically trimmed text -->
+    <input type="text" v-model.trim="trimmed">
+    <p>Trimmed message : {{ trimmed }}</p>
+</div>
 
 <script src="https://cdn.jsdelivr.net/npm/vue/dist/vue.js"></script>
 <script src="./main2.js"></script>
