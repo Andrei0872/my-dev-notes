@@ -20,6 +20,59 @@
     <p>Trimmed message : {{ trimmed }}</p>
 </div>
 
+<!-- ============================================ -->
+<!-- *Components -->
+<div id="components-demo">
+    <button-counter></button-counter>
+    <!-- Reusing Components -->
+    <!-- Each component maintains its own, separate "count" -->
+    <button-counter></button-counter>
+    <button-counter></button-counter>
+</div>
+<br><br>
+<!-- Passing Data to Child Components -->
+<div id="blog-post-demo">
+    <blog-post
+        v-for="post in posts"
+        :post="post"
+        :key="post.id"
+    ></blog-post>
+</div>
+<br><br>
+<!-- Sending messages to Parents From events -->
+<div id="blog-post-demo2">
+   <div :style="{ 'font-size': postSize + 'em'}">
+        <blog-post2
+            v-for="post in posts"
+            :post="post"
+            :colors="colors"
+            :key="post.id"
+            @enlarge-text="postSize += $event"
+            @reduce-text="postSize -= $event"
+            @test-func="testFunc"
+            :style="{'color': defaultColor}"
+        ></blog-post2>
+   </div>
+</div>
+<br><br>
+<hr>
+<br>
+<!-- v-model on Components -->
+<div id="custom-inp">
+    <custom-input 
+        v-model="searchText"
+        v-bind:value="searchText"
+        v-on:input="searchText = $event"
+    ></custom-input>
+</div>
+
+
+<!-- ============================================ -->
+<!-- ============================================ -->
+<!-- ============================================ -->
+<!-- ============================================ -->
+<!-- ============================================ -->
+<!-- ============================================ -->
 <script src="https://cdn.jsdelivr.net/npm/vue/dist/vue.js"></script>
 <script src="./main2.js"></script>
 </body>

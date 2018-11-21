@@ -153,3 +153,26 @@ to ```track``` each node's identity, and thus reuse and reorder existing element
 <br>
 You can also ```define custom key modifier aliases``` : Vue.config.keyCodes.f1 = 112
 
+---
+
+### Components
+
+* are reusable Vue instances with a name - they accept the same options as new Vue: data, computed, watch, methods and lifecycle hooks
+
+* we can use a component as a custom element inside a root Vue instance creted with new Vue()
+
+* each time you use a component, a ```new instance``` is created
+<br>
+<br>
+
+```data``` -  must be a function so that each instance can maintain ```an independent copy``` of the returned data object
+
+<br>
+
+* 2 types of component inregistration : ```global```(using Vue.component()) and ```local```
+
+<br>
+#### Passing Data to Child Components
+
+```props``` - custom attributes you can register on a component; when a value is passed to a prop attr, it becomes a property of that component instance
+
