@@ -201,3 +201,24 @@ var ComponentB = {
 
 HTML attribute names are case-insensitive.
 
+<br>
+
+#### Passing Properties of an Object
+
+If you want to pass all the properties: ```v-bind(without and argument)```
+
+```javascript
+post: {
+  id: 1,
+  title: 'My Journey with Vue'
+}
+```
+
+Will be equivalent to:
+
+```javascript
+<blog-post
+  v-bind:id="post.id"
+  v-bind:title="post.title"
+></blog-post>
+```
