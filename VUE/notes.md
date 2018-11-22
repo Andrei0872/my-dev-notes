@@ -176,3 +176,28 @@ You can also ```define custom key modifier aliases``` : Vue.config.keyCodes.f1 =
 
 ```props``` - custom attributes you can register on a component; when a value is passed to a prop attr, it becomes a property of that component instance
 
+
+#### Local Registration
+
+In Webpack, globally registering all components means that even if you stop using a component, it could still be included in ur final buid: 
+unnecessarily increases the amount of JS the users have to download
+
+<br>
+Make ```component A``` be available in ```component B```
+
+```javascript
+
+var ComponentA = { /* ... */ }
+
+var ComponentB = {
+  components: {
+    'component-a': ComponentA
+  },
+  // ...
+}
+```
+
+<br>
+
+HTML attribute names are case-insensitive.
+
