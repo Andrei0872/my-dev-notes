@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>Document</title>
+</head>
+<body>
+    <script type="text/javascript" src="https://unpkg.com/vue@2.4.2/dist/vue.js"></script>
+
+    <!-- * Passing the properties of an Object -->
+    <div id="demo">
+        <about-me
+            :name="obj.name"
+            :age="obj.age"
+        ></about-me>
+        <hr>
+        <about-me
+            v-bind="obj"
+        ></about-me>
+        <hr>
+        <!-- <about-me
+            v-bind:obj="obj"
+        ></about-me> -->
+    </div>
+    <br><hr><br>
+    
+    <!-- ============================================= -->
+    
+    <!-- * Prop Validation -->
+
+    <div id="prop-validation">
+        <my-prop-validation
+            :prop-c="'Andrei'"
+            :prop-a="1230.34"
+            :prop-b="'This is a string'"
+            :prop-d="123"
+            :prop-e="{message:'this is a message'}"
+            :prop-f="'success'"
+        ></my-prop-validation>
+    </div>
+
+    <br><hr><br>
+
+    <!-- ============================================= -->
+
+
+<script src="./components-in-depth.js"></script>
+</body>
+</html>

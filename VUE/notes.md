@@ -157,6 +157,8 @@ You can also ```define custom key modifier aliases``` : Vue.config.keyCodes.f1 =
 
 ### Components
 
+* ```a property must be present in the data object``` in order for Vue to convert it and make it reactive 
+
 * are reusable Vue instances with a name - they accept the same options as new Vue: data, computed, watch, methods and lifecycle hooks
 
 * we can use a component as a custom element inside a root Vue instance creted with new Vue()
@@ -175,7 +177,7 @@ You can also ```define custom key modifier aliases``` : Vue.config.keyCodes.f1 =
 #### Passing Data to Child Components
 
 ```props``` - custom attributes you can register on a component; when a value is passed to a prop attr, it becomes a property of that component instance
-
+            - preferred for passing information to a child component
 
 #### Local Registration
 
@@ -222,3 +224,69 @@ Will be equivalent to:
   v-bind:title="post.title"
 ></blog-post>
 ```
+
+<br>
+
+```base components``` components that wrap an element like an input or a button
+
+### One-Way Data Flow
+
+When the parent property updates, it will flow down to the child, but not the other way around
+
+This prevents child comp from accidentally mutating the parent's state
+
+Every time the parent comp is updated, all props in the child comp will be refreshed with the latest value
+
+<br>
+
+Mutating prop inside a child comp:
+
+<p> 1: The prop is used to pass an initial value; the child component wants to use it as a local data property afterwards
+
+```javascript
+props: ['initialCounter'],
+data: function () {
+  return  {
+    counter: this.initialCounter
+  }
+}
+```
+</p>
+
+<p> The prop is passed in as a rau value that needs to be transformed
+
+```javascript
+props: ['size'],
+computed: {
+  normalizedSize: function () {
+    return this.size.trim().toLowerCase();
+  }
+}
+```
+</p>
+
+```props``` are validated ```before``` a component instance is created, so instance properties (data, computed) will not be available inside ```default``` or ```validator```
+
+<br>
+
+#### Non-Prop Attributes
+
+an attribute that is passed to a component, but does not have a corresponding prop defined
+
+#### Replacing/Merging with Existing Attributes
+
+```class``` and ```style``` are merged
+other attributes like ```type(on input)``` would be replaced
+
+
+#### Disabling Attribute Inheritance 
+```javascript
+Vue.component('my-component', {
+  inheritAttrs: false,
+  // ...
+})
+```
+
+```$attrs``` - contains the attribute names and values passed to a component
+
+
