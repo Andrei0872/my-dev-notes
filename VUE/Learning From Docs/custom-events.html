@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>Document</title>
+</head>
+<style>
+    #Hello {
+        color: white;
+        background-color: tomato;
+        border-radius: 10px;
+        padding: 10px;
+    }
+
+    .all {
+        text-decoration: underline;
+    }
+</style>
+<body>
+<script type="text/javascript" src="https://unpkg.com/vue@2.4.2/dist/vue.js"></script>
+
+<!-- *Custom events -->
+
+<div id="demo">
+    <!-- The value of `lovingVue` will be passed to `checked` property -->
+    <base-checkbox v-model="lovingVue" @change-state="showAlert"></base-checkbox>
+</div>
+<br><hr><br>
+
+<!-- ================================ -->
+
+<!-- *Binding Native Events to Components
+ -->
+<div id="app">
+    <parent></parent>
+</div>
+<template id="parent-component">
+    <div>
+        <h1>Parent</h1>
+        <inherited-child
+            :id="id"
+            :custom-attr="'custom1'"
+            v-bind="$attrs"
+            :class="cls"
+            @click="sayHello"
+        ></inherited-child>
+    
+        <noninherited-child
+        :id="id"
+        v-bind="$attrs"
+        :class="cls"
+        :custom-attr="'custom2'"
+        @click="sayHello"
+        ></noninherited-child>
+    </div>   
+</template>
+
+<template id="child-component">
+    <div v-on="$listeners">
+        <h1>Child</h1>
+        <div>
+            $attrs -> {{ $attrs }}
+        </div>
+    </div>
+</template>
+
+
+<script src="./custom-events.js"></script>
+</body>
+</html>

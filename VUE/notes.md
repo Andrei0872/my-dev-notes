@@ -279,7 +279,10 @@ an attribute that is passed to a component, but does not have a corresponding pr
 other attributes like ```type(on input)``` would be replaced
 
 
-#### Disabling Attribute Inheritance 
+#### Disabling Attribute Inheritance
+
+attributes from parent scope that are not recognized as props, will be applied to the root element of the child component as normal HTML attrs
+
 ```javascript
 Vue.component('my-component', {
   inheritAttrs: false,
@@ -288,5 +291,12 @@ Vue.component('my-component', {
 ```
 
 ```$attrs``` - contains the attribute names and values passed to a component
+             - contains parent-scope attributes(except for ```class``` and ```style```) that are not recognized(and extracted) as props.
+               when a component doesn't have any declared props, this essentially contains all parent-scope bindings(except for ```class``` and ```style```) and can be passed down to an inner component via ```v-bind="$attrs"```
+
+
+
+```$listeners``` - property containing an object of listeners being used on the component
+
 
 
