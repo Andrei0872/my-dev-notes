@@ -173,6 +173,8 @@ data -  must be a function so that each instance can maintain an independent cop
 
 * 2 types of component inregistration : global(using Vue.component()) and local
 
+the styles will be applied for the data passed from outside
+
 <br>
 #### Passing Data to Child Components
 
@@ -328,3 +330,14 @@ new Vue() --> <br>
                                   Destroyed
 
 </pre>
+
+
+--- 
+
+* Vue will treat the unnamed slots as default slots
+
+* Dynamically add components: ```<component></component>```
+
+* By default, dynamic components get destroyed
+
+* ```<keep-alive></keep-alive>``` - keep alive dynamic components
