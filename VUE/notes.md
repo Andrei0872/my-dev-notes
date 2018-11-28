@@ -17,7 +17,11 @@ attach event listeners that invoke methods on our Vue instances
 
 ---
 
-v-model = 2 way binding
+<b>v-model</b>
+
+1. 2 way binding
+2. binds the value (:value) 
+3. it gives us the @input event(@change if used with lazy)
 
 ---
 
@@ -341,3 +345,13 @@ new Vue() --> <br>
 * By default, dynamic components get destroyed
 
 * ```<keep-alive></keep-alive>``` - keep alive dynamic components
+
+---
+
+### Input modifiers
+
+```v-model.lazy``` - listen on change event
+```v-model``` - listen on key event
+
+---
+
