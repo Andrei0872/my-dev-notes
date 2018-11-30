@@ -366,4 +366,6 @@ new Vue() --> <br>
   4. ``` componentUpdated(el, binding, vnode) ``` - whenever the comp gets updated(With Children)
   5. ``` unbind(el, binding, vnode) ``` - once the directive is removed
 
-  <!-- https://www.youtube.com/watch?v=GQzn7XRdzxY -->
+```modifiers``` - v-myDirectiv.nameOfModifier="{key1:val1, key2:val2...}"; binding.modifier['nameOfModifier']
+
+```arguments``` v-myDirective:argument; binding.arg
