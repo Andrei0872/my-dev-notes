@@ -369,3 +369,12 @@ new Vue() --> <br>
 ```modifiers``` - v-myDirectiv.nameOfModifier="{key1:val1, key2:val2...}"; binding.modifier['nameOfModifier']
 
 ```arguments``` v-myDirective:argument; binding.arg
+
+
+### Filters & Mixins
+
+```filter``` - feature you can use to transform output
+
+```mixins``` - when you want to share code or functionality among multiple components
+
+```mixins``` - can be merged; components always get called last
