@@ -378,3 +378,56 @@ new Vue() --> <br>
 ```mixins``` - when you want to share code or functionality among multiple components
 
 ```mixins``` - can be merged; components always get called last
+
+
+### Transition CSS Classes
+
+```*-enter``` - the first frame
+
+```*-enter-active``` - until the animation finishes
+
+```*-leave``` 
+
+```*-enter-leave```
+
+<b>Default</b> : ```v-enter``` if no name is supplied
+
+```type``` - dictates the length
+
+```mode="out-in"``` - let the old element animate out first, and then animate the new one
+
+#### Transition JS Hooks
+
+1. ```before-enter``` - comparable with "*-enter" css class which lasts for one frame; set the initial state
+
+2. ```enter ```- play our animation; 
+
+3. ```after-enter``` - after our animation is finished
+
+4. ```after-enter-cancelled``` - "change the condition which will add  to the element before the animation finished"
+
+5. ```before-leave```
+
+6.```leave```
+
+7. ```after-leave```
+
+8. ```after-leave-cancelled```
+
+```! IMPORTANT ! ```  <br>
+  1.  ```<transition>``` - will not be rendered in the DOM
+  2. ```<transition-group tag="TAG">``` - does render a new HTML Tag!(span by default); 
+
+<p><b>You can use all these hooks</b> on you CSS animation.</p>
+
+<p>For example, you could execute some code whenever some animation finishes executing</p>
+
+```:css="false"``` -  don't look for CSS classes
+
+<p>
+<b>Where to animate with JavaScript ? </b> 
+<br>
+In <code>enter</code> and <code>leave</code> hooks, because these are the functions that get executed after setting the intial state(<code>beforeLeave</code>, <code>afterLeave</code>) and before we are done(<code>after-enter</code>, <code>after-leave</code>)
+</p>
+
+
