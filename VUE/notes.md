@@ -355,3 +355,15 @@ new Vue() --> <br>
 
 ---
 
+### Directives
+
+```Globally``` - Vue.directive() in ```main.js```
+
+* A directive has 5 Hooks <br>
+  1. ``` bind(el, binding, vnode) ``` - occurs as soon as the directive is bound to the element
+  2. ``` inserted(el, binding, vnode) ``` - as soon as inserted in the dom
+  3. ``` update(el, binding, vnode, oldVnode) ``` - whenever the comp gets updated (Without Children)
+  4. ``` componentUpdated(el, binding, vnode) ``` - whenever the comp gets updated(With Children)
+  5. ``` unbind(el, binding, vnode) ``` - once the directive is removed
+
+  <!-- https://www.youtube.com/watch?v=GQzn7XRdzxY -->
