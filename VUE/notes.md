@@ -476,3 +476,16 @@ In <code>enter</code> and <code>leave</code> hooks, because these are the functi
     </code>
   </p>
 </p>
+
+
+---
+
+
+### Routing
+
+* what's before the `#` - is sent to the server
+
+* what's after the `#` - handed over to the JS application
+
+
+
