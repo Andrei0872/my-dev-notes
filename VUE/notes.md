@@ -179,8 +179,11 @@ data -  must be a function so that each instance can maintain an independent cop
 
 the styles will be applied for the data passed from outside
 
-<br>
+<br> 
+
+
 #### Passing Data to Child Components
+
 
 props - custom attributes you can register on a component; when a value is passed to a prop attr, it becomes a property of that component instance
             - preferred for passing information to a child component
@@ -211,7 +214,9 @@ HTML attribute names are case-insensitive.
 
 <br>
 
+
 #### Passing Properties of an Object
+
 
 If you want to pass all the properties: v-bind(without and argument)
 
@@ -396,6 +401,8 @@ new Vue() --> <br>
 
 ```mode="out-in"``` - let the old element animate out first, and then animate the new one
 
+---
+
 #### Transition JS Hooks
 
 1. ```before-enter``` - comparable with "*-enter" css class which lasts for one frame; set the initial state
@@ -430,4 +437,42 @@ new Vue() --> <br>
 In <code>enter</code> and <code>leave</code> hooks, because these are the functions that get executed after setting the intial state(<code>beforeLeave</code>, <code>afterLeave</code>) and before we are done(<code>after-enter</code>, <code>after-leave</code>)
 </p>
 
+---
 
+### Event Bus
+
+<b>Allows us to emit an event in one component and listen for that in another</b>
+
+<p>
+  <b><li>Defining a global Event Bus</li></b>
+  <p>In this way you won't have to export the event bus in each components
+    <br>
+    <code>
+      Vue.prototype.$eventHug  = new Vue();
+    </code>
+  </p>
+  <p>
+  From any components, you can emit an event to the bus as follows: 
+  <br>
+  <code>
+    login() {
+      this.$eventHub.$emit('logged-in')
+    }
+  </code>
+  </p>
+  <p>
+    In order to listen to events, the event bus must be put in <code>created()</code>
+    <br>
+    <code>
+      created() {
+        this.$eventHub.$on('logged-in', this.getCurrentUser);
+      }
+      <br>
+      // Make sure the event listener is turned off before you destroy the component 
+      <br>
+      beforeDestroy() {
+        this.$eventHub.$off('logged-in')
+      }
+    </code>
+  </p>
+</p>
