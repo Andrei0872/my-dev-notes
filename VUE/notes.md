@@ -487,5 +487,12 @@ In <code>enter</code> and <code>leave</code> hooks, because these are the functi
 
 * what's after the `#` - handed over to the JS application
 
+### render() 
 
+* here we can create the DOM(Virtual DOM); contains Vnodes
 
+* declarative template is compiled to imperative render function
+
+* alternative: write render function directly
+
+* functional component - Vue doesn't have to watch for any change
