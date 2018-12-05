@@ -18,14 +18,12 @@ const solve = async () => {
     console.log(res) // valid
 }
 
-solve()
+solve().catch(handle)
  
 function handle(result) {
-    console.log(result)
+    console.log(result) // either 'random pass' or 'random fail'
     let err, res;
 
     result !== "random pass" ? (err="errors", res="invalid") : (err="0", res="valid");
     return {err,res};
 }
-
-//* You can either use .catch() or a handler
