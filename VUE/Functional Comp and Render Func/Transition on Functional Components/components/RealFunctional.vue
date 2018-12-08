@@ -25,7 +25,14 @@
                 }
             }, [h('b', item.title),' ', h('i', item.img)]))
             
-            const result = this.selected ? h('Test', { props: { details: this.info }, on: { click: this.testFunc } }) : h('div',[items]);
+            // const result = this.selected ? h('Test', { props: { details: this.info }, on: { click: this.testFunc } }) : h('div',[items]);
+            let self = this;
+            const result = this.selected ? h('Test', { 
+                props: { details: this.info }, 
+                on: { 
+                    click: function() { self.selected = !self.selected } 
+                    } 
+                }) : h('div',[items]);
 
             const transition = h('transition', {
                  props: { name: "fade", mode: "out-in" } 
