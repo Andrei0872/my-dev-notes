@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>Document</title>
+</head>
+<body>
+    
+    <my-el></my-el>
+
+    <script>
+        class MyEl extends HTMLElement {
+            
+            constructor() {
+                console.log('called constructor')
+                super();
+                this.render();
+            }
+            
+            get myObj() {
+                return this._myObj;
+            }
+
+            set myObj(value) {
+                this._myObj = value;
+                this.render();
+            }
+
+            render() {
+                this.innerHTML = '<span>Hello</span>';
+            }
+        }
+
+        customElements.define('my-el', MyEl);
+
+        const el = document.querySelector('my-el');
+        el.myObj = { name: 'andrei' };
+
+        console.log(el.myObj)
+    </script>
+</body>
+</html>
