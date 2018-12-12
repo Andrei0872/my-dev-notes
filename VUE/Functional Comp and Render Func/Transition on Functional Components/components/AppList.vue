@@ -24,7 +24,7 @@
 
 <script>
 import NonFunctional from './NonFunctional.vue';
-import RealFunctional from './RealFunctional.vue';
+import RenderFunc from './RenderFunc.vue';
 
 export default {
     data() {
@@ -42,7 +42,7 @@ export default {
     },
     components: {
         'app-nonfunctional': NonFunctional,
-        'real-functional': RealFunctional
+        'real-functional': RenderFunc
     },
     methods: {
         getInfo(index) {
