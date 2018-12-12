@@ -66,3 +66,27 @@ const infiniteSum = () => {
 const infinite = infiniteSum();
 let current = infinite(1)(2)(3)(4) // 10
 console.log(+ current(2)(2)) // 14
+
+
+const fibonacci = () => {
+    let prev = 0, curr = 1;
+
+    const compute = () => {
+        [prev, curr] = [curr, prev + curr]
+        return compute
+    }
+
+    compute.valueOf = () => curr
+
+    return compute
+}
+
+// 0 1 1 2 3 5 8 13 21
+const fibGen = fibonacci()
+// n-th fibonacci number
+let n = 7, res
+while(n-- > 1) {
+    res = fibGen()
+}
+console.log(+res) // 13
+
