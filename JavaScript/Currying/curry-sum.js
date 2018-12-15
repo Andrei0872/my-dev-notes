@@ -36,3 +36,18 @@ const ex2 = curryAdder()
 console.log(ex2) // 110
 
 
+// ================================================
+
+function curry(func) {
+    let args = [].slice.call(arguments,1)
+    return function () {
+        return func.apply(null, [].concat.apply(args, arguments))
+    }
+}
+
+const add = (...args) => args.reduce((a,b) => a + b)
+
+const fun = curry(add,2,1, 10)
+console.log(fun(1,2,3,1)) // 20
+
+
