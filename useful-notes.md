@@ -54,3 +54,13 @@ function outer() { // Parent scope
 * can't change the `this` binding. however, you can still use `bind()`, `apply()`, `call()` for passing parameters
 
 * can't be used as generator functions
+
+
+### Checking if an input is empty with CSS
+
+```
+input:not(:placeholder-shown) {
+  border-color: hsl(0, 76%, 50%);
+}
+```
+
