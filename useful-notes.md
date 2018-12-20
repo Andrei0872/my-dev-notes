@@ -64,3 +64,14 @@ input:not(:placeholder-shown) {
 }
 ```
 
+
+### DOM Stuff
+
+```javascript 
+  window.scrollX(Y)  //  returns the number of pixels that the document is currently scrolled horizontally(vertically)
+  ``` 
+
+```javascript
+  window.scrollY || window.pageYOffset // window.scrollY - not supported in IE(11 or below)
+```
+
