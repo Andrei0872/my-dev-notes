@@ -75,3 +75,24 @@ input:not(:placeholder-shown) {
   window.scrollY || window.pageYOffset // window.scrollY - not supported in IE(11 or below)
 ```
 
+### Fetch API
+
+**The promise does not reject on HTTP error statuses**. The promise gets rejected only on **network error** (connection refused || name not solved)
+<br>
+Requesting a URL from a server that will return a 404 **will not fail**
+<br>
+To reject a promise, check the staus
+
+```javascript
+  fetch('https://jsonplaceholder.typicode.com/404')
+  .then(res => {
+    if(res.ok) {
+      return res;
+    } else {
+      throw Error(`Request rejected with status ${res.status}`);
+    }
+  })
+  .catch(console.error)
+```
+
+---
