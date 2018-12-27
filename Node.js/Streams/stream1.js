@@ -94,3 +94,42 @@ readable._read = (data, enc, next) => {}
 readable.push('31231')
 readable.push('312312')
 
+// =====================================================
+
+const Stream = require('stream');
+const fs = require('fs');
+
+if (process.argv.length !== 3) {
+    console.log('file path required!')
+    process.exit(1);
+}
+
+const filepath = process.argv[2];
+
+const readStream = fs.createReadStream(filepath);
+
+readStream.on('data', chunk => {
+    console.log('.......')
+    console.log('reading chunk..')
+    console.log('.......')
+    // console.log(chunk.toString().length)
+})
+
+const writableStream = new Stream.Writable();
+
+// let res = 'not defined';
+let chunks = [];
+writableStream._write = (chunk, encoding, next) => {
+    // console.log(chunk.toString().length)
+    res = chunk.toString();
+    chunks.push(chunk.toString().length)
+    next();
+}
+
+readStream.pipe(writableStream)
+
+// This would also work 
+setTimeout(() => {
+    // console.log(res)
+    console.log(chunks)
+}, 100);
