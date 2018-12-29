@@ -96,3 +96,17 @@ To reject a promise, check the staus
 ```
 
 ---
+
+### Data Access Layer
+
+- abstract the actual db engine or other data store, such that the app can switch from on db to another
+
+- abstract the logical data model such that the Business Layer is decoupled from this knowledge and is agnostic of it(giving you the ability to modify the logical data model without impacting the business layer)
+
+---
+
+### Business Logic  
+
+- refers to all algorithms and codes needed to make a piece of software work
+
+- just the guts of the software needed to change a customer click into a request that the server can provide a response to
