@@ -110,3 +110,96 @@ To reject a promise, check the staus
 - refers to all algorithms and codes needed to make a piece of software work
 
 - just the guts of the software needed to change a customer click into a request that the server can provide a response to
+
+---
+
+### Normalization && Denormalization
+
+Normalization
+- dividing data into multiple collections with references between these collections
+
+- efficient data representation
+
+Normalization Example
+```bash
+# We have a `users` collection
+# We store each user's preferences in an `accountsPref` collection
+# We store each article written by users in an `articles` collection
+
+# Not really recommended
+db.users.findOne({_id: userId})
+{
+  _id: ObjectId("5977aad83abbae8aef44b47b"),
+  name: "John Doe",
+  email: "johndoe@gmail.com",
+  articles: [ # One-to-many relationship
+    ObjectId("5977aad83abbae8aef44b47a"),
+    ObjectId("5977aad83abbae8aef44b478"),
+    ObjectId("5977aad83abbae8aef44b477")
+  ],
+  accountsPref: ObjectId("5977aad83abbae8aef44b476")
+}
+
+db.accountsPref.findOne({_id: id})
+{
+  _id: ObjectId("5977aad83abbae8aef44b490"),
+  userId: ObjectId("5977aad83abbae8aef44b47b"),
+  showFriends: true,
+  notificationsOne: false,
+  style: "light"
+}
+```
+<br>
+Denormalization
+
+- will make data reading efficient
+
+Denormalization Example
+
+```bash
+# Store the accounts preferences of each user as an embedded document
+
+{
+  _id: ObjectId("5977aad83abbae8aef44b47b"),
+  name: "John Doe",
+  email: "johndoe@gmail.com",
+  articles: [
+    ObjectId("5977aad83abbae8aef44b47a"),
+    ObjectId("5977aad83abbae8aef44b478"),
+    ObjectId("5977aad83abbae8aef44b477")
+  ],
+  accountsPref: {
+    style: "light",
+    showFriends: true,
+    notificationsOn: false
+  }
+}
+```
+
+Pros
+
+- one less query to get the information
+
+Cons
+
+- takes up more space and is more difficult to keep in sync
+
+**Solution**
+```bash
+# Use a hybrid of referencing and embedding
+
+{
+  _id: ObjectId("5977aad83abbae8aef44b47b"),
+  name: "John Doe",
+  email: "johndoe@gmail.com",
+  articles: [
+    ObjectId("5977aad83abbae8aef44b47a"),
+    ObjectId("5977aad83abbae8aef44b478"),
+    ObjectId("5977aad83abbae8aef44b477")
+  ],
+  accountsPref: {
+    _id: ObjectId("5977aad83abbae8aef44b490"),
+    style: "light" # Assuming this filed is frequently used in our app
+  }
+}
+```
