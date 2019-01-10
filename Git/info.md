@@ -1,4 +1,10 @@
 
+### Important
+
+- before git add: _working area_
+
+- after git add: _index area_
+--- 
 
 ### Tell github who you are
 
@@ -146,6 +152,10 @@ OR
 
 ```git log --branches --not --remotes```
 
+---
+
+## Undo Operations
+
 ### Undo the most recent commit
 
 git commit -m 'hmm, I might not want to do that'
@@ -156,13 +166,65 @@ Adding your new files
 
 git commit -C ORIG_HEAD
 
+---
+
+### Discard changes
+
+```bash
+# To a specific bile
+git checkout <file_name>
+
+# To all files
+git checkout .
+```
+
+---
+
+### Unstaging Files
+
+* after unstaging - the files are kept in working area
+
+```bash
+# All the files
+git reset HEAD * # .
+
+# Specific file
+git reset HEAD <file_name>
+```
+
+---
+
+### Remove the latest command in the history
+
+- removing arbitrary/specific commit is not possible with ```git reset```
+
+```bash
+# Also remove commit from history
+# Do this locally!
+# Use this command when you haven't pushed the files to the remote repo
+git reset HEAD~1 # The files are send in working area
 
 
+# Remove 3 commits
+git reset HEAD~3
+```
+
+* ```git reset``` modes
+  * soft  - keeps all the changes in the staging area
+  * mixed - default; resets index, but not the working tree(the changes are kept in the working tree)
+  * hard - removes all the commits and discards changes from index and from working tree
 
 
+* after pushing to remote remo, ```git reset``` will only reset the files **locally**
 
+---
 
+* ```git revert``` 
+  * undo changes in any commit 
+  * won't remove commit from the history
+  * will undo the changes and will create a fresh commit
 
+```bash
 
-
+```
 
