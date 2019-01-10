@@ -146,7 +146,15 @@ OR
 
 ```git log --branches --not --remotes```
 
+### Undo the most recent commit
 
+git commit -m 'hmm, I might not want to do that'
+
+git reset HEAD
+
+Adding your new files
+
+git commit -C ORIG_HEAD
 
 
 
