@@ -225,6 +225,6 @@ git reset HEAD~3
   * will undo the changes and will create a fresh commit
 
 ```bash
-
+git revert <id_commit>
 ```
 
