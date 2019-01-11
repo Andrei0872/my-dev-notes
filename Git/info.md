@@ -228,3 +228,7 @@ git reset HEAD~3
 git revert <id_commit>
 ```
 
+### Personal notes
+
+I first used ```git reset --soft``` when I was ready to push files to the remote repo, but suddenly I realised that I also want to include
+other files within that commit.
