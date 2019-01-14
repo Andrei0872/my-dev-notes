@@ -4,6 +4,11 @@
 - before git add: _working area_
 
 - after git add: _index area_
+
+- ```git log```: shows the current HEAD and its ancestry
+
+- ```git reflog```: undo history for the repo; it isn't part of the repo itself
+
 --- 
 
 ### Tell github who you are
