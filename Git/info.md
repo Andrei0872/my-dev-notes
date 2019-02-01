@@ -20,6 +20,13 @@
 
 ---
 
+### Fetching
+
+* Clone a single branch
+```git clone -b <branch_name> --single-branch <git://sub.domain.com/repo.git>```
+
+---
+
 ### Basic Commands
 
 Create a new branch : ``` git checkout -b <name> ```
