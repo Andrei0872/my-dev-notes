@@ -140,6 +140,17 @@ console.log(match[0]) // ​​​​​that that
 
 // ==========
 
+const sameWords = /(?<word>\w+)\s*===\s*(\k<word>)/
+console.log(sameWords.test("andrei === andrei")) // true
+console.log(sameWords.test("orange === apple")) // false
+
+// ==========
+
+const switchNames = /(?<firstName>\w+)\s+(?<lastName>\w+)/;
+console.log("Andrei Gatej".replace(switchNames, "$<lastName> $<firstName>")) // Gatej Andrei
+
+// ==========
+
 // Insert a named capture group into the replacement string of the replace() func
 
 const str = 'red & blue';
