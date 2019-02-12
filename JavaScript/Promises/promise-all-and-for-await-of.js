@@ -52,7 +52,7 @@
 
     // All requests start at the same time, but all will be available when the longer one finishes
     const results = (await Promise.all(reqs))
-    results.forEach(name => console.log(name)
+    results.forEach(name => console.log(name))
     
 })();
 
