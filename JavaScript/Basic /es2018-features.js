@@ -165,3 +165,15 @@ re = /(?<=\$|£|€)\d+(\.\d*)?/
 console.log(re.exec('199')) // null
 console.log(re.exec('$199')) // ​​​​​[ '199', undefined, index: 1, input: '$199', groups: undefined ]​​​​​
 console.log(re.exec('€199.30')) // ​​​​​​​​​​[ '199.30', '.30', index: 1, input: '€199.30', groups: undefined ]​​​​​
+
+// ============================================================
+
+// Symbol Description
+// Its goal is to avoid getting the provided description from `Symbol.prototype.toString()`
+
+const mySymbol = Symbol('coolDescription')
+
+console.log(mySymbol) // ​​​​​Symbol(coolDescription)​​​​​
+console.log(mySymbol.toString()) // ​​​​​Symbol(coolDescription)​​​​​
+console.log(mySymbol.description) // ​​​​​coolDescription​​​​​
+
