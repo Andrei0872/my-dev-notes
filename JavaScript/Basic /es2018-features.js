@@ -13,7 +13,7 @@ console.log({ ...obj }) // setter ignored
 
 console.log(Object.assign({}, obj)) 
 // -> set called !
-// -> {} - setter NOT ignored
+// -> {} - setter ignored
 
 // ============================================================
 
