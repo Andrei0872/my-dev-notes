@@ -177,3 +177,27 @@ console.log(mySymbol) // ​​​​​Symbol(coolDescription)​​​​​
 console.log(mySymbol.toString()) // ​​​​​Symbol(coolDescription)​​​​​
 console.log(mySymbol.description) // ​​​​​coolDescription​​​​​
 
+// ============================================================
+
+// Object.fromEntries()
+// A reverse method for Object.entries()
+
+const me = {
+    name: 'Andrei',
+    age: 17,
+    country: 'RO'
+};
+
+const entries = Object.entries(me)
+console.log(entries) // ​​​​​[ [ 'name', 'Andrei' ], [ 'age', 17 ], [ 'country', 'RO' ] ]​​​​​
+
+// At this moment, it only works on Firefox 63.
+const fromEntries = Object.fromEntries(entries);
+console.log(fromEntries);
+/* 
+{
+    "name": "Andrei",
+    "age": 17,
+    "country": "RO"
+}
+*/
