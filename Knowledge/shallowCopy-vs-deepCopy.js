@@ -1,7 +1,4 @@
 
-// https://stackoverflow.com/questions/728360/how-do-i-correctly-clone-a-javascript-object?noredirect=1&lq=1
-
-
 /* 
 * TL;DR
 - Shallow copy will not create a new reference, but deep copy will create the new reference
@@ -33,10 +30,7 @@ if any references are other objects just the reference addresses are copied
 const me = {
     name: 'Andrei',
     age: 17,
-    country: 'RO',
-    get fullName () {
-        return 'Gatej Andrei'
-    }
+    country: 'RO'
 };
 
 // ================================
