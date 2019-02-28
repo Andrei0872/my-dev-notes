@@ -62,20 +62,27 @@ consume(asyncIterable())
 
 // ==========================================================
 
-// Random Example
+(async () => {
+    let orders = ['order1', 'order2', 'order3', 'order4'];
+    const fetch = (name, time) => new Promise(resolve => setTimeout(resolve, time, name))
 
-const names = ['andrei', 'gatej', 'john', 'jane'];
-const objNames = {
-    [Symbol.asyncIterator]: async function * () {
-        // for(let name of names) {
-        //     yield name
-        // }
-        yield * names
+    orders[Symbol.asyncIterator] = async function * () {
+        yield * [... this].map(async(order, i) => {
+            return await fetch(`resolved ${order}`, i * 1000);
+        })
     }
-}
 
-!(async function () {
-    for await (const name of objNames) {
-        console.log(name)
+    for await (const resolvedOrder of orders) {
+        console.log(resolvedOrder)
     }
-})();
+
+    console.log('finished !')
+    /* 
+    --> 
+    resolved order1
+    resolved order2
+    resolved order3
+    resolved order4
+    finished!
+    */
+})()
