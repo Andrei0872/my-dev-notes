@@ -1,0 +1,90 @@
+
+{
+    "editor.multiCursorModifier": "ctrlCmd",
+    "workbench.iconTheme": "material-icon-theme",
+    "editor.fontSize": 14.7,
+    "editor.formatOnSave": false,
+    "editor.fontFamily": "'Source Code Pro','Menlo','Droid Sans Mono', 'monospac', monospace, 'Droid Sans Fallback'",
+    "editor.wordWrap": "on",
+    "liveServer.settings.donotShowInfoMsg": true,
+    "window.zoomLevel": 0,
+    "highlight-matching-tag.enabled": true,
+    "markdown-preview-enhanced.liveUpdate": true,
+    "bracketPairColorizer.forceUniqueOpeningColor": true,
+    "bracketPairColorizer.forceIterationColorCycle": true,
+    "bracketPairColorizer.colorMode": "Consecutive",
+    "bracketPairColorizer.highlightActiveScope": true,
+    "bracketPairColorizer.activeScopeCSS": [
+        "borderStyle : solid",
+        "borderWidth : 1px",
+        "borderColor : {color}; opacity: 0.5",
+        "backgroundColor : {color} "
+    ],
+    "bracketPairColorizer.independentPairColors": [
+        [
+            "()",
+            [
+                "Gold",
+                "Orchid",
+                "LightSkyBlue",
+                "Yellow",
+                "Purple",
+                "Green"
+            ],
+            "Red"
+        ],
+        [
+            "[]",
+            [
+                "Gold",
+                "Orchid",
+                "LightSkyBlue",
+                "Yellow",
+                "Purple",
+                "Green"
+            ],
+            "Red"
+        ],
+        [
+            "{}",
+            [
+                "Gold",
+                "Orchid",
+                "LightSkyBlue",
+                "Yellow",
+                "Purple",
+                "Green"
+            ],
+            "Red"
+        ]
+    ],
+    "bracketPairColorizer.consecutivePairColors": [
+        "()",
+        "[]",
+        "{}",
+        [
+            "Gold",
+            "Orchid",
+            "LightSkyBlue",
+            "#b37298"
+        ],
+        "Red"
+    ],
+    "editor.formatOnPaste": true,
+    "editor.formatOnType": false,
+    "workbench.editor.enablePreview": false,
+    "cSpell.userWords": [
+        "builder",
+        "database",
+        "illuminate",
+        "schema"
+    ],
+    "php.suggest.basic": false,
+    "todo-tree.defaultHighlight": {},
+    "window.titleBarStyle": "native",
+    "javascript.updateImportsOnFileMove.enabled": "always",
+    "[html]": {},
+    "breadcrumbs.enabled": true,
+    "explorer.openEditors.visible": 0,
+    "terminal.external.linuxExec": "gnome-terminal"
+}
