@@ -9,6 +9,29 @@
 
 - ```git reflog```: undo history for the repo; it isn't part of the repo itself
 
+- ```git commit -am 'commit message'```: stages all the tracked files across the entire repo
+
+- ```git commit -m 'commit message' -o .```: stages all the tracked files in the current directory
+
+- ```git ls-files . --exclude-standard --others```: list untracked files
+
+- ```git ls-tree -r master --name-only```: list the tracked files in the current branch and directory
+
+- ```git ls-tree -r master --full-tree```: show tracked files in the current branch no matter where you run this command from
+
+- ```git ls-files```: list the tracked files in the current directory and subdirectories
+
+- ```git diff --name-only --cached|--staged```: show staged files
+
+- ```git reset -- . ```: unstage files in current directory
+
+- ```git stash && git add ./ && git stash pop```: add untracked files in current directory
+
+- ```git stash```: will pull all modified tracked files into a separate stack, then left over files are untracked files
+
+- ```git add -u ./```: add tracked files from current directory
+
+- ```git add -u .```: add tracked files from all across the local repo
 --- 
 
 ### Tell github who you are
@@ -206,7 +229,7 @@ git reset HEAD <file_name>
 
 ---
 
-### Remove the latest command in the history
+### Remove the latest commit in the history
 
 - removing arbitrary/specific commit is not possible with ```git reset```
 
@@ -240,7 +263,20 @@ git reset HEAD~3
 git revert <id_commit>
 ```
 
+---
+
+## Branches
+
+* when mergin feature branch and master branch, you also merge all the commits from the feature branch with the master branch
+
+* `--squash` - summarize all the changes we had in the feature branch in the **last** commit, and then merges this last commit with the master branch
+
+* current branch: **master** -  `git rebase feature` - git will see what's the last commit these 2 branches have in common and from there every different commit from the `feature` branch will have its own place in the `master` branch
+
+---
+
+
 ### Personal notes
 
-I first used ```git reset --soft``` when I was ready to push files to the remote repo, but suddenly I realised that I also want to include
+I first used ```git reset --soft``` when I was ready to push files to the remote repo, but suddenly I realized that I also want to include
 other files within that commit.
