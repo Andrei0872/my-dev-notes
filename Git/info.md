@@ -32,6 +32,9 @@
 - ```git add -u ./```: add tracked files from current directory
 
 - ```git add -u .```: add tracked files from all across the local repo
+
+- ```git diff-tree --no-commit-id --name-only -r <commit_id>```: list files in a commit
+
 --- 
 
 ### Tell github who you are
