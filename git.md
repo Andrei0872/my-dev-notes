@@ -5,6 +5,15 @@
 
 ### Tricks
 
+**Aliases**
+```bash
+git config --global alias.lga "log --graph --abbrev-commit --pretty=format:'%C(red)%h%Creset -%C(yellow)%d%Creset %s %C(green)(%cr) %C(bold blue)<%an>%Creset' --all"
+git config --global alias.lg "log --graph --abbrev-commit --pretty=format:'%C(red)%h%Creset -%C(yellow)%d%Creset %s %C(green)(%cr) %C(bold blue)<%an>%Creset'"
+
+# git lga: show the whole tree
+# git lg: show just your branch
+```
+
 **Switching back and forth between two branches**
 ```bash
 git checkout -
