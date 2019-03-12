@@ -1,6 +1,14 @@
 ## Contents
 
+[Tricks](#tricks)
 [Branches](#branches)
+
+### Tricks
+
+**Switching back and forth between two branches**
+```bash
+git checkout -
+```
 
 ### Branches
 
