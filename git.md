@@ -1,6 +1,7 @@
 ## Contents
 
 [Tricks](#tricks)
+[Credentials](#credentials)
 [Branches](#branches)
 
 ### Tricks
@@ -17,6 +18,15 @@ git config --global alias.lg "log --graph --abbrev-commit --pretty=format:'%C(re
 **Switching back and forth between two branches**
 ```bash
 git checkout -
+```
+
+### Credentials
+
+**Store your credentials for a certain period of time**
+```bash
+# Set the cache to timeout after an hour
+$ git config --global credential.helper 'cache --timeout=3600'
+
 ```
 
 ### Branches
