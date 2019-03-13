@@ -1,6 +1,7 @@
 ## Contents
 
 - [Good to know](#good-to-know)
+- [Objects](#objects)
 
 ## Good to know
 
@@ -48,4 +49,39 @@ function flat (arr) {
 const arr = [["a", "b"], ["c", "d"]];
 
 console.log(flat(arr)) // [ 'a', 'b', 'c', 'd' ]
+```
+
+## Objects
+
+**Dynamically exclude properties**
+```javascript
+const user1 = {
+    id: 1,
+    name: 'Andrei Gatej',
+    password: 'password',
+}
+
+const removeProp = prop => ({ [prop]: _, ...rest }) => (console.log(_),rest)
+
+const removePassword = removeProp('password');
+console.log(removePassword(user1)) // ​​​​​{ id: 1, name: 'Andrei Gatej' }​​​​​
+
+const removeId = removeProp('id')
+console.log(removeId(user1)) // ​​​​​{ name: 'Andrei Gatej', password: 'password' }​​​​​
+```
+
+**Organize Properties**
+```javascript
+const user1 = {
+    id: 1,
+    name: 'Andrei Gatej',
+    password: 'password',
+}
+
+// const organizeFirst = (object, prop = 'id') => ({ [prop]: null, ...object })
+const organizeFirst = (object, prop = 'id') => ({ [prop]: undefined, ...object })
+console.log(organizeFirst(user1, 'password')) // ​​​​​{ password: 'password', id: 1, name: 'Andrei Gatej' }​​​​​
+
+const organizeLast = (prop, { [prop]: _, ...object }) => ({ ...object, [prop]: _ })
+console.log(organizeLast('id', user1)) // ​​​​​​​​​​{ name: 'Andrei Gatej', password: 'password', id: 1 }​​​​​ 
 ```
