@@ -1,3 +1,5 @@
+# JavaScript Notebook
+
 ## Contents
 
 - [Good to know](#good-to-know)
