@@ -2,9 +2,27 @@
 
 ## Contents
 
+- [Knowledge](#knowledge)
 - [Good to know](#good-to-know)  
 - [Objects](#objects)
 - [Asynchronous Programming](#asynchronous-programming)
+
+## Knowledge
+
+**new**  
+* creates an empty {}
+* assigns the property `prototype` of this empty object to the `myFunc` prototype property
+
+**__proto__**
+* points to the prototype object of a function that created this object
+* exposed to the object instance
+
+**prototype**
+* accessed by <function-name>.prototype
+* returns the function that created the instance
+
+**constructor**
+* returns the function that created the instance
 
 ## Good to know
 
