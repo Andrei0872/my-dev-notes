@@ -2,8 +2,9 @@
 
 ## Contents
 
-- [Good to know](#good-to-know)
+- [Good to know](#good-to-know)  
 - [Objects](#objects)
+- [Asynchronous Programming](#asynchronous-programming)
 
 ## Good to know
 
@@ -86,4 +87,39 @@ console.log(organizeFirst(user1, 'password')) // ​​​​​{ password: 'pas
 
 const organizeLast = (prop, { [prop]: _, ...object }) => ({ ...object, [prop]: _ })
 console.log(organizeLast('id', user1)) // ​​​​​​​​​​{ name: 'Andrei Gatej', password: 'password', id: 1 }​​​​​ 
+```
+
+## Asynchronous Programming
+
+**Handling asynchronous operations in parallel**  
+[Source](https://itnext.io/node-js-handling-asynchronous-operations-in-parallel-69679dfae3fc)
+
+```javascript
+// Restrict the amount of requests executed in parallel
+
+async function solution () {
+  const concurrencyLimit = 5;
+  const argsCopy = [...listOfArguments.map((val, ind) => ({ val, ind }))];
+  const result = [...Array(listOfArguments.length)];
+  const promises = [...Array(concurrencyLimit)].fill(Promise.resolve())
+
+  // Chain the next Promise to the currently executed Promise as soon as it is completed
+  function chainNext (promise) {
+    if (argsCopy.length) {
+      const arg = argsCopy.shift();
+      console.log(arg)
+      return promise.then((temp) => {
+        console.log('temp', temp)
+        const newPromise = asyncOperation(arg.val).then(resp => ( result[arg.ind] = resp ));
+        return chainNext(newPromise)
+      });
+    }
+
+    return promise;
+  }
+
+  await Promise.all(promises.map(chainNext));
+
+  return result;
+}
 ```
