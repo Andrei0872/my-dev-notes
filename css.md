@@ -21,6 +21,12 @@
     * browser need to draw layers in the correct order
     * some elements might overlap each other, so it is important to make sure elements appear in the order intended
 
+**display**  
+* _block_ - strecth horizontally to fill their containing block
+* _inline_ - shrink to fit their contents
+
+---
+
 ### Tricks
 
 **Triangle(Arrow)**
