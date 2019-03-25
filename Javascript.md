@@ -7,7 +7,9 @@
 - [Objects](#objects)
 - [Asynchronous Programming](#asynchronous-programming)
 
-## Knowledge
+---
+
+### Knowledge
 
 **new**  
 * creates an empty {}
@@ -24,7 +26,9 @@
 **constructor**
 * returns the function that created the instance
 
-## Good to know
+---
+
+### Good to know
 
 **Get safe object properties**
 
@@ -72,7 +76,9 @@ const arr = [["a", "b"], ["c", "d"]];
 console.log(flat(arr)) // [ 'a', 'b', 'c', 'd' ]
 ```
 
-## Objects
+---
+
+### Objects
 
 **Dynamically exclude properties**
 ```javascript
@@ -107,7 +113,9 @@ const organizeLast = (prop, { [prop]: _, ...object }) => ({ ...object, [prop]: _
 console.log(organizeLast('id', user1)) // ​​​​​​​​​​{ name: 'Andrei Gatej', password: 'password', id: 1 }​​​​​ 
 ```
 
-## Asynchronous Programming
+---
+
+### Asynchronous Programming
 
 **Handling asynchronous operations in parallel**  
 [Source](https://itnext.io/node-js-handling-asynchronous-operations-in-parallel-69679dfae3fc)
