@@ -2,7 +2,7 @@
 
 ## Contents
 
--[Event Loop](#event-loop)
+- [Event Loop](#event-loop)
 
 ---
 
