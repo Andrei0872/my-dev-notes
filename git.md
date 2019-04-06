@@ -3,6 +3,8 @@
 [Tricks](#tricks)
 [Credentials](#credentials)
 [Branches](#branches)
+[Diff](#diff)
+[Search](#search)
 
 ### Tricks
 
@@ -20,6 +22,8 @@ git config --global alias.lg "log --graph --abbrev-commit --pretty=format:'%C(re
 git checkout -
 ```
 
+---
+
 ### Credentials
 
 **Store your credentials for a certain period of time**
@@ -28,6 +32,8 @@ git checkout -
 $ git config --global credential.helper 'cache --timeout=3600'
 
 ```
+
+---
 
 ### Branches
 
@@ -52,3 +58,47 @@ git branch -m <old> <new>
 git push origin --delete testBranch # Delete the old branch
 git push origin <new> # Push up the new branch
 ```
+
+---
+
+### Diff
+
+**Log files with code diff information**
+```bash
+git log -p
+```
+
+**Show specific commit in detail**
+```bash
+git show <commit_id>
+```
+
+---
+
+### Search
+
+**Search the commit log(across all branches)**
+```bash
+git log --all --grep='msg'
+```
+
+**Sort by author**
+```bash
+git shortlog
+```
+
+**Pretty print**
+```bash
+git log --pretty='%cn commited %h on %cd'
+```
+
+**Filter by author**
+```bash
+git log --author='authorName'
+```
+
+**Filter by date**
+```bash
+git log --date='4-7-2019'
+```
+
