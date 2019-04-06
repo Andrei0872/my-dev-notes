@@ -26,6 +26,62 @@
 **constructor**
 * returns the function that created the instance
 
+<details>
+    <summary>
+        <b>Shallow Copy vs Deep Copy</b>
+    </summary>
+<div>
+<p>
+    <b>TL;DR: </b>
+    Shallow copy will not create a new reference, but deep copy will create the new reference.
+</p>
+<p>
+    <i>Shallow copy (bit-wise copy)</i><br>
+    <ul>
+        <li>a new object is created and that has an exact copy of the values in the original obj; 
+if any references are other objects just the reference addresses are copied</li>
+        <li>copy just the 'immediate' members, but keeping the same reference</li>
+    </ul>
+</p>
+    <i>Deep Copy (member-wise copy)</i><br>
+    <ul>
+        <li>visit each member and explicitly copy it</li>
+        <li>occurs when an object is copied along with the objects to which it refers</li>
+        <li>allocates different memory location </li>
+        <li>recursively perform shallow copies until everything is a new copy of the original</li>
+    </ul>
+<code>
+<pre>
+// Examples
+
+const me = {
+    name: 'Andrei',
+    age: 17,
+    country: 'RO'
+};
+
+// ================================
+
+// Shallow copy
+const meCopy = me;
+// meCopy.name = "ANDREI";
+// console.log(meCopy) 
+// console.log(me)
+// -> { name: 'ANDREI', age: 17, country: 'RO' } (both)
+
+// ================================
+
+// Deep Copy 
+const deepCopyMe = JSON.parse(JSON.stringify(me));
+deepCopyMe.name = 'ANDREI'
+console.log(deepCopyMe) // { name: 'ANDREI', age: 17, country: 'RO' } 
+console.log(me) // { name: 'Andrei', age: 17, country: 'RO' } 
+
+</pre>
+</code>
+</div>
+</details>
+
 ---
 
 ### Good to know
