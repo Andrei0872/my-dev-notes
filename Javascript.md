@@ -6,6 +6,7 @@
 - [Good to know](#good-to-know)  
 - [Objects](#objects)
 - [Asynchronous Programming](#asynchronous-programming)
+- [This](#this)
 
 ---
 
@@ -204,4 +205,23 @@ async function solution () {
 
   return result;
 }
+```
+
+---
+
+### This
+
+**_arguments_ keyword**
+```javascript
+function test() {
+    let s = [].slice.call(arguments);
+    console.log(s)
+}
+
+function wrapper(func) {
+    console.log(arguments)
+    return func.apply(null, [].slice.call(arguments, 1));
+}
+
+wrapper(test, 20, 30);
 ```
