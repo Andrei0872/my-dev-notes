@@ -22,7 +22,7 @@
 
 **prototype**
 * accessed by <function-name>.prototype
-* returns the function that created the instance
+* has an inherent property called `constructor` which is a pointer to the function itself
 
 **constructor**
 * returns the function that created the instance
