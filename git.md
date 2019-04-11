@@ -113,6 +113,11 @@ git log --pretty=oneline | tail -n <n>
 git log --oneline -<n>
 ```
 
+**Skip <n> logs**
+```bash
+git log --oneline --skip=<n> -n -<m>
+```
+
 ---
 
 ### Rebase
