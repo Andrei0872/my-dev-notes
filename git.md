@@ -5,6 +5,7 @@
 [Branches](#branches)
 [Diff](#diff)
 [Search](#search)
+[Rebase](#rebase)
 
 ### Tricks
 
@@ -112,4 +113,12 @@ git log --pretty=oneline | tail -n <n>
 git log --oneline -<n>
 ```
 
+---
 
+### Rebase
+
+**Change any _unpushed_ commit message**
+```bash
+# X - the number of commits to the last commit you want to be able to edit
+git rebase -i HEAD~<N>
+```
