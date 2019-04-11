@@ -102,3 +102,14 @@ git log --author='authorName'
 git log --date='4-7-2019'
 ```
 
+**Show <n> logs in reverse order**
+```bash
+git log --pretty=oneline | tail -n <n>
+```
+
+**Show <n> logs**
+```bash
+git log --oneline -<n>
+```
+
+
