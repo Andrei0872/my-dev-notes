@@ -128,6 +128,11 @@ git log --format="%B" -1 HEAD~1 # or <commit>
 git show <commit> | less
 ```
 
+**Show commits between 2 periods**
+```bash
+git log --format='%B' --since='7/4/2019' --until='12/4/2019'
+```
+
 ---
 
 ### Rebase
