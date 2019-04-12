@@ -118,6 +118,10 @@ git log --oneline -<n>
 git log --oneline --skip=<n> -n -<m>
 ```
 
+**Print commit message**
+```bash
+git log --format="%B" -1 HEAD~1 # or <commit>
+```
 ---
 
 ### Rebase
