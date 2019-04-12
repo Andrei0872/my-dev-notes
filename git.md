@@ -122,6 +122,12 @@ git log --oneline --skip=<n> -n -<m>
 ```bash
 git log --format="%B" -1 HEAD~1 # or <commit>
 ```
+
+**Show commit changes**
+```bash
+git show <commit> | less
+```
+
 ---
 
 ### Rebase
