@@ -133,6 +133,11 @@ git show <commit> | less
 git log --format='%B' --since='7/4/2019' --until='12/4/2019'
 ```
 
+**Search commit message by pattern**
+```bash
+git log --format="%B" | grep -E ':(\w+):'
+```
+
 ---
 
 ### Rebase
