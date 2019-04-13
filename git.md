@@ -121,6 +121,14 @@ git cherry -v
 git diff A...B
 ```
 
+**List commits since a certain commit**
+```bash
+git log --oneline ^<commit_id> HEAD
+
+# Or
+git log --oneline <commit_id>...HEAD # What changes HEAD has introduced since its common ancestor with <commit_id>
+```
+
 ---
 
 ### Search
