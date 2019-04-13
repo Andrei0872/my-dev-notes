@@ -88,6 +88,7 @@ git branch | grep \* | cut -d ' ' -f2
 ---
 
 ### Diff
+[What are the differences between double dot and triple dot](https://stackoverflow.com/questions/7251477/what-are-the-differences-between-double-dot-and-triple-dot-in-git-dif#comment45515553_7256391)
 
 **Log files with code diff information**
 ```bash
@@ -114,6 +115,10 @@ git diff --stat origin/master
 
 # Or
 git cherry -v
+
+# Diff from the common ancestor; Specifically, what changes the branch B has introduced
+# since its common ancestor with A
+git diff A...B
 ```
 
 ---
