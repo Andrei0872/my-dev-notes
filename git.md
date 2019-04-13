@@ -143,6 +143,26 @@ git log --oneline -<n>
 git log --oneline --skip=<n> -n -<m>
 ```
 
+**Print commit message**
+```bash
+git log --format="%B" -1 HEAD~1 # or <commit>
+```
+
+**Show commit changes**
+```bash
+git show <commit> | less
+```
+
+**Show commits between 2 periods**
+```bash
+git log --format='%B' --since='7/4/2019' --until='12/4/2019'
+```
+
+**Search commit message by pattern**
+```bash
+git log --format="%B" | grep -E ':(\w+):'
+```
+
 ---
 
 ### Rebase
