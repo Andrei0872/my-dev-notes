@@ -111,6 +111,9 @@ git diff --stat origin/master..HEAD
 # Or
 # If you have changes staged for commit, they will be shown as well
 git diff --stat origin/master
+
+# Or
+git cherry -v
 ```
 
 ---
