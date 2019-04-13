@@ -1,11 +1,26 @@
 ## Contents
 
-[Tricks](#tricks)
-[Credentials](#credentials)
-[Branches](#branches)
-[Diff](#diff)
-[Search](#search)
-[Rebase](#rebase)
+[Knowledge](#knowledge)  
+[Tricks](#tricks)  
+[Credentials](#credentials)  
+[Branches](#branches)  
+[Diff](#diff)  
+[Search](#search)  
+[Rebase](#rebase)  
+
+### Knowledge
+
+**master** -  a local branch
+
+**origin/master** - an entity representing the state of the _master_ branch in the remote _origin_
+
+**origin** - a remote repo
+
+**when doing _git pull_**  
+* it copies origin master into origin/master
+* it merges origin/master into master
+
+---
 
 ### Tricks
 
