@@ -75,6 +75,16 @@ git push origin --delete testBranch # Delete the old branch
 git push origin <new> # Push up the new branch
 ```
 
+**Compare the checked out branch to another branch**
+```bash
+git diff ..<another_branch>
+```
+
+**Get current branch name**
+```bash
+git branch | grep \* | cut -d ' ' -f2
+```
+
 ---
 
 ### Diff
