@@ -99,6 +99,20 @@ git log -p
 git show <commit_id>
 ```
 
+**See what you are about to push**
+```bash
+# --stat - show the amount each file was changed
+git diff --stat origin/master HEAD
+
+# Or
+# git diff A..B - show commits that are in B, but not in A
+git diff --stat origin/master..HEAD
+
+# Or
+# If you have changes staged for commit, they will be shown as well
+git diff --stat origin/master
+```
+
 ---
 
 ### Search
