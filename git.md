@@ -196,6 +196,11 @@ git log --format='%B' --since='7/4/2019' --until='12/4/2019'
 git log --format="%B" | grep -E ':(\w+):'
 ```
 
+**Print changes in file in a certain commit**
+```bash
+git log -p <filename>
+```
+
 ---
 
 ### Rebase
