@@ -45,6 +45,12 @@ git rm --cached <what_you_want_to_remove>
 git commit --amend --no-edit
 ```
 
+**Keep commiting further changes to file that has already been commited to the repo**
+```bash
+git update-index --assume-unchanged <filename>
+# Stop ignoring changes
+git update-index --no-assume-unchanged <filename>
+```
 ---
 
 ### Credentials
