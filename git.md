@@ -38,6 +38,13 @@ git config --global alias.lg "log --graph --abbrev-commit --pretty=format:'%C(re
 git checkout -
 ```
 
+**Remove file from existing commit**
+```bash
+# Assuming you want to keep the last commit message
+git rm --cached <what_you_want_to_remove>
+git commit --amend --no-edit
+```
+
 ---
 
 ### Credentials
