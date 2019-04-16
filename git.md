@@ -129,6 +129,9 @@ git log --oneline ^<commit_id> HEAD
 git log --oneline <commit_id>...HEAD # What changes HEAD has introduced since its common ancestor with <commit_id>
 ```
 
+**List all files in a commit**
+git diff-tree --no-commit-id --name-only -r <commit_id>
+
 ---
 
 ### Search
