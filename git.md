@@ -76,6 +76,11 @@ git branch -vv
 git branch -r
 ```
 
+**Fetch remote branch**
+```bash
+git checkout --track <remote_branch>
+```
+
 **Change branch name**
 ```bash
 git branch -m <old> <new>
