@@ -3,6 +3,7 @@
 ## Contents
 
 [Knowledge](#knowledge)
+[Indexing](#indexing)
 
 ## Knowledge
 
@@ -14,3 +15,46 @@
 **Transactions**
 * group operations into a single unit that can avoid half succeeding or half failing between operations
 * won't lock rows during reading --> `concurrency`
+
+---
+
+## Indexing
+
+[Resource](https://medium.freecodecamp.org/database-indexing-at-a-glance-bb50809d48bd) :sparkles:
+
+* *index vs key*
+    * **index** - special data structure that facilitates data search across the table
+    * **key** - a constraint imposed on the behaviour of the column
+
+* is created on the columns specified in the `WHERE` clause
+
+* a proper index can be created only when you know exactly what your query & data access patterns look like
+
+* if you don't create an index, the db _scans all the rows_
+
+```bash
+# With index
+explain select * from index_demo where phone_no = '7111';
++----+-------------+------------+------------+-------+---------------+---------+---------+-------+------+----------+-------+
+| id | select_type | table      | partitions | type  | possible_keys | key     | key_len | ref   | rows | filtered | Extra |
++----+-------------+------------+------------+-------+---------------+---------+---------+-------+------+----------+-------+
+|  1 | SIMPLE      | index_demo | NULL       | const | PRIMARY       | PRIMARY | 22      | const |    1 |   100.00 | NULL  |
++----+-------------+------------+------------+-------+---------------+---------+---------+-------+------+----------+-------+
+# `rows` returns 1 -  the query optimizer just goes directly to the record & fetches it
+
+# Without index
+explain select * from index_demo_2 where phone_no = '7111';
++----+-------------+--------------+------------+------+---------------+------+---------+------+------+----------+-------------+
+| id | select_type | table        | partitions | type | possible_keys | key  | key_len | ref  | rows | filtered | Extra       |
++----+-------------+--------------+------------+------+---------------+------+---------+------+------+----------+-------------+
+|  1 | SIMPLE      | index_demo_2 | NULL       | ALL  | NULL          | NULL | NULL    | NULL |    4 |    25.00 | Using where |
++----+-------------+--------------+------------+------+---------------+------+---------+------+------+----------+-------------+
+
+```
+
+* secondary indexes do not impact physical storage locations unlike primary indices
+
+```bash
+# `name` - column in the table
+CREATE INDEX sec_index ON table (name)
+```
