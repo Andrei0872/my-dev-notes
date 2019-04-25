@@ -20,6 +20,7 @@ $([ "$2" == 'js' ] && echo $js || echo '')
 "
 )"
 
+# Choose your location
 dirPath=$HOME/Documents/Workspace/train/
 cd $dirPath
 

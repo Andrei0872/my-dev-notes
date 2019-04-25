@@ -21,6 +21,8 @@ export PATH=$PATH:/home/andubuntu
 
 ### Usage
 
+Before running the script, make sure that you choose your location where it would generate the files. You can do this by opening `main.sh` and look for the suggestive comment.
+
 ```bash
 # If you want your project to have a `main.js` 
 <name_of_your_script> <directory_name> js
