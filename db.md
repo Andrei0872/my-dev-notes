@@ -68,3 +68,105 @@ CREATE INDEX sec_index ON table (name)
 
 - abstract the logical data model such that the Business Layer is decoupled from this knowledge and is agnostic of it(giving you the ability to modify the logical data model without impacting the business layer)
 
+---
+
+## Normalization && Denormalization
+
+**Normalization**
+
+* dividing data into multiple collections with references between these collections
+
+* efficient data representation
+
+<details>
+<summary>
+    Normalization Example
+</summary>
+
+```bash
+# We have a `users` collection
+# We store each user's preferences in an `accountsPref` collection
+# We store each article written by users in an `articles` collection
+
+# Not really recommended
+db.users.findOne({_id: userId})
+{
+  _id: ObjectId("5977aad83abbae8aef44b47b"),
+  name: "John Doe",
+  email: "johndoe@gmail.com",
+  articles: [ # One-to-many relationship
+    ObjectId("5977aad83abbae8aef44b47a"),
+    ObjectId("5977aad83abbae8aef44b478"),
+    ObjectId("5977aad83abbae8aef44b477")
+  ],
+  accountsPref: ObjectId("5977aad83abbae8aef44b476")
+}
+
+db.accountsPref.findOne({_id: id})
+{
+  _id: ObjectId("5977aad83abbae8aef44b490"),
+  userId: ObjectId("5977aad83abbae8aef44b47b"),
+  showFriends: true,
+  notificationsOne: false,
+  style: "light"
+}
+```
+</details>
+
+**Denormalization**
+
+* will make data reading efficient
+
+<details>
+    <summary>
+        Denormalization Example
+    </summary>
+
+```bash
+# Store the accounts preferences of each user as an embedded document
+
+{
+  _id: ObjectId("5977aad83abbae8aef44b47b"),
+  name: "John Doe",
+  email: "johndoe@gmail.com",
+  articles: [
+    ObjectId("5977aad83abbae8aef44b47a"),
+    ObjectId("5977aad83abbae8aef44b478"),
+    ObjectId("5977aad83abbae8aef44b477")
+  ],
+  accountsPref: {
+    style: "light",
+    showFriends: true,
+    notificationsOn: false
+  }
+}
+```
+</details>
+
+**Pros of Denormalization**
+
+* one less query to get the information
+
+**Cons of Denormalization**
+
+* takes up more space and is more difficult to keep in sync
+
+**Solution**
+```bash
+# Use a hybrid of referencing and embedding
+
+{
+  _id: ObjectId("5977aad83abbae8aef44b47b"),
+  name: "John Doe",
+  email: "johndoe@gmail.com",
+  articles: [
+    ObjectId("5977aad83abbae8aef44b47a"),
+    ObjectId("5977aad83abbae8aef44b478"),
+    ObjectId("5977aad83abbae8aef44b477")
+  ],
+  accountsPref: {
+    _id: ObjectId("5977aad83abbae8aef44b490"),
+    style: "light" # Assuming this filed is frequently used in our app
+  }
+}
+```
