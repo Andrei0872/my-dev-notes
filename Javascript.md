@@ -83,6 +83,37 @@ console.log(me) // { name: 'Andrei', age: 17, country: 'RO' } 
 </div>
 </details>
 
+**Arrow functions**
+
+* don't have their own this
+
+* can't be called as a constructor
+
+* don't have the `arguments` special variable
+
+* can't change the `this` binding. however, you can still use `bind()`, `apply()`, `call()` for passing parameters
+
+* can't be used as generator functions
+
+**Fetch API**
+
+* **The promise does not reject on HTTP error statuses**. The promise gets rejected only on **network error** (connection refused || name not solved)
+
+* Requesting a URL from a server that will return a 404 **will not fail**
+
+```javascript
+  fetch('https://jsonplaceholder.typicode.com/404')
+  .then(res => {
+    // To reject a promise, check the staus
+    if(res.ok) {
+      return res;
+    } else {
+      throw Error(`Request rejected with status ${res.status}`);
+    }
+  })
+  .catch(console.error)
+```
+
 ---
 
 ### Good to know
