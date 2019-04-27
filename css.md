@@ -50,3 +50,11 @@
         /* border-left: 6px solid #FFF; */
     }
 ```
+
+**Checking if an input is empty with CSS**
+
+```css
+input:not(:placeholder-shown) {
+  border-color: hsl(0, 76%, 50%);
+}
+```
