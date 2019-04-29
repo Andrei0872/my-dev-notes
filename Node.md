@@ -2,7 +2,8 @@
 
 ## Contents
 
-- [Event Loop](#event-loop)
+- [Event Loop](#event-loop)  
+- [Knowledge](#knowledge)
 
 ---
 
@@ -45,3 +46,13 @@ setTimeout
 setImmediate
 */
 ```
+
+---
+
+### Knowledge
+
+**Concurrency vs Parallelism**
+
+* *concurrency* - dealing with multiple things at once
+
+* *parallelism* - doing a multiple things at once
