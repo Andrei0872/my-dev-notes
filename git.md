@@ -93,6 +93,14 @@ git push origin --delete testBranch # Delete the old branch
 git push origin <new> # Push up the new branch
 ```
 
+**Delete remote branch**
+```bash
+git push origin --delete <branch_name>
+
+# Multiple branches
+git branch -r | grep -vE '*/master' | cut -d'/' -f2 | xargs git push origin --delete
+```
+
 **Compare the checked out branch to another branch**
 ```bash
 git diff ..<another_branch>
