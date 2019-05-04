@@ -4,7 +4,8 @@
 ## Contents
 
 [Knowledge](#knowledge)  
-[Tricks](#tricks)
+[Tricks](#tricks)  
+[Accessibility](#accessibility)
 
 ### Knowledge
 
@@ -56,5 +57,21 @@
 ```css
 input:not(:placeholder-shown) {
   border-color: hsl(0, 76%, 50%);
+}
+```
+
+### Accessibility
+
+```css
+.visuallyhidden {
+    border: 0;
+    clip: rect(0 0 0 0);
+    height: auto;
+    margin: 0;
+    overflow: hidden;
+    padding: 0;
+    position: absolute;
+    width: 1px;
+    white-space: nowrap;
 }
 ```
