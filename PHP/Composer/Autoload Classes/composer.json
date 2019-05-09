@@ -1,9 +1,0 @@
-{
-    "autoload" : {
-        "psr-4" : {
-            "Acme\\" : "src"
-        }
-    },
-    "name" : "nume",
-    "description": "desc"
-}
