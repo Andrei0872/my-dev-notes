@@ -1,8 +1,8 @@
 # Useful commands
 
 [Generate project structure](#generate-project-structure)  
-[Move multiple files to another location](#move-multiple-files-to-another-location)
-
+[Move multiple files to another location](#move-multiple-files-to-another-location)  
+[Delete everything that is not a directory](#delete-everything-that-is-not-a-directory)
 
 ### Generate project structure
 
@@ -17,4 +17,14 @@ tree -a -L 2 -R -I '<ignored_dir1>|<ignored_dir2>|...' --dirsfirst
 for i in $(ls -1 | grep -e "$YOUR_REGEX"); do 
     mv "$i" $YOUR_LOCATION 
 done
+```
+
+---
+
+### Delete everything that is not a directory
+```bash
+# First preview what we are going to delete
+find . -maxdepth 1  -not -type d
+# Expand the previous command
+rm $(!!)
 ```
