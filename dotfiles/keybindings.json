@@ -1,0 +1,43 @@
+// Place your key bindings in this file to override the defaults
+[{
+        "key": "ctrl+shift+5",
+        "command": "editor.emmet.action.matchTag"
+    },
+    {
+        "key": "ctrl+`",
+        "command": "workbench.action.focusActiveEditorGroup",
+        "when": "terminalFocus"
+    }, {
+        "key": "ctrl+`",
+        "command": "workbench.action.terminal.focus",
+        "when": "!terminalFocus"
+    },
+    {
+        "key": "ctrl+shift+k",
+        "command": "workbench.action.terminal.focusNext"
+    }, {
+        "key": "ctrl+shift+j",
+        "command": "workbench.action.terminal.focusPrevious"
+    },
+    {
+        "key": "ctrl+shift+1",
+        "command": "workbench.action.terminal.focusPreviousPane"
+    },
+    {
+        "key": "ctrl+shift+2",
+        "command": "workbench.action.terminal.focusNextPane"
+    },
+    {
+        "key": "ctrl+shift+4",
+        "command": "editor.action.addSelectionToNextFindMatch"
+    },
+    {
+        "key": "ctrl+shift+3",
+        "command": "editor.action.addSelectionToPreviousFindMatch"
+    },
+    {
+        "key": "ctrl+w",
+        "command": "workbench.action.terminal.kill",
+        "when": "terminalFocus"
+    },
+]

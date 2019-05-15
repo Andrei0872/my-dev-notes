@@ -1,0 +1,15 @@
+{
+    "Generate TS Script - Vue": {
+        "prefix": "tscript",
+        "body": [
+            "<script lang='ts'>",
+            "import Vue from 'vue';",
+            "import { Component } from 'vue-property-decorator';",
+            "",
+            "@Component",
+            "export default class $1 extends Vue {}",
+            "</script>"
+        ],
+        "description": "Log output to console"
+    }
+}
