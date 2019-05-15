@@ -2,7 +2,7 @@
 
 [Generate project structure](#generate-project-structure)  
 [Move multiple files to another location](#move-multiple-files-to-another-location)  
-[Delete everything that is not a directory](#delete-everything-that-is-not-a-directory)
+[Delete everything that is not a directory](#delete-everything-that-is-not-a-directory)  
 [Move content from subdirectory x to subdirectory y](#move-content-from-subdirectory-x-to-subdirectory-y)
 
 ### Generate project structure
