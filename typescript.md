@@ -1,6 +1,24 @@
 # TypeScript Notebook
 
+[Knowledge](#knowledge)  
 [Types](#types)  
+
+## Knowledge
+
+:sparkles:[Source](https://stackoverflow.com/questions/40222162/typescript-2-custom-typings-for-untyped-npm-module)
+
+**types[] & typeRoots[]**
+- not general-purpose ways to load declarations (*.d.ts) files
+- load typing declarations from NPM packages
+
+**typeRoots[]**
+- add additional locations from where type packages will be loaded from automatically
+
+**types[]**
+- disable automatic loading behavior 
+
+
+---
 
 ## Types
 
