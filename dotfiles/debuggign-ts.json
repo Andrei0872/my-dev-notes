@@ -1,0 +1,12 @@
+{
+    "type": "node",
+    "request": "launch",
+    "name": "Debug TS in Node.js",
+    "preLaunchTask": "typescript",
+    "program": "${workspaceFolder}/server/src/index.ts",
+    "cwd": "${workspaceFolder}/server/",
+    "protocol": "inspector",
+    "outFiles": [
+        "${workspaceFolder}/server/dist/**/*.js"
+    ]
+}
