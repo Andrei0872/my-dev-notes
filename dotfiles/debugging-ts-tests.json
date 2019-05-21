@@ -1,0 +1,14 @@
+{
+    "type": "node",
+    "request": "launch",
+    "name": "Mocha Tests",
+    "program": "${workspaceFolder}/server/node_modules/mocha/bin/_mocha",
+    "args": [
+        "--require", "ts-node/register",
+        "-u", "bdd",
+        "--timeout", "999999",
+        "--colors", "--recursive",
+        "${workspaceFolder}/server/tests/**/*.ts"
+    ],
+    "internalConsoleOptions": "openOnSessionStart"
+}
