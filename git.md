@@ -51,6 +51,13 @@ git update-index --assume-unchanged <filename>
 # Stop ignoring changes
 git update-index --no-assume-unchanged <filename>
 ```
+
+**List of merges into a branch**
+```bash
+git log --merges --first-parent master \
+        --pretty=format:"%h %<(10,trunc)%aN %C(white)%<(15)%ar%Creset %C(red bold)%<(15)%D%Creset %s"
+```
+
 ---
 
 ### Credentials
