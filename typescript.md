@@ -17,6 +17,9 @@
 **types[]**
 - disable automatic loading behavior 
 
+**files**
+- specify a list of ts files that will be included by the compiler(url absolute/relative)
+- not affected by **exclude** property
 
 ---
 
