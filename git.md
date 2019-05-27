@@ -20,6 +20,26 @@
 * it copies origin master into origin/master
 * it merges origin/master into master
 
+**checkout** 
+- move HEAD to a specific commit
+- commit or file
+- file: discard changes in the working dir
+- commit: switch between the branches/inspect old snapshots
+
+
+**revert**
+- takes a commit and creates a new commit which inverses the specified commit
+- commit: undo commit in public branch
+
+**reset**
+- takes a commit resets the 3 trees
+- commit: discard commits or throw aray uncommited changes
+- file: unstange file
+  --soft(keep staged): staged snapshot & working dir - not altered
+  --mixed(unstaged): staged is updated to match the specified commit, working dir not altered
+  --hard(not even unstaged, everything is gone!): both staged snapshot & working dir - altered
+
+
 ---
 
 ### Tricks
