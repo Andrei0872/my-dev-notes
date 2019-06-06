@@ -12,14 +12,14 @@
 - http request
 
 **Observer**
-- does something whenver
+- does something whenever
     - a value/error occurs
     - the *observable* reports the `complete` status
 - 3 methods
     - `next()`
     - `error()`
     - `complete()`
-The observable knows when to call these methods throught the **Subscription**
+The observable knows when to call these methods throughout the **Subscription**
 
 **Subscription**
 - `subscribe()`
