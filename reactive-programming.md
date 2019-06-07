@@ -1,6 +1,7 @@
 ## Notes on Reactive Programming
 
 - [Concepts](#concepts)  
+- [Observables](#observables)
 
 ---
 
@@ -25,3 +26,18 @@ The observable knows when to call these methods throughout the **Subscription**
 - `subscribe()`
 - tells the observable that someone wants to know about its values
 - connects _observer_ with _observable_
+
+---
+
+### Observables
+
+- is **unicast**: each subscribed observer owns an independent execution of the observable
+```javascript
+const src = new Observable(obs => {
+      obs.next(Math.random().toFixed(2))
+    });
+
+src.subscribe(v => console.log('subscription 1',  v));
+
+src.subscribe(v => console.log('subscription 2',  v));
+```
