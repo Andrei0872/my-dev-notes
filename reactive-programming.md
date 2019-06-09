@@ -3,6 +3,7 @@
 - [Concepts](#concepts)  
 - [Observables](#observables) 
 - [Subject](#subject)
+- [Operators](#operators)
 
 ---
 
@@ -75,3 +76,26 @@ subject.subscribe(v => console.log('subscription 2', v)); // Same number
 */ 
 observable.subscribe(subject);
 ```
+
+---
+
+### Operators
+
+- **mergeMap**
+   - map into a single observable
+   - run subscriptions/reqs in parallel
+   - post, put, delete requests when order is NOT important
+
+
+- **switchMap** 
+   - cancels the current subscription/request and can cause race conditions
+   - use it for requests or cancelable requests (searches)
+
+- **concatMap**
+   - runs subscriptions/requests in order: less performant
+   - will wait for the last req to finish
+   - get, post, put req when order is important
+
+- **exhaustMap** 
+   - ignore all subsequent req until it completes
+   - use for login(don't want more reqs until the initial one is complete)
