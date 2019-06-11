@@ -4,6 +4,7 @@
 - [Observables](#observables) 
 - [Subject](#subject)
 - [Operators](#operators)
+- [Tricks](#tricks)
 
 ---
 
@@ -101,3 +102,33 @@ observable.subscribe(subject);
    - ignore all subsequent req until it completes
    - use for login(don't want more reqs until the initial one is complete)
    - source items are ignored while the prev Observable is not completed
+
+---
+
+### Tricks
+**Resolve multiple promises ascendingly depending on their timeout**
+```javascript
+
+// ----------------4------------>
+// 0---------------------------->
+// ----1------------------------>
+//          mergeAll()
+// 0---1-----------4------------>
+function promiseDelay(ms) {
+      return new Promise(resolve => {
+        setTimeout(() => resolve('done' + ms), ms);
+      });
+    }
+
+of(promiseDelay(4000), promiseDelay(0), promiseDelay(1000))
+   .pipe(
+      mergeAll()
+   )
+   .subscribe(console.log)
+/*
+--->
+done0
+done1000
+done4000
+*/
+```
