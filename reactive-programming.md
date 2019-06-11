@@ -89,13 +89,15 @@ observable.subscribe(subject);
 
 - **switchMap** 
    - cancels the current subscription/request and can cause race conditions
-   - use it for requests or cancelable requests (searches)
+   - use it for search requests or cancelable requests (searches)
 
 - **concatMap**
    - runs subscriptions/requests in order: less performant
    - will wait for the last req to finish
    - get, post, put req when order is important
+   - waits for the previous Observable to complete before creating the next one
 
 - **exhaustMap** 
    - ignore all subsequent req until it completes
    - use for login(don't want more reqs until the initial one is complete)
+   - source items are ignored while the prev Observable is not completed
