@@ -1,6 +1,7 @@
 ## Notes on Angular
 
 - [Architecture](#architecture)  
+- [Knowledge](#knowledge)
 
 ---
 
@@ -77,3 +78,15 @@
    - modal
    - menu
    - grid/card (used more than once?)
+
+---
+
+### Knowledge
+
+**components**
+   * declarative
+      - declared in the _template_
+   * imperative (entry components)
+      - the bootstrapped root component
+      - a component you specify in a route definition
+      - _not_ referenced in a template
