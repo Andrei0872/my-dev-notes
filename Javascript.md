@@ -297,6 +297,38 @@ for (const val of q) {
 
 ```
 
+**`setImmediate()` vs `nextTick()` vs `setTimeout()`**
+
+```javascript
+// setImmediate() puts the cb ahead of the job queue
+const p = () => new Promise(r => setTimeout(r, 1000));
+
+setTimeout(() => {
+    console.log('timeout 1')
+    setImmediate(() => {
+        console.log('immediate 1')
+    });
+}, 0);
+
+setTimeout(() => {
+    console.log('timeout 2')
+    setImmediate(() => {
+        console.log('immediate 2')
+    });
+}, 0);
+
+setTimeout(() => {
+    console.log('timeout 3')
+}, 0);
+/* 
+--->
+timeout 1
+timeout 2
+timeout 3
+immediate 1
+immediate 2
+*/
+```
 ---
 
 ### This
