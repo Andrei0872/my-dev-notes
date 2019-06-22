@@ -4,6 +4,7 @@
 [Move multiple files to another location](#move-multiple-files-to-another-location)  
 [Delete everything that is not a directory](#delete-everything-that-is-not-a-directory)  
 [Move content from subdirectory x to subdirectory y](#move-content-from-subdirectory-x-to-subdirectory-y)
+[Create a directory and cd into id immediately](#create-a-directory-and-cd-into-id-immediately)
 
 ### Generate project structure
 
@@ -36,3 +37,10 @@ rm $(!!)
 ```bash
 # Assuming that x and y have the same parent directory
 ls -QI "YOUR_DIR" | xargs -I{}  mv ./{} client
+
+---
+
+### Create a directory and cd into id immediately
+```bash
+mkdir <dir_name> && cd $_
+```
