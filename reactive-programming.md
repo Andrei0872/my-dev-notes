@@ -103,6 +103,31 @@ observable.subscribe(subject);
    - use for login(don't want more reqs until the initial one is complete)
    - source items are ignored while the prev Observable is not completed
 
+- **buffer(obs$)**
+   - keeps accumulating values until observable emits values
+   ```javascript
+   const s = new Subject();
+
+   interval(300)
+   .pipe(
+      take(5)
+   )
+   .subscribe(
+      v => { s.next(v); },
+   );
+
+   // Emits value if 1s has passed without something happening
+   const debouncedSubj$ = s.pipe(debounceTime(1000));
+
+   // Accumulate the emitted values
+   const addVal$ = s.pipe(buffer(debouncedSubj$));
+
+   addVal$.subscribe(res => {
+      console.log('res', res);
+      // --> [0, 1, 2, 3, 4]
+    })
+   ```
+
 ---
 
 ### Tricks
