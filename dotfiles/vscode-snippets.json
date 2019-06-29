@@ -1,0 +1,25 @@
+{
+    "Line Break": {
+        "prefix": "lineB",
+        "body": [
+            "//================================"
+        ],
+        "description": "Outputs a line break",
+    },
+    "T:Describe": {
+        "prefix": "tdesc",
+        "body": [
+            "describe('$1', () => {",
+            "",
+            "});"
+        ],
+    },
+    "T:it": {
+        "prefix": "testit",
+        "body": [
+            "it('$1', () => {",
+            "",
+            "});"
+        ]
+    }
+}
