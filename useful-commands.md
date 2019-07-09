@@ -5,6 +5,7 @@
 [Delete everything that is not a directory](#delete-everything-that-is-not-a-directory)  
 [Move content from subdirectory x to subdirectory y](#move-content-from-subdirectory-x-to-subdirectory-y)
 [Create a directory and cd into id immediately](#create-a-directory-and-cd-into-id-immediately)
+[Update multiple npm packages](#update-multiple-npm-packages)
 
 ### Generate project structure
 
@@ -43,4 +44,12 @@ ls -QI "YOUR_DIR" | xargs -I{}  mv ./{} client
 ### Create a directory and cd into id immediately
 ```bash
 mkdir <dir_name> && cd $_
+```
+
+---
+
+### Update multiple npm packages
+```bash
+# Use case: Updating the packages that belong to `@angular`
+npm i $(npm outdated | grep @angular | cut -d ' ' -f1 | xargs -I $ echo '$@latest' | xargs echo)
 ```
