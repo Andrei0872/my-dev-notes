@@ -45,6 +45,39 @@ if any references are other objects just the reference addresses are copied
 
 * recursively perform shallow copies until everything is a new copy of the original
 
+### `Object.valueOf()`
+* called when a **numeric operator** is applied to the object
+
+<details>
+<summary>Example</summary>
+<br>
+
+
+```typescript
+const fibonacci = () => {
+    let prev = 0, curr = 1;
+
+    const compute = () => {
+        [prev, curr] = [curr, prev + curr]
+        return compute
+    }
+
+    compute.valueOf = () => curr
+
+    return compute
+}
+
+// 0 1 1 2 3 5 8 13 21
+const fibGen = fibonacci()
+// n-th fibonacci number
+let n = 7, res
+while(n-- > 1) {
+    res = fibGen()
+}
+console.log(+res) // 13
+```
+</details>
+
 ---
 
 ## Functions
