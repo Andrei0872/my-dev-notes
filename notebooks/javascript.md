@@ -206,6 +206,16 @@ for (const val of q) {
 
 ## Proxy
 
+* drastically clean up and abstract access to objects
+
+* let you control access to an object(instead of calling obj props directly, you call something else that calls it)
+
+* you can use Proxies for caching
+
+* **handler** - obj that declares a number of traps(which are triggered by making calls to the obj that's being proxied)
+
+* **receiver** - the object in which the property lookup happens
+
 ### Get safe object properties
 
 <details>
@@ -240,6 +250,42 @@ const obj = { a: { b: 1 } }
 console.log(obj.a.b) // 1
 // console.log(obj.c.d) // Cannot read property 'd' of undefined
 console.log(safe(obj).c.d) // 'undefined'
+```
+</details>
+
+### Using a Proxy as an object's prototype
+
+<details>
+<summary>Example</summary>
+<br>
+
+
+```typescript
+const handlers = {
+    get(target, key, context) {
+        console.log(greeter === context)
+        return function() {
+            context.speak(key + "!")
+        }
+    }
+};
+
+const catchall = new Proxy({}, handlers);
+
+const greeter = {
+    speak(who = "someone") {
+        console.log('hello', who);
+    }
+};
+
+// Setup `greeter` to fall back to `catchall`
+Object.setPrototypeOf(greeter, catchall);
+
+greeter.speak() // hello someone
+
+greeter.speak("world") // hello world
+
+greeter.everyone() // hello everyone
 ```
 </details>
 
