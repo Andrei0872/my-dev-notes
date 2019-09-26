@@ -3,6 +3,7 @@
 - [Objects and Classes](#objects-and-classes)
 - [Functions](#functions)
 - [Asynchronous Programming](#asynchronous-programming)
+- [Iterables and Generators](#iterables-and-generators)
 - [Proxy](#proxy)
 - [:sparkles:Cool Stuff :sparkles:](#cool-stuff)
 
@@ -199,6 +200,32 @@ for (const val of q) {
     responses.forEach(console.log)
 })();
 
+```
+</details>
+
+---
+
+## Iterables and Generators
+
+* will run the function unlti the **yield** keyword is met; the rest of the function will be run at the next `.next()` call
+
+### Recursive Generators
+<details>
+<summary>Example</summary>
+<br>
+
+
+```typescript
+function * range(start, end) {
+    yield start;
+    if(start === end) return;
+    yield * range(start + 1, end);
+}
+
+for(let o of range(1,3)) {
+    console.log(o);
+}
+console.log([... range(1,3)]) // [1, 2, 3]
 ```
 </details>
 
