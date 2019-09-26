@@ -343,6 +343,116 @@ console.log([... range(1,3)]) // [1, 2, 3]
 ```
 </details>
 
+### Async Generators
+
+* the object must implement `Symbol.asyncIterator`
+* can be consumed with `for-await-of`
+
+<details>
+<summary>Example</summary>
+<br>
+
+
+```typescript
+(async () => {
+    let orders = ['order1', 'order2', 'order3', 'order4'];
+    const fetch = (name, time) => new Promise(resolve => setTimeout(resolve, time, name))
+
+    orders[Symbol.asyncIterator] = async function * () {
+        yield * [... this].map(async(order, i) => {
+            return await fetch(`resolved ${order}`, i * 1000);
+        })
+    }
+
+    for await (const resolvedOrder of orders) {
+        console.log(resolvedOrder)
+    }
+
+    console.log('finished !')
+    /* 
+    --> 
+    resolved order1
+    resolved order2
+    resolved order3
+    resolved order4
+    finished!
+    */
+})()
+
+```
+</details>
+
+#### Dealing with a collection of requests
+
+* all the requests start being processed at the same time
+
+* `for-await-of` processes the promises sequentially; this means that if we have `[p1(500), p2(300)]`, `p1` will be resolved first, and `p2` immediately after, because it sort of waited for `p1` to be ready.
+
+<details>
+<summary>Example</summary>
+<br>
+
+
+```typescript
+function fetch(name, time) {
+    return new Promise((resolve, reject) => {
+        setTimeout(() => {
+            resolve(name)
+        }, time);
+    });
+}
+
+(async () => {
+const reqs = [fetch('andrei', 1000), fetch('dan', 3000), fetch('john', 500)]
+
+// In the above example, 'john' will be returned after 3 seconds
+// Because for await of processes the promises sequentially and so
+// when 'dan' ready, `john` will be instantly ready, because it was basically waiting for `dan` to finish
+reqs[Symbol.asyncIterator] = async function * () {
+    yield * [... this]
+}
+
+for await (const res of reqs) {
+    console.log(res)
+}
+
+const results = (await Promise.all(reqs))
+results.forEach(name => console.log(name));
+})();
+
+
+// =============================================================
+
+/* 
+All the requests responses will be printed at the same time, after 2 seconds.
+Because all the requests are fired at the same time and even though 'jane' is ready before 'john',
+they both must wait for the first request, which takes 2 seconds.
+BUT notice that the order can change that.
+If the time sequence was: [1000, 2000, 3000], the requests would be solved in the same order.
+*/
+(async () => {
+    const fetch = (time, name) => new Promise((resolve, reject) => setTimeout(resolve, time, name))
+
+    const reqs = [fetch(2000, 'andrei'), fetch(1000, 'jane'), fetch(2000, 'john')]
+
+    reqs[Symbol.asyncIterator] = async function* () {
+        yield* [...this];
+    }
+
+    for await (const resp of reqs) {
+        console.log(resp)
+        /* 
+        andrei
+        jane
+        john
+        */
+    }
+})();
+
+
+```
+</details>
+
 ---
 
 ## Proxy
