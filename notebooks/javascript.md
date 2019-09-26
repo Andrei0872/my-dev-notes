@@ -193,6 +193,65 @@ console.log(Object.getOwnPropertyDescriptors(target2, 'foo'))
 ```
 </details>
 
+### this
+
+#### `bind()`
+
+<details>
+<summary>Example</summary>
+<br>
+
+
+```typescript
+/**
+ * * Description
+ * bind() - creates a bound function(BF)
+ * BF - exotic function object that wraps the original function obj
+ * Calling BF - results in the execution of its wrapped function
+ * 
+ */
+
+
+// * Creating a bound function
+var module = {
+    x: 81,
+    getX: function() { return this.x; }
+  };
+  
+console.log(module.getX()) // 81
+
+var retrieveX = module.getX;
+console.log(retrieveX()) // undefined - global scope
+
+// Create a new function with "this" bound to module
+var boundGetX = retrieveX.bind(module);
+console.log(boundGetX()) // 81
+//--------------------------------------------
+
+
+//* Partially applied function
+/*
+The arguments follow the provided "THIS" and are then inserted at the start
+of the arguments passed to the target function, followed by the arguments
+passed to the bound function, whenever the BOUND FUNCTION IS CALLED
+*/
+function list () {
+    console.log(arguments)
+    return Array.prototype.slice.call(arguments)
+}
+
+var list1 = list(1,2,3)
+console.log(list1) // [1,2,3]
+
+var leadingFunc = list.bind(null,36); // Inserted at the start of the arguments passed to the target function
+var list2 = leadingFunc() // This is the bound function
+console.log(list2) // [36]
+
+var list3 = leadingFunc(1,2,3)
+console.log(list3) // [36,1,2,3]
+```
+</details>
+
 ---
 
 ## Functions
