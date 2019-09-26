@@ -317,6 +317,104 @@ for (const val of q) {
 ```
 </details>
 
+#### Understanding Promises
+
+<details>
+<summary>Example 1</summary>
+<br>
+
+
+```typescript
+Promise
+    .resolve()
+    .then(() => Promise.reject('error1'))
+    .then(() => console.log('test')) // Won't get executed
+    .catch(console.log)
+    .then(() => console.log('continue1'))
+
+Promise
+    .resolve()
+    .then(() => Promise.reject('error2'))
+    .then(() => console.log('continue2'), console.log) // error2
+    .then(() => console.log('continue3'))
+
+Promise
+    .resolve()
+    .then(() => Promise.resolve('nice!!'))
+    .then(res => {
+        console.log(res);
+        return Promise.reject('error3')
+    })
+    .catch(console.log)
+    .then(() => console.log('continue4'))
+
+/* 
+Output:
+
+error2
+nice!!!
+error1
+continue3
+continue1 // Here basically the promise is already resolved
+error3 // .then() vs a fresh returned Promise 
+continue4
+*/
+```
+</details>
+
+<details>
+<summary>Example 2</summary>
+<br>
+
+
+```typescript
+// Useful when the desire is to handle errors separately
+
+Promise
+    .resolve(2)
+    .then(num => {
+        if (num === 2) {
+            // Break the chain
+            return Promise.reject('number 2 is not allowed!')
+            // throw new Error('number 2 is not allowed!'); // Either this
+        }
+        return Promise.resolve('ok')
+    })
+    .catch(err => (console.log('error!', err), Promise.reject('no access!'))) // This will `break` the chain
+    .then(resp => (console.log(resp), Promise.resolve('still ok')))
+    .then(console.log)
+    .then(resp => (console.log(resp), Promise.resolve('still ok2'))) // Not executed
+    .then(console.log)
+    .then(resp => (console.log(resp), Promise.resolve('still ok'))) // Not executed
+    .then(console.log)
+    .catch(err => console.log('err!', err)) // no access!
+
+// Output: ​​​​​error! number 2 is not allowed! -> ​​​​​err! no access!​​​​​
+
+// ================================================================================
+
+Promise
+    .resolve(2)
+    .then(num => {
+        if (num === 2) {
+            // Break the chain
+            return Promise.reject('number 2 is not allowed!')
+        }
+        return Promise.resolve('ok')
+    })
+    .catch(err => console.log('error!', err))  
+    .then(resp => Promise.resolve('still ok'))
+    .then(console.log) 
+    .then(resp => Promise.resolve('still ok2'))  
+    .then(console.log)
+    .then(resp => Promise.resolve('still ok3'))  
+    .then(console.log)
+    .catch(err => console.log('err!', err)) 
+
+// Output: ​​​​​error! number 2 is not allowed!​​​​​ -> ​​​​​still ok -> ​​​​​still ok2​​​​​ ->​​​​​ still ok3​​​​​
+```
+</details>
+
 ---
 
 ## Iterables and Generators
