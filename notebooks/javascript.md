@@ -266,6 +266,8 @@ console.log(list3) // [36,1,2,3]
 
 * can't change the `this` binding. however, you can still use `bind()`, `apply()`, `call()` for passing parameters
 
+* "this", "arguments" : inherited from their parent function
+
 ---
 
 ## Asynchronous Programming
