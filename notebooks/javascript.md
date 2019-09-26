@@ -79,6 +79,120 @@ console.log(+res) // 13
 ```
 </details>
 
+### Objects are passed by reference
+
+<details>
+<summary>Example</summary>
+<br>
+
+
+```typescript
+
+let range = [[-6],[-3,-2,-1,0,1,2]]
+console.log(range); // [ [ -6 ], [ -3, -2, -1, 0, 1, 2 ] ]
+
+let currentRange = range[0]
+console.log(currentRange) // [ -6 ]
+
+currentRange.push(1,2,3)
+console.log(range) // [ [ -6, 1, 2, 3 ], [ -3, -2, -1, 0, 1, 2 ] ]
+
+function changeArr(arr) {
+    arr.push(100,100,100);
+} 
+
+changeArr(range[1]);
+console.log(range) // [ [ -6, 1, 2, 3 ], [ -3, -2, -1, 0, 1, 2, 100, 100, 100 ] ]
+
+let test = range[0]
+
+// test = [1,2,3,4,5,]; //! This will not affect the original array, as it points to a new reference
+test.push(200) // This will affect the original array
+```
+</details>
+
+### `Object.getOwnPropertyDescriptors()`
+
+* returns an object in which for each __non-inherited__ property of the input object, it adds that property with its value being the property's descriptor
+
+<details>
+<summary>Example</summary>
+<br>
+
+
+```typescript
+const obj = {
+    [Symbol('foo')]: 123,
+    get bar () { return 'abc'; }
+}
+
+console.log(Object.getOwnPropertyDescriptors(obj))
+/* 
+​​​​​{ bar:
+​​​​​   { get: [λ: get bar],
+​​​​​     set: undefined,
+​​​​​     enumerable: true,
+​​​​​     configurable: true },
+​​​​​  [Symbol(foo)]:
+​​​​​   { value: 123,
+​​​​​     writable: true,
+​​​​​     enumerable: true,
+​​​​​     configurable: true } }
+*/
+
+```
+</details>
+
+#### Copying properties into an object
+
+* `Object.assign()` - does **not** copy properties with non-default attributes(getters, setters)
+
+<details>
+<summary>Example</summary>
+<br>
+
+
+```typescript
+const src = {
+    set foo (val) { console.log(val) }
+}
+
+console.log(Object.getOwnPropertyDescriptors(src, 'foo'))
+/* 
+​​​​​{ foo:
+​​​​​   { get: undefined,
+​​​​​     set: [λ: set foo],
+​​​​​     enumerable: true,
+​​​​​     configurable: true } }
+*/
+
+const target1 = {}
+Object.assign(target1, src)
+
+// No setters here
+console.log(Object.getOwnPropertyDescriptors(target1, 'foo'))
+/* 
+​​​​​{ foo:
+​​​​​   { value: undefined,
+​​​​​     writable: true,
+​​​​​     enumerable: true,
+​​​​​     configurable: true } }
+*/
+
+// Object.defineProperties() is here to help !!!
+const target2 = {};
+Object.defineProperties(target2, Object.getOwnPropertyDescriptors(src))
+console.log(Object.getOwnPropertyDescriptors(target2, 'foo'))
+/* 
+​​​​​{ foo:
+​​​​​   { get: undefined,
+​​​​​     set: [λ: set foo],
+​​​​​     enumerable: true,
+​​​​​     configurable: true } }
+*/
+```
+</details>
+
 ---
 
 ## Functions
@@ -459,5 +573,47 @@ console.log(flat(arr)) // [ 'a', 'b', 'c', 'd' ]
     }
   })
   .catch(console.error)
+```
+</details>
+
+### Multiple Class Inheritance
+[:sparkles:Resouce](https://stackoverflow.com/questions/29879267/es6-class-multiple-inheritance)
+
+<details>
+<summary>Example</summary>
+<br>
+
+
+```typescript
+class A {
+    foo() {
+        console.log(`from A -> inside instance of A: ${this instanceof A}`);
+    }
+    funcA() {
+        console.log('hello from a')
+    }
+}
+
+const B = (B) => class extends B {
+    foo() {
+        if (super.foo) super.foo();
+        console.log(`from B -> inside instance of B: ${this instanceof B}`);
+    }
+    funcB() {
+        console.log('hello from B')
+    }
+};
+
+
+// C extends A, B
+class C extends B(A) {
+    constructor() {
+        super();
+    }
+}
+
+new C().funcB(); // hello from B
+new C().funcA(); // hello from a
+new C().foo();
 ```
 </details>
