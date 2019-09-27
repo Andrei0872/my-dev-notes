@@ -311,6 +311,11 @@ console.log({ ...car2 }) // { type: 'Seat Leon' }​​​​​
 
 * "this", "arguments" : inherited from their parent function
 
+* **In classes**
+    * defined in the **constructor** on the initialization
+    * undefined in the **prototype**
+    * cannot be called with `super`
+
 ---
 
 ## Asynchronous Programming
