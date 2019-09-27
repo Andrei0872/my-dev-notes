@@ -252,6 +252,48 @@ console.log(list3) // [36,1,2,3]
 ```
 </details>
 
+### Spread operator
+
+* only the enumerable props will be added
+
+* inherited properties are ignored
+
+<details>
+<summary>Example</summary>
+<br>
+
+
+```typescript
+const car = {
+    color: 'blue'
+};
+
+// Object.defineProperty(car, 'type', {
+//     value: 'BMW',
+//     enumerable: false
+// });
+
+// 'type' is not enumerable
+// console.log({ ...car }) // { color: 'blue' }
+
+// ==========================
+
+const car2 = Object.create(car, {
+    type: {
+        value: 'Seat Leon',
+        enumerable: true
+    }
+})
+
+console.log(car2.color) // blue
+console.log(car2.hasOwnProperty('type')) // true
+console.log(car2.hasOwnProperty('color')) // false
+
+// color not included - spread properties only copy the own properties of an object
+console.log({ ...car2 }) // { type: 'Seat Leon' }​​​​​
+```
+</details>
+
 ---
 
 ## Functions
