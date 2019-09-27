@@ -5,6 +5,7 @@
 - [Asynchronous Programming](#asynchronous-programming)
 - [Iterables and Generators](#iterables-and-generators)
 - [Proxy](#proxy)
+- [Symbol](#symbol)
 - [:sparkles:Cool Stuff :sparkles:](#cool-stuff)
 
 ## Objects and Classes
@@ -548,6 +549,7 @@ console.log([... range(1,3)]) // [1, 2, 3]
 
 * the object must implement `Symbol.asyncIterator`
 * can be consumed with `for-await-of`
+* each iterator returns a promise that fulfills to `{ value, done }`
 
 <details>
 <summary>Example</summary>
@@ -788,6 +790,28 @@ console.log(Object.getOwnPropertySymbols(Object.getPrototypeOf(myObj))) // ​�
 
 // Getting symbol properties
 console.log(Reflect.ownKeys(myObj)) // ​​​​​[ Symbol(name) ]​​​​​
+```
+</details>
+
+---
+
+## Symbol
+
+### Symbol.description
+
+* its goal is to avoid getting the provided description from `Symbol.prototype.toString()`
+
+<details>
+<summary>Example</summary>
+<br>
+
+
+```typescript
+const mySymbol = Symbol('coolDescription')
+
+console.log(mySymbol) // ​​​​​Symbol(coolDescription)​​​​​
+console.log(mySymbol.toString()) // ​​​​​Symbol(coolDescription)​​​​​
+console.log(mySymbol.description) // ​​​​​coolDescription​​​​​
 ```
 </details>
 
