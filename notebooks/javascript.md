@@ -7,6 +7,7 @@
 - [Iterables and Generators](#iterables-and-generators)
 - [Proxy](#proxy)
 - [Symbol](#symbol)
+- [Typed Arrays](#typed-arrays)
 - [:sparkles:Cool Stuff :sparkles:](#cool-stuff)
 
 ## Concepts
@@ -836,6 +837,38 @@ const mySymbol = Symbol('coolDescription')
 console.log(mySymbol) // ​​​​​Symbol(coolDescription)​​​​​
 console.log(mySymbol.toString()) // ​​​​​Symbol(coolDescription)​​​​​
 console.log(mySymbol.description) // ​​​​​coolDescription​​​​​
+```
+</details>
+
+---
+
+## Typed Arrays
+
+* provide a mechanism for accessing raw binary data
+
+* the container for all typed arrays: **ArrayBuffer**
+
+* interacting with **ArrayBuffer**: **DataView**
+
+<details>
+<summary>Example</summary>
+<br>
+
+
+```typescript
+// Create a 16 bytes buffer
+const buffer = new ArrayBuffer(16);
+
+// Access the whole buffer
+const dv1 = new DataView(buffer);
+// Start at slot 10, get only 3 bytes
+const dv2 = new DataView(buffer, 10, 3);
+
+// Put "42" in slot "11" through view1
+dv1.setInt8(11, 42);
+// Get the second slot(starting from 10)
+const num = dv2.getInt8(1);
+console.log(num) // 42
 ```
 </details>
 
