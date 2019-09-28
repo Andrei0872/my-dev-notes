@@ -2,6 +2,7 @@
 
 - [Event loop](#event-loop)
 - [Event Emitter](#event-emitter)
+- [Streams](#streams)
 
 ## Event Loop
 
@@ -215,5 +216,234 @@ Before executing​​​​​
 ​​done with execute!!!​​​​​
 After executing​​​​​ 
 */
+```
+</details>
+
+---
+
+## Streams
+
+:sparkles:[Resouce](https://stackoverflow.com/questions/18335499/nodejs-whats-the-difference-between-a-duplex-stream-and-a-transform-stream)
+
+✨[Resouce](https://www.freecodecamp.org/news/node-js-streams-everything-you-need-to-know-c9141306be93/)
+
+* **stream** - a collection of data; might not be available all at once
+    * **readable** - from which data can be consumed
+    * **writable** - destination to which data can be written
+    * **duplex** 
+        * both readable and writable
+        * the reads and writes happen **independently**
+    * **transform** 
+        * a duplex stream that can modify/transform the data as it is written and read
+        * can be read from and written to
+        * the output is the transformation of its input
+
+* does not have to fit in memory
+
+* useful when working with large amount of data
+    * reading/writing to files
+    * network communication
+
+* `pipe()` - returns the destination stream(chaining)
+
+### Writable Stream
+
+<details>
+<summary>Example</summary>
+<br>
+
+
+```typescript
+const {
+    Writable
+} = require('stream')
+
+// class MyWritableStream extends Writable {}
+
+const outStream = new Writable({
+    /**
+     * 
+     * @param chunk - buffer
+     * @param encoding 
+     * @param cb - call it after we're done processing the data chunk;
+     *           - it signals whether the write was successful or not 
+     */
+    write(chunk, encoding, cb) {
+        console.log(chunk.toString())
+        cb();
+    }
+})
+
+process.stdin.pipe(outStream)
+```
+</details>
+
+### Readable Stream
+
+<details>
+<summary>Example</summary>
+<br>
+
+
+```typescript
+const {
+    Readable
+} = require('stream')
+
+const inStream = new Readable({
+    // Push data on demand
+    read() {
+        this.push(String.fromCharCode(this.currentCharCode++))
+
+        if (this.currentCharCode > 70)
+            this.push(null)
+    }
+})
+
+inStream.currentCharCode = 65 // A
+
+//! Not very efficient - we're pushing all the data in the stream before piping it into process.stdout
+// inStream.push('123')
+// inStream.push('andrei')
+// inStream.push(null) // No more data
+
+inStream.pipe(process.stdout)
+```
+</details>
+
+### Duplex Stream
+
+<details>
+<summary>Example</summary>
+<br>
+
+
+```typescript
+const {
+    Duplex
+} = require('stream')
+
+const duplex = new Duplex({
+    write(chunk, encoding, cb) {
+        console.log(chunk.toString())
+        cb();
+    },
+    read() {
+        this.push(String.fromCharCode(this.currentCharCode++))
+
+        if (this.currentCharCode > 90)
+            this.push(null)
+    }
+});
+
+duplex.currentCharCode = 65
+
+process.stdin.pipe(duplex).pipe(process.stdout)
+```
+</details>
+
+### Transform Stream
+
+<details>
+<summary>Example</summary>
+<br>
+
+
+```typescript
+const {
+    Transform
+} = require('stream')
+
+const upperCaseTr = new Transform({
+    transform(chunk, encoding, cb) {
+        this.push(chunk.toString().toUpperCase())
+        cb();
+    }
+})
+
+process.stdin.pipe(upperCaseTr).pipe(process.stdout)
+```
+</details>
+
+### Stream Object Mode
+
+<details>
+<summary>Example</summary>
+<br>
+
+
+```typescript
+
+const commaSplitter = new Transform({
+    readableObjectMode: true, // We are pushing an object, not a string!!!
+
+    transform(chunk, encoding, cb) {
+        this.push(chunk.toString().trim().split(','))
+        cb();
+    }
+});
+
+const arrayToObject = new Transform({
+    readableObjectMode: true, // We're also pushing the object
+    writableObjectMode: true, // Accept the object!!
+
+    transform(chunk, encoding, cb) {
+        const obj = {}
+        for (let i = 0; i < chunk.length; i += 2) {
+            obj[chunk[i]] = chunk[i + 1]
+        }
+        this.push(obj)
+        cb()
+    }
+})
+
+
+const ObjectToString = new Transform({
+    writableObjectMode: true,
+
+    transform(chunk, encoding, cb) {
+        this.push(JSON.stringify(chunk) + '\n')
+        cb()
+    }
+})
+
+process.stdin
+    .pipe(commaSplitter)
+    .pipe(arrayToObject)
+    .pipe(ObjectToString)
+    .pipe(process.stdout)
+```
+</details>
+
+### Send file and receive file modified
+
+<details>
+<summary>Example</summary>
+<br>
+
+
+```typescript
+const http = require('http');
+const map = require('through2-map');
+
+const port = 3000;
+
+const server = http.createServer((req, resp) => {
+        if (req.method !== 'POST') {
+            return resp.end('must be POST \n');
+        }
+
+        req.pipe(map(chunk => {
+            let text = chunk.toString();
+            text = text.replace(/happy/gi, ':)');
+            text = text.replace(/sad/gi, ':(');
+            text = text.replace(/super/gi, 'awesome');
+
+            return text;
+        })).pipe(resp)
+
+        req.on('error', resp.end);
+    })
+    .listen(port);
 ```
 </details>
