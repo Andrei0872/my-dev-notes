@@ -1,5 +1,6 @@
 # JavaScript Notebook
 
+- [Concepts](#concepts)
 - [Objects and Classes](#objects-and-classes)
 - [Functions](#functions)
 - [Asynchronous Programming](#asynchronous-programming)
@@ -7,6 +8,24 @@
 - [Proxy](#proxy)
 - [Symbol](#symbol)
 - [:sparkles:Cool Stuff :sparkles:](#cool-stuff)
+
+## Concepts
+
+### Execution Context
+
+* where the JS code is evaluated and executed
+
+* the function code executes inside the function execution context
+
+* each function has its own execution context
+
+### Call Stack
+
+* **LIFO** structure, which is used to store all the execution context created during the code execution
+
+* JS has a single call stack
+
+---
 
 ## Objects and Classes
 
