@@ -1,6 +1,7 @@
 # Node.js Notebook
 
 - [Event loop](#event-loop)
+- [Event Emitter](#event-emitter)
 
 ## Event Loop
 
@@ -167,6 +168,52 @@ nextTick! ​​​​​
 setImmediate ​​​​​
 result from promise 0 
 setTimeout ​​​​​
+*/
+```
+</details>
+
+---
+
+## Event Emitter
+
+* `events` module - facilitates communication between objects in Node
+
+* is at the core of Node async event-driven architecture
+
+<details>
+<summary>Synchronous Behavior</summary>
+<br>
+
+
+```typescript
+const EventEmitter = require('events')
+
+class WithLog extends EventEmitter {
+    execute(taskFunc) {
+        console.log('Before executing')
+        this.emit('begin')
+        taskFunc()
+        this.emit('end')
+        console.log('After executing')
+    }
+}
+
+const log = new WithLog()
+
+// Adding listener functions
+log.on('begin', () => console.log('about to execute!!!'))
+log.on('end', () => console.log('done with execute!!!'))
+
+
+log.execute(() => console.log('during execution'))
+
+/* 
+-->
+Before executing​​​​​ 
+​​​​about to execute!!!​​​​​
+​​​​​during execution​​​​​
+​​done with execute!!!​​​​​
+After executing​​​​​ 
 */
 ```
 </details>
