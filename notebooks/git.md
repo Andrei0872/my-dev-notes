@@ -148,6 +148,8 @@ git clean -n
 
 ## Branches
 
+* when merging **feature** and **master** branch, you also **merge** all the **commits** **from the feature branch** with the master branch
+
 ### See where all my the branches are being tracked from
 
 ```bash
