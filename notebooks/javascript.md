@@ -1,6 +1,7 @@
 # JavaScript Notebook
 
 - [Concepts](#concepts)
+    * [Debouncing and Throttling](#debouncing-and-throttling)
 - [Objects and Classes](#objects-and-classes)
 - [Functions](#functions)
 - [Asynchronous Programming](#asynchronous-programming)
@@ -25,6 +26,22 @@
 * **LIFO** structure, which is used to store all the execution context created during the code execution
 
 * JS has a single call stack
+
+### Debouncing and Throttling
+
+* techniques to control how many times we allow a function to be executed over time
+
+#### Debounce
+
+* execute this function only if X ms have passed without it being executed
+
+#### Throttle
+
+* execute this function at most once every X ms 
+
+* don't allow our function to execute more than once every X ms
+
+* ensures the execution of the function regularly, at least every X ms
 
 ---
 
