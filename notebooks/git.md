@@ -23,6 +23,8 @@
 
 * [Commands](#commands)
     * [git diff](#git-diff)
+    * [git stash](#git-stash)
+        * [Add untracked files in current directory](#add-untracked-files-in-current-directory)
 
 ## Concepts
 
@@ -200,3 +202,13 @@ git branch | grep \* | cut -d ' ' -f2
 * `git diff --name-only --staged`: show the staged files
 
 * `git diff --name--only HEAD^`: show the changes between **HEAD** and the previous commit **HEAD^**; with other words, this will list the **files** that are included in the **last commit**
+
+### git stash
+
+* put files in a separate stack(will eventually be garbage collected)
+
+#### Add untracked files in current directory
+
+```bash
+git stash && git add ./ && git stash pop
+```
