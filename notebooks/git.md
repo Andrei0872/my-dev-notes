@@ -30,6 +30,7 @@
         * [Add untracked files in current directory](#add-untracked-files-in-current-directory)
     * [git reset](#git-reset)
     * [git revert](#git-revert)
+    * [git checkout](#git-checkout)
 
 ## Concepts
 
@@ -53,12 +54,6 @@ _assuming the current branch is `master`_
 
 * it **copies** origin master into origin/master
 * it **merges** origin/master into master
-
-### `git checkout`
-
-* `git checkout $commit-hash`: **move** HEAD to a **specific** commit; useful when inspecting old snapshots
-
-* `git checkout $file-name`: discard changes in the working dir
 
 ---
 
@@ -246,3 +241,9 @@ _Note: you can undo/redo everything by using `git reflog`_
 * takes a **commit** and **creates** a **new commit** which **inverses** the specified commit
 
 * undo commit in public branch and create a fresh commit
+
+### git checkout
+
+* `git checkout $commit-hash`: **move** HEAD to a **specific** commit; useful when inspecting old snapshots
+
+* `git checkout $file-name`: discard changes in the working dir
