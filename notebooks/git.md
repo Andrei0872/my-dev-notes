@@ -14,6 +14,7 @@
     * [Remove file from existing commit while keeping the changes](#remove-file-from-existing-commit-while-keeping-the-changes)
     * [Stage all the tracked files across the entire repo](#stage-all-the-tracked-files-across-the-entire-repo)
     * [Add only tracked files to index](#add-only-tracked-files-to-index)
+    * [Remove untracked files](#remove-untracked-files)
 
 * [Branches](#branches)
     * [See where all my the branches are being tracked from](#see-where-all-my-the-branches-are-being-tracked-from)
@@ -167,6 +168,16 @@ git commit -am 'commit message'
 
 ```bash
 git add -u
+```
+
+### Remove untracked files
+
+```bash
+# Remove from directories as well
+git clean -f
+
+# Just show what files would be deleted
+git clean -n
 ```
 
 ---
