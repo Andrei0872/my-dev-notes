@@ -21,6 +21,7 @@
     * [Change remote branch name](#change-remote-branch-name)
     * [Compare the checked out branch to another branch](#compare-the-checked-out-branch-to-another-branch)
     * [Get current branch name](#get-current-branch-name)
+    * [Clone a single branch](#clone-a-single-branch)
 
 * [Commands](#commands)
     * [git diff](#git-diff)
@@ -173,16 +174,19 @@ git add -u
 ## Branches
 
 ### See where all my the branches are being tracked from
+
 ```bash
 git branch -vv
 ```
 
 ### Fetch remote branch
+
 ```bash
 git checkout --track <remote_branch>
 ```
 
 ### Change remote branch name
+
 ```bash
 git branch -m <old> <new>
 git push origin --delete <old> 
@@ -190,13 +194,21 @@ git push origin <new>
 ```
 
 ### Compare the checked out branch to another branch
+
 ```bash
 git diff ..<another_branch>
 ```
 
 ### Get current branch name
+
 ```bash
 git branch | grep \* | cut -d ' ' -f2
+```
+
+### Clone a single branch
+
+```bash
+git clone -b <branch_name> --single-branch <git://sub.domain.com/repo.git>
 ```
 
 ---
