@@ -2,8 +2,6 @@
 
 * [Concepts](#concepts)
 
-* [When issuing $command](#when-issuing-command)
-
 * [Aliases](#aliases)
     * [List all files in a commit](#list-all-files-in-a-commit)
     * [List tracked files in the current branch](#list-tracked-files-in-the-current-branch)
@@ -31,6 +29,7 @@
     * [git reset](#git-reset)
     * [git revert](#git-revert)
     * [git checkout](#git-checkout)
+    * [git pull](#git-pull)
 
 ## Concepts
 
@@ -43,17 +42,6 @@
 * an entity **representing** the **state** of the **$branch _branch_** in the **remote _origin_**
 
 * **origin**: a remote repo
-
----
-
-## When issuing `$command`
-
-### `git pull`
-
-_assuming the current branch is `master`_
-
-* it **copies** origin master into origin/master
-* it **merges** origin/master into master
 
 ---
 
@@ -247,3 +235,9 @@ _Note: you can undo/redo everything by using `git reflog`_
 * `git checkout $commit-hash`: **move** HEAD to a **specific** commit; useful when inspecting old snapshots
 
 * `git checkout $file-name`: discard changes in the working dir
+
+### git pull
+
+_assuming the current branch is `master`_
+
+* it **copies** origin master into origin/master && **merges** origin/master into master(_master_ = local branch)
