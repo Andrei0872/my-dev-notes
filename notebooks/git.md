@@ -13,6 +13,7 @@
     * [Store your credentials for a certain period of time](#store-your-credentials-for-a-certain-period-of-time)
     * [Remove file from existing commit while keeping the changes](#remove-file-from-existing-commit-while-keeping-the-changes)
     * [Stage all the tracked files across the entire repo](#stage-all-the-tracked-files-across-the-entire-repo)
+    * [Add only tracked files to index](#add-only-tracked-files-to-index)
 
 * [Branches](#branches)
     * [See where all my the branches are being tracked from](#see-where-all-my-the-branches-are-being-tracked-from)
@@ -155,9 +156,16 @@ git commit --amend --no-edit
 ```
 
 ### Stage all the tracked files across the entire repo
+
 ```bash
 # tracked = deleted | updated 
 git commit -am 'commit message'
+```
+
+### Add only tracked files to index
+
+```bash
+git add -u
 ```
 
 ---
