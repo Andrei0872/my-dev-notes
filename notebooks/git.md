@@ -28,6 +28,7 @@
     * [git diff](#git-diff)
     * [git stash](#git-stash)
         * [Add untracked files in current directory](#add-untracked-files-in-current-directory)
+    * [git reset](#git-reset)
 
 ## Concepts
 
@@ -62,22 +63,7 @@ _assuming the current branch is `master`_
 ### `git revert`
 
 * takes a **commit** and **creates** a **new commit** which **inverses** the specified commit
-* undo commit in public branch
-
-### `git reset`
-
-* `git reset $commit-hash`: discard commits or throw away uncommited changes
-
-* `git reset $file-name`: unstange file
-
-#### Options
-* `--soft`(keep staged): staged snapshot & working dir not altered
-
-* `--mixed`(default): (unstaged): staged is updated to match the specified commit, working dir not altered
-
-* `--hard`(not even unstaged, everything is gone!): both staged snapshot & working dir - altered
-
-_Note: you can undo/redo everything by using `git reflog`_
+* undo commit in public branch and create a fresh commit
 
 ---
 
@@ -243,3 +229,19 @@ git clone -b <branch_name> --single-branch <git://sub.domain.com/repo.git>
 ```bash
 git stash && git add ./ && git stash pop
 ```
+
+### git reset
+
+* `git reset $commit-hash`: discard commits or throw away uncommited changes
+
+* `git reset $file-name`: unstange file
+
+#### Options
+
+* `--soft`(keeps all the changes in the staging area): staged snapshot & working dir not altered
+
+* `--mixed`(default): resets index, staged is updated to match the specified commit, working dir not altered;
+
+* `--hard`(not even unstaged, everything is gone!): both staged snapshot & working dir - altered
+
+_Note: you can undo/redo everything by using `git reflog`_
