@@ -29,6 +29,7 @@
     * [git stash](#git-stash)
         * [Add untracked files in current directory](#add-untracked-files-in-current-directory)
     * [git reset](#git-reset)
+    * [git revert](#git-revert)
 
 ## Concepts
 
@@ -58,12 +59,6 @@ _assuming the current branch is `master`_
 * `git checkout $commit-hash`: **move** HEAD to a **specific** commit; useful when inspecting old snapshots
 
 * `git checkout $file-name`: discard changes in the working dir
-
-
-### `git revert`
-
-* takes a **commit** and **creates** a **new commit** which **inverses** the specified commit
-* undo commit in public branch and create a fresh commit
 
 ---
 
@@ -245,3 +240,9 @@ git stash && git add ./ && git stash pop
 * `--hard`(not even unstaged, everything is gone!): both staged snapshot & working dir - altered
 
 _Note: you can undo/redo everything by using `git reflog`_
+
+### git revert
+
+* takes a **commit** and **creates** a **new commit** which **inverses** the specified commit
+
+* undo commit in public branch and create a fresh commit
