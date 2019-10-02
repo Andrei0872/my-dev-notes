@@ -23,6 +23,8 @@
     * browser need to draw layers in the correct order
     * some elements might overlap each other, so it is important to make sure elements appear in the order intended
 
+* `opacity` & `transform`: do **not** cause the browser to repaint or reflow the page
+
 ### `@import` vs `<link>`
 
 * **@import**
