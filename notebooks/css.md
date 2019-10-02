@@ -37,6 +37,8 @@
 
 * **block** - stretch horizontally to fill their containing block
 * **inline** - shrink to fit their contents
+* **none** - not rendered at all, no space allocated; however, you can still get the element's reference
+
 
 ---
 
