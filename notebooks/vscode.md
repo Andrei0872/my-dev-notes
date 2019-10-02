@@ -2,7 +2,10 @@
 
 * [Shortcuts](#shortcuts)
     * [Go to previous mouse cursor](#go-to-previous-mouse-cursor)
-* [Keybindings](#keyn)
+* [Keybindings](#keybindings)
+* [Debugging](#debugging)
+    * [Debugging TS](#debugging-ts)
+    * [Debugging TS with Tests](#debugging-ts-with-tests)
 
 ## Shortcuts
 
@@ -92,5 +95,59 @@ CTRL + SHIFT + -
         "command": "-workbench.action.moveEditorToNextGroup"
     },
 ]
+```
+</details>
+
+---
+
+## Debugging
+
+### Debugging TS
+
+<details>
+<summary>Example</summary>
+<br>
+
+
+```json
+{
+    "type": "node",
+    "request": "launch",
+    "name": "Debug TS in Node.js",
+    "preLaunchTask": "typescript",
+    "program": "${workspaceFolder}/server/src/index.ts",
+    "cwd": "${workspaceFolder}/server/",
+    "protocol": "inspector",
+    "outFiles": [
+        "${workspaceFolder}/server/dist/**/*.js"
+    ]
+}
+```
+</details>
+
+### Debugging TS with tests
+
+_Using **Mocha**_
+
+<details>
+<summary>Example</summary>
+<br>
+
+
+```json
+{
+    "type": "node",
+    "request": "launch",
+    "name": "Mocha Tests",
+    "program": "${workspaceFolder}/server/node_modules/mocha/bin/_mocha",
+    "args": [
+        "--require", "ts-node/register",
+        "-u", "bdd",
+        "--timeout", "999999",
+        "--colors", "--recursive",
+        "${workspaceFolder}/server/tests/**/*.ts"
+    ],
+    "internalConsoleOptions": "openOnSessionStart"
+}
 ```
 </details>
