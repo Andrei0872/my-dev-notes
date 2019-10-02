@@ -10,6 +10,7 @@
 - [Symbol](#symbol)
 - [Typed Arrays](#typed-arrays)
 - [:sparkles:Cool Stuff :sparkles:](#cool-stuff)
+- [DOM](#dom)
 
 ## Concepts
 
@@ -1209,3 +1210,11 @@ data.discount = 7.5;
 console.log('salePrice = ', salePrice)
 ```
 </details>
+
+---
+
+## DOM
+
+### Element.closest(_selectorString_)
+
+* search through element's ancestors until it finds a node that matches the provided _selectorString_
