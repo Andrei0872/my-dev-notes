@@ -4,6 +4,7 @@
 - [Named Capture Groups](#named-capture-group)
 - [Lookbehind](#lookbehind)
 - [Lookahead](#lookahead)
+- [Quantifiers](#quantifiers)
 
 ## Knowledge
 
@@ -100,3 +101,21 @@ console.log(str.replace(/((?!\d))/g, '*')) // "*a*n*d*r3*e*e*e*e1*"
 console.log(str.replace(/((?=\d))/g, '*')) // "andr*3eeee*1"
 ```
 </details>
+
+---
+
+## Quantifiers
+
+* **possesive**(`+`) - all or nothing
+
+* **greedy**(`*`) - longest possible string
+    ```javascript
+    /s.*o/.exec('stackoverflow')
+    // stackoverflo
+    ```
+
+* **lazy**(`?`) - shortest possible string
+    ```javascript
+    /s.+?o/.exec('stackoverflow')
+    // stacko
+    ```
