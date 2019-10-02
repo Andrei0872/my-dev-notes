@@ -6,6 +6,7 @@
 * [Debugging](#debugging)
     * [Debugging TS](#debugging-ts)
     * [Debugging TS with Tests](#debugging-ts-with-tests)
+* [Snippets](#snippets)
 
 ## Shortcuts
 
@@ -148,6 +149,44 @@ _Using **Mocha**_
         "${workspaceFolder}/server/tests/**/*.ts"
     ],
     "internalConsoleOptions": "openOnSessionStart"
+}
+```
+</details>
+
+---
+
+## Snippets
+
+<details>
+<summary>List</summary>
+<br>
+
+
+```json
+{
+    "Line Break": {
+        "prefix": "lineB",
+        "body": [
+            "//================================"
+        ],
+        "description": "Outputs a line break",
+    },
+    "T:Describe": {
+        "prefix": "tdesc",
+        "body": [
+            "describe('$1', () => {",
+            "",
+            "});"
+        ],
+    },
+    "T:it": {
+        "prefix": "testit",
+        "body": [
+            "it('$1', () => {",
+            "",
+            "});"
+        ]
+    }
 }
 ```
 </details>
