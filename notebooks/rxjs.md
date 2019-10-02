@@ -1,4 +1,4 @@
-# Notes on Reactive Programming
+# RxJS Notebook
 
 - [Concepts](#concepts)  
 - [Observable](#observable) 
