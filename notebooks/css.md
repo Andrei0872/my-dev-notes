@@ -8,7 +8,7 @@
 
 ## Knowledge
 
-### Rendering  
+### Rendering
 [Source](https://dev.to/devdevcharlie/things-nobody-ever-taught-me-about-css-2lhj)
 
 - layout:  
@@ -21,8 +21,11 @@
     * browser need to draw layers in the correct order
     * some elements might overlap each other, so it is important to make sure elements appear in the order intended
 
-**display**  
+### `@import` vs `<link>`
 
+* **@import**
+    * blocks parallel downloads
+    * the browser will wait for the imported file to finish downloading before it starts downloading the rest of the content
 
 ---
 
