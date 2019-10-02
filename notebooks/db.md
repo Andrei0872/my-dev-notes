@@ -4,6 +4,7 @@
 * [Concepts](#concepts)
 * [Indexing](#indexing)
 * [Normalization and Denormalization](#normalization-and-denormalization)
+* [Joins](#joins)
 
 ## Concepts
 
@@ -175,5 +176,145 @@ db.accountsPref.findOne({_id: id})
     notificationsOn: false
   }
 }
+```
+</details>
+
+---
+
+## Joins
+
+### Inner join
+
+<details>
+<summary>Example</summary>
+<br>
+
+
+```sql
+ select * from Customer;
++----+---------+-------------------+
+| id | city_id | customer_name     |
++----+---------+-------------------+
+|  1 |       3 | Shane Dooley      |
+|  2 |       2 | Lavon Schroeder   |
+|  3 |       1 | Mariela Emard     |
+|  4 |       3 | Margie Macejkovic |
++----+---------+-------------------+
+
+------------------------------------------
+select * from City;
++----+--------------+
+| id | city_name    |
++----+--------------+
+|  1 | Willashire   |
+|  2 | West Karson  |
+|  3 | Port Bridget |
++----+--------------+
+
+-------------------------------------------
+
+select * from Customer inner join City on Customer.city_id = City.id;
++----+---------+-------------------+----+--------------+
+| id | city_id | customer_name     | id | city_name    |
++----+---------+-------------------+----+--------------+
+|  1 |       3 | Shane Dooley      |  3 | Port Bridget |
+|  2 |       2 | Lavon Schroeder   |  2 | West Karson  |
+|  3 |       1 | Mariela Emard     |  1 | Willashire   |
+|  4 |       3 | Margie Macejkovic |  3 | Port Bridget |
++----+---------+-------------------+----+--------------+
+```
+</details>
+
+### Left Join
+
+* get **all results** from the **left table** even if the **condition isn't met**
+
+<details>
+<summary>Example</summary>
+<br>
+
+
+```sql
+select * from Customer;
++----+---------+-------------------+
+| id | city_id | customer_name     |
++----+---------+-------------------+
+|  1 |       3 | Shane Dooley      |
+|  2 |       2 | Lavon Schroeder   |
+|  3 |       1 | Mariela Emard     |
+|  4 |       4 | Margie Macejkovic |
++----+---------+-------------------+
+
+-------------------------------------
+
+select * from City;
++----+--------------+
+| id | city_name    |
++----+--------------+
+|  1 | Willashire   |
+|  2 | West Karson  |
+|  3 | Port Bridget |
++----+--------------+
+
+-------------------------------------
+
+select * from Customer left join City on Customer.city_id = City.id;
++----+---------+-------------------+------+--------------+
+| id | city_id | customer_name     | id   | city_name    |
++----+---------+-------------------+------+--------------+
+|  3 |       1 | Mariela Emard     |    1 | Willashire   |
+|  2 |       2 | Lavon Schroeder   |    2 | West Karson  |
+|  1 |       3 | Shane Dooley      |    3 | Port Bridget |
+|  4 |       4 | Margie Macejkovic | NULL | NULL         |
++----+---------+-------------------+------+--------------+
+
+```
+</details>
+
+### Right Join
+
+* get **all results** from the **right table** even if the **condition isn't met**
+
+<details>
+<summary>Example</summary>
+<br>
+
+
+```sql
+select * from Customer;
++----+---------+-------------------+
+| id | city_id | customer_name     |
++----+---------+-------------------+
+|  1 |       3 | Shane Dooley      |
+|  2 |       2 | Lavon Schroeder   |
+|  3 |       1 | Mariela Emard     |
+|  4 |       4 | Margie Macejkovic |
++----+---------+-------------------+
+
+-------------------------------------
+
+select * from City;
++----+--------------+
+| id | city_name    |
++----+--------------+
+|  1 | Willashire   |
+|  2 | West Karson  |
+|  3 | Port Bridget |
+|  4 | Bucharest    |
+|  5 | Cluj         |
++----+--------------+
+
+-------------------------------------
+
+select * from Customer right  join City on Customer.city_id = City.id;
++------+---------+-------------------+----+--------------+
+| id   | city_id | customer_name     | id | city_name    |
++------+---------+-------------------+----+--------------+
+|    1 |       3 | Shane Dooley      |  3 | Port Bridget |
+|    2 |       2 | Lavon Schroeder   |  2 | West Karson  |
+|    3 |       1 | Mariela Emard     |  1 | Willashire   |
+|    4 |       4 | Margie Macejkovic |  4 | Bucharest    |
+| NULL |    NULL | NULL              |  5 | Cluj         |
++------+---------+-------------------+----+--------------+
 ```
 </details>
