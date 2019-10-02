@@ -6,6 +6,7 @@
 * [Tricks](#tricks)  
 * [Accessibility](#accessibility)
 * [BEM](#bem)
+* [Cascade and Specificity](#cascade-and-specificity)
 
 ## Knowledge
 
@@ -121,3 +122,47 @@ input:not(:placeholder-shown) {
 * `l-` - layout(structure application's layout): `l-grid`, `l-container`
 * `h-` - helper: `h-hide`
 * `is-` - states: `is-visible`, `is-hidden`
+
+---
+
+## Cascade and Specificity
+
+### Cascade
+
+[Resource](https://blog.logrocket.com/the-only-reason-your-css-fails-8e4388d562af/) :sparkles:
+
+* the **algorithm** the browsers use to **decide which rules** to apply to each element when they encounter **conflicting declarations**(more than one rule assigning different values to an elements' property)
+
+* the **source order** is important; browsers **don't look** at the **order** on which the classes are declared in **HTML**, **but** in the **CSS**.
+    <details>
+    <summary>Example</summary>
+    <br>
+
+
+    ```css
+    .red {
+        color: red;
+    }
+
+    .blue {
+        color: blue;
+    }
+    ```
+
+    ```html
+    <div class="red blue"> <!-- blue -->
+    <div class="blue red"> <!-- blue -->
+    ```
+    </details>
+
+### Specificity
+
+#### Order of priority
+
+0. **inline styles**
+
+1. **id** selectors
+
+2. **class** selectors & **pseudo-classes**(`:hover`)
+
+3. elements(`p`) & pseudo-elements(`::before`)
