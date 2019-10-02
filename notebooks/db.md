@@ -5,6 +5,8 @@
 * [Indexing](#indexing)
 * [Normalization and Denormalization](#normalization-and-denormalization)
 * [Joins](#joins)
+* [Useful Commands](#useful-commands)
+  * [Copying a table](#copying-a-table)
 
 ## Concepts
 
@@ -316,5 +318,33 @@ select * from Customer right  join City on Customer.city_id = City.id;
 |    4 |       4 | Margie Macejkovic |  4 | Bucharest    |
 | NULL |    NULL | NULL              |  5 | Cluj         |
 +------+---------+-------------------+----+--------------+
+```
+</details>
+
+---
+
+## Useful Commands
+
+### Copying a table
+
+<details>
+<summary>Without index</summary>
+<br>
+
+
+```sql
+create table t1 as select * from t2;
+```
+</details>
+
+<details>
+<summary>With index</summary>
+<br>
+
+
+```sql
+create table t1 like t2;
+
+insert t1 select * from t2;
 ```
 </details>
