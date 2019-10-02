@@ -35,9 +35,14 @@
 
 ### `display`
 
+[display: contents](https://bitsofco.de/how-display-contents-works/)
+
 * **block** - stretch horizontally to fill their containing block
 * **inline** - shrink to fit their contents
 * **none** - not rendered at all, no space allocated; however, you can still get the element's reference
+* **contents**
+    * the element is **replaced** by element's **contents** to appear as if the **element's children** were **direct descendants** of **element's parent**
+    * on images or on form elements it acts as `display: none`, because their box is not defined
 
 ### visibility
 
