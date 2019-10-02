@@ -863,6 +863,49 @@ console.log(mySymbol.description) // ​​​​​coolDescription​​​​�
 ```
 </details>
 
+### Symbol.for()
+
+* return existing symbols; if a symbol does not exist, it will create one in the symbol registry
+
+<details>
+<summary>Example</summary>
+<br>
+
+
+```typescript
+const s1 = Symbol('foo')
+const s2 = Symbol('foo')
+
+console.log(s1 === s2) // false
+
+// ==================
+
+const s1 = Symbol.for('bar')
+const s2 = Symbol.for('bar')
+
+console.log(s1 === s2) // true
+
+const o = { [s1]: 'andrei' } // {Symbol(bar): "andrei"}
+
+o[s1] = 'ANDREI' // {Symbol(bar): "ANDREI"}
+
+o[s2] = 'andrei !' // {Symbol(bar): "andrei !"}
+```
+</details>
+
+<details>
+<summary>Retrieving a shared symbol key</summary>
+<br>
+
+
+```typescript
+// The equivalent of `Symbol.description`
+const s = Symbol.for('foo')
+
+console.log(Symbol.keyFor(s)) // "foo"
+```
+</details>
+
 ---
 
 ## Typed Arrays
