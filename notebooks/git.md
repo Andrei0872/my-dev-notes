@@ -43,6 +43,13 @@
 
 * **origin**: a remote repo
 
+### index
+
+* a file that keeps track of files over 3 areas
+    * working directory
+    * staging
+    * local repo
+
 ---
 
 ## Aliases
