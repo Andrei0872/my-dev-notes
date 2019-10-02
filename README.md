@@ -1,6 +1,10 @@
 # My dev notes
 
-## Notebooks
+<details>
+<summary><b>Notebooks</b></summary>
+<br>
+
+
 
 * [Bash Scripting](https://github.com/Andrei0872/my-dev-notes/blob/master/notebooks/bash-scripting.md)
 * [CSS](https://github.com/Andrei0872/my-dev-notes/blob/master/notebooks/css.md)
@@ -12,3 +16,4 @@
 * [RxJS](https://github.com/Andrei0872/my-dev-notes/blob/master/notebooks/rxjs.md)
 * [TypeScript](https://github.com/Andrei0872/my-dev-notes/blob/master/notebooks/typescript.md)
 * [VS Code](https://github.com/Andrei0872/my-dev-notes/blob/master/notebooks/vscode.md)
+</details>
