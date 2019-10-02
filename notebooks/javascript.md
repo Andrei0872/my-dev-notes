@@ -43,6 +43,12 @@
 
 * ensures the execution of the function regularly, at least every X ms
 
+### compiled vs interpreted
+
+* **compiled**: other program converts the code into machine code
+
+* **interpreted**: an interpreter reads the code line by line
+
 ---
 
 ## Objects and Classes
