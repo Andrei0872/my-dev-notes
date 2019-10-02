@@ -3,7 +3,8 @@
 
 * [Knowledge](#knowledge)  
 * [Properties](#properties)
-* [Tricks](#tricks)  
+* [Tricks](#tricks)
+    * [Hover Media Query](#hover-media-query)
 * [Accessibility](#accessibility)
 * [BEM](#bem)
 * [Cascade and Specificity](#cascade-and-specificity)
@@ -95,6 +96,18 @@ input:not(:placeholder-shown) {
 }
 ```
 </details>
+
+### Hover Media Query
+
+* tests whether the user's primary input mechanism can hover over elements
+
+```css
+@media (hover: hover) {
+    .foo:hover {
+        /* hover styles */
+    }
+}
+```
 
 ---
 
