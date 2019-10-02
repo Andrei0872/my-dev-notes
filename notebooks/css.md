@@ -5,6 +5,7 @@
 * [Properties](#properties)
 * [Tricks](#tricks)
     * [Hover Media Query](#hover-media-query)
+    * [prefers-reduced-motion](#prefers-reduced-motion)
 * [Accessibility](#accessibility)
 * [BEM](#bem)
 * [Cascade and Specificity](#cascade-and-specificity)
@@ -106,6 +107,20 @@ input:not(:placeholder-shown) {
     .foo:hover {
         /* hover styles */
     }
+}
+```
+
+### prefers-reduced-motion
+
+* detect if the user has requested that the system minimize the amount of animation or motion it uses
+
+```css
+@media screen and (prefers-reduced-motion: no-preference) {
+    .animatable { animation: animation-name 2s ease-out; }
+}
+
+@media screen and (prefers-reduced-motion: reduce) {
+    .animatable { animation: none; }
 }
 ```
 
