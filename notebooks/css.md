@@ -5,6 +5,7 @@
 * [Properties](#properties)
 * [Tricks](#tricks)  
 * [Accessibility](#accessibility)
+* [BEM](#bem)
 
 ## Knowledge
 
@@ -107,3 +108,16 @@ input:not(:placeholder-shown) {
 }
 ```
 </details>
+
+---
+
+## BEM
+
+[Resource](https://www.smashingmagazine.com/2016/06/battling-bem-extended-edition-common-problems-and-how-to-avoid-them/) :sparkles:
+
+### Namespaces
+
+* `c-` - component: `c-card`
+* `l-` - layout(structure application's layout): `l-grid`, `l-container`
+* `h-` - helper: `h-hide`
+* `is-` - states: `is-visible`, `is-hidden`
