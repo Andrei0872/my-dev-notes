@@ -11,6 +11,48 @@
 * `.*?` - match **as little as possible**
 * `.*` - any symbol **any number of times**
 
+### Shorthands
+
+[Resource](https://javascript.info/regexp-quantifiers) :sparkles:
+
+#### `+`
+
+* **one or more**
+
+* same as `{1, }`
+
+<details>
+<summary>Example</summary>
+<br>
+
+
+```typescript
+("100 10 1").match(/\d0+/g) // ["100", "10"]
+```
+</details>
+
+#### `*`
+
+* **zero or more**
+
+* same as `{0, }`
+
+<details>
+<summary>Example</summary>
+<br>
+
+
+```typescript
+("100 10 1").match(/\d0*/g) // ["100", "10", "1"]
+```
+</details>
+
+#### `?`
+
+* **zero ore one**
+
+* same as `{0, 1}`
+
 ---
 
 ## Named Capture Groups
