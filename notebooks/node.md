@@ -3,6 +3,7 @@
 - [Event loop](#event-loop)
 - [Event Emitter](#event-emitter)
 - [Streams](#streams)
+- [package.json](#package-json)
 
 ## Event Loop
 
@@ -447,3 +448,20 @@ const server = http.createServer((req, resp) => {
     .listen(port);
 ```
 </details>
+
+---
+
+## package json
+
+### Accessing fields inside `package.json`
+
+```json
+{
+"config": {
+    "me": "andrei"
+    },
+"scripts": {
+    "test": "echo $npm_package_config_me"
+    },
+} // npm run test: `andrei`
+```
