@@ -67,6 +67,7 @@
 **prototype**
 * accessed by `<function-name>.prototype`
 * has an inherent property called `constructor` which is a pointer to the function itself
+* a home where are stored methods and props that are available across all child objects
 
 **constructor**
 * returns the function that created the instance
