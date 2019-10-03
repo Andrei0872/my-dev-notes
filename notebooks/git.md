@@ -14,6 +14,7 @@
     * [Add only tracked files to index](#add-only-tracked-files-to-index)
     * [Remove untracked files](#remove-untracked-files)
     * [Search commits by string](#search-commits-by-string)
+    * [Search commits by file contents](#search-commits-by-file-contents)
 
 * [Branches](#branches)
     * [See where all my the branches are being tracked from](#see-where-all-my-the-branches-are-being-tracked-from)
@@ -160,6 +161,12 @@ git clean -n
 
 ```bash
 git log --grep='your-string-here'
+```
+
+### Search commits by file contents
+
+```bash
+git log -S $your-string
 ```
 
 ---
