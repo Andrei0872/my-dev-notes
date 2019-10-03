@@ -33,6 +33,11 @@ The observable knows when to call these methods throughout the **Subscription**
 - `subscribe()`
 - tells the observable that someone wants to know about its values
 - connects _observer_ with _observable_
+- what starts a stream execution
+
+### Stream
+
+* sequence of data elements which are available over time
 
 ---
 
