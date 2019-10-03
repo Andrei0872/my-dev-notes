@@ -50,6 +50,10 @@
     * staging
     * local repo
 
+### detached HEAD
+
+* refers to a specific commit, as opposed to referring to a branch
+
 ---
 
 ## Aliases
