@@ -1,7 +1,9 @@
 # TypeScript Notebook
 
-[Knowledge](#knowledge)  
-[Types](#types)  
+* [Knowledge](#knowledge)  
+* [Types](#types)
+    * [Create a condition-based subset of types](#create-a-condition-based-subset-of-types)
+    * [Type Assignments](#type-assignments)
 
 ## Knowledge
 
@@ -94,3 +96,21 @@ type Callable = SubType<Person, (_: any) => any>
 const callable: Callable = { load: (): Promise<Person> => { return new Promise(resolve => resolve()) } }
 ```
 </details>
+
+---
+
+### Type Assignments
+
+```typescript
+type X = { name: string; };
+type Y = { name: string; age: number; }
+
+let x: X = { name: 'andrei' };
+let y: Y = { name: 'gatej', age: 123 };
+
+// Are `x's` returned types included in `y` ?
+x = y;
+
+// `x` - does not have the `age` property, so we'll have an error
+y = x;
+```
