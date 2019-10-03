@@ -39,6 +39,10 @@ The observable knows when to call these methods throughout the **Subscription**
 
 * sequence of data elements which are available over time
 
+### Project function
+
+* give shape to the emitted data so that the **subs** can only **see** the **final result** and not the variable collection of emitted values
+
 ---
 
 # Observable
