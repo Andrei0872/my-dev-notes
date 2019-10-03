@@ -1218,3 +1218,11 @@ console.log('salePrice = ', salePrice)
 ### Element.closest(_selectorString_)
 
 * search through element's ancestors until it finds a node that matches the provided _selectorString_
+
+### Incremental DOM
+
+* only **allocate** memory when a **node** gets **removed or added**
+
+### Virtual DOM
+
+* creates a new tree from scratch on re-render
