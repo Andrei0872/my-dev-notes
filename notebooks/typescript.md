@@ -7,22 +7,34 @@
 
 ## Knowledge
 
-**types[] & typeRoots[]**
+### types[] & typeRoots[]
+
 - not general-purpose ways to load declarations (*.d.ts) files
 - load typing declarations from NPM packages
 
-**typeRoots[]**
+### typeRoots[]
+
 - add additional locations from where type packages will be loaded from automatically
 
-**types[]**
+### types[]
+
 - disable automatic loading behavior 
 
-**files**
+### files
+
 - specify a list of ts files that will be included by the compiler(url absolute/relative)
 - not affected by **exclude** property
 
-**declare** 
+### declare
+
 - define a variable/function/class that may not originate from typescript(i.e using a library that does not use ts); 
+
+### naked parameters
+
+- not wrapped in another type(i.e: _array_, _tuple_, _function_, _promise_)
+
+- a naked parameter is** distributed over a union**
+  the **conditional type** is **applied** for each **member** of the **union**
 
 ---
 
