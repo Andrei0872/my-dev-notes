@@ -11,3 +11,17 @@
 ### JIT
 
 * **uses** the **browser** to **compile** the code
+
+### `{ static: true | false }`
+
+* encountered in 
+    * `@ContentChild(/* ... */, { static: true | false })` 
+    * `@ViewChild(/* ... */, { static: true | false })`
+
+* **true**
+    * queries that can be solved statically - not in `*ngFor` or `*ngIf`
+    * accessible in `ngOnInit()`
+
+* **false**
+    * will ensure query matches that are dependent on binding resolution(`*ngIf` etc...)
+    * accessible in `ngAfterViewChecked()` or `ngAfterContentChecked()`
