@@ -198,6 +198,92 @@ example.pipe(debounce(() => timer(500)))
 ```
 </details>
 
+### `defer()`
+
+* emits when the **operation inside**(i.e: `promise`) is **ready**
+
+   <details>
+   <summary>Example</summary>
+   <br>
+
+
+   ```typescript
+   const p = () => new Promise((resolve, reject) => {
+      resolve();
+   });
+
+   of({})
+      .pipe(
+         flatMap(() => defer(() => p())),
+      )
+      .subscribe(() => {});
+   ```
+   </details>
+
+* each subscriber gets a **new subscription**
+
+   <details>
+   <summary>Example</summary>
+   <br>
+
+
+   ```typescript
+   const getObs = () => {
+   let cnt = 1;
+
+   return interval(1000)
+      .pipe(map(() => cnt++));
+   };
+
+
+   const observable = getObs();
+
+   // observable
+   //   .subscribe(v => console.log('SUBSCRIBER 1: ', v))
+
+   // observable
+   //   .subscribe(v => console.log('SUBSCRIBER 2: ', v))  
+
+   /*
+   SUBSCRIBER 1: 7
+   SUBSCRIBER 2: 8
+   SUBSCRIBER 1: 9
+   SUBSCRIBER 2: 10
+   SUBSCRIBER 1: 11
+   SUBSCRIBER 2: 12
+   ...
+   */
+
+   const getObsWithDefer = () => {
+   return defer(() => {
+      let cnt = 1;
+
+      return interval(1000)
+         .pipe(map(() => cnt++))
+   });
+   }
+
+   const observableWithDefer = getObsWithDefer();
+
+   observableWithDefer
+   .subscribe(v => console.log('SUBSCRIBER 1: ', v))
+
+   observableWithDefer
+   .subscribe(v => console.log('SUBSCRIBER 2: ', v))  
+
+   /*
+   SUBSCRIBER 1: 1
+   SUBSCRIBER 2: 1
+   SUBSCRIBER 1: 2
+   SUBSCRIBER 2: 2
+   SUBSCRIBER 1: 3
+   SUBSCRIBER 2: 3
+   SUBSCRIBER 1: 4
+   SUBSCRIBER 2: 4
+   */
+   ```
+   </details>
+
 ---
 
 ## Tricks
