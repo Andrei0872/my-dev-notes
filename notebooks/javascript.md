@@ -1226,3 +1226,15 @@ console.log('salePrice = ', salePrice)
 ### Virtual DOM
 
 * creates a new tree from scratch on re-render
+
+### Properties
+
+* defined by DOM
+
+* **can change**
+
+### Attributes
+
+* **initialize** DOM properties and then they are **done**
+
+* defined by HTML
