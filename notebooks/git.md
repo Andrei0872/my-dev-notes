@@ -13,6 +13,7 @@
     * [Stage all the tracked files across the entire repo](#stage-all-the-tracked-files-across-the-entire-repo)
     * [Add only tracked files to index](#add-only-tracked-files-to-index)
     * [Remove untracked files](#remove-untracked-files)
+    * [Search commits by string](#search-commits-by-string)
 
 * [Branches](#branches)
     * [See where all my the branches are being tracked from](#see-where-all-my-the-branches-are-being-tracked-from)
@@ -153,6 +154,12 @@ git clean -f
 
 # Just show what files would be deleted
 git clean -n
+```
+
+### Search commits by string
+
+```bash
+git log --grep='your-string-here'
 ```
 
 ---
