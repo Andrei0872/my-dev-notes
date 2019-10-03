@@ -161,6 +161,39 @@ The observable knows when to call these methods throughout the **Subscription**
       ```
       </details>
 
+### `debounce($obs)`
+
+* the `$obs` determines the time span of emission silence
+
+* if **no** other **value** is **emitted while awaiting** `X time`, the **crt value** will be **emitted**, **otherwise discarded**
+
+<details>
+<summary>Example</summary>
+<br>
+
+
+```typescript
+const example = Observable.create(subs => {
+
+subs.next('123')
+subs.next('222')
+subs.next('333')
+
+setTimeout(() => {
+      subs.next('444')
+}, 700)
+
+setTimeout(() => {
+      subs.next('555')
+   }, 1201)
+});
+
+example.pipe(debounce(() => timer(500)))
+   .subscribe(console.log)
+// => 333, 444, 555
+```
+</details>
+
 ---
 
 ## Tricks
