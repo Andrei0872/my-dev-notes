@@ -21,6 +21,9 @@
 - specify a list of ts files that will be included by the compiler(url absolute/relative)
 - not affected by **exclude** property
 
+**declare** 
+- define a variable/function/class that may not originate from typescript(i.e using a library that does not use ts); 
+
 ---
 
 ## Types
