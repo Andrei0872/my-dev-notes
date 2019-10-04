@@ -4,6 +4,7 @@
 * [Types](#types)
     * [Create a condition-based subset of types](#create-a-condition-based-subset-of-types)
     * [Type Assignments](#type-assignments)
+    * [infer](#infer)
 
 ## Knowledge
 
@@ -144,3 +145,50 @@ x = y;
 // `x` - does not have the `age` property, so we'll have an error
 y = x;
 ```
+
+### infer
+
+* allows to `infer` the type from a **conditional**
+
+* it can also **accumulate** the **inferred types** by **inferring** the **same variable multiple times** in a condition
+
+<details>
+<summary>Example</summary>
+<br>
+
+
+```typescript
+type Arr = string[];
+
+type GetArrType<T> = T extends (infer R)[] ? R : T
+
+type ArrType = GetArrType<Arr>; // string
+
+interface Person {
+  name: string;
+  age: number;
+}
+
+// ====================================
+
+type APromise = Promise<Person>;
+
+type GetPromiseType<T> = T extends Promise<infer R> ? R : T;
+
+type PromiseT = GetPromiseType<APromise>; // Person
+
+// ====================================
+
+type GetAccumulatedTypes<T> = T extends {
+  a: (...args: infer U) => infer R;
+  b: (...args: infer U) => infer R;
+} ? R : T;
+
+type ObjType = {
+  a: (name: string) => boolean;
+  b: (age: number) => string;
+};
+
+type AccType = GetAccumulatedTypes<ObjType>; // boolean | string
+```
+</details>
