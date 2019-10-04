@@ -35,6 +35,17 @@
 
 - a naked parameter is** distributed over a union**
   the **conditional type** is **applied** for each **member** of the **union**
+    <details>
+    <summary>Example</summary>
+    <br>
+
+
+    ```typescript
+    type Exclude<T, U> = T extends U ? never : T:
+
+    type Foo = Exclude<'a' | 'b' | 'c', 'c'> // "a" | "b"
+    ```
+    </details>
 
 ### mapped types
 
