@@ -95,6 +95,14 @@ CTRL + SHIFT + -
         "key": "ctrl+alt+right",
         "command": "-workbench.action.moveEditorToNextGroup"
     },
+    {
+        "key": "ctrl+shift+6",
+        "command": "editor.action.codeAction",
+        "args": {
+            "kind": "refactor.extract",
+            "preferred": true
+        }
+    },
 ]
 ```
 </details>
