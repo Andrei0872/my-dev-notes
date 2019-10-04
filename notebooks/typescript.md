@@ -36,6 +36,10 @@
 - a naked parameter is** distributed over a union**
   the **conditional type** is **applied** for each **member** of the **union**
 
+### mapped types
+
+* types created based on old types
+
 ---
 
 ## Types
