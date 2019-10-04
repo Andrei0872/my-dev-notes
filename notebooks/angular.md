@@ -8,9 +8,13 @@
 
 * **before** JS code is run in the browser, it is **pre-compiled** into an **optimized format**, then is **sent** to the browser
 
+* notify **template errors** at **build time**
+
 ### JIT
 
 * **uses** the **browser** to **compile** the code
+
+* the **browser** has to **download** the **compiler**
 
 ### `{ static: true | false }`
 
