@@ -5,6 +5,7 @@
     * [Create a condition-based subset of types](#create-a-condition-based-subset-of-types)
     * [Type Assignments](#type-assignments)
     * [infer](#infer)
+    * [as const](#as-const)
 
 ## Knowledge
 
@@ -190,5 +191,69 @@ type ObjType = {
 };
 
 type AccType = GetAccumulatedTypes<ObjType>; // boolean | string
+```
+</details>
+
+---
+
+## `as const`
+
+[Resource](#https://dev.to/aexol/typescript-tutorial-use-as-const-to-export-colors-39fl) :sparkles:
+
+* prevent widened literal types (from `"andrei"` to `string`)
+
+* **array** literals become **readonly tuples**
+
+* **object literals** get **readonly properties**
+
+<details>
+<summary>Example</summary>
+<br>
+
+
+```typescript
+const Colors = {
+  cherry: "#F9193F",
+  mars: "#F19037",
+  meteor: "#FFE3C8"
+};
+
+type ColorsTypeWithoutAsConst = typeof Colors;
+/* 
+const Colors: {
+    cherry: string;
+    mars: string;
+    meteor: string;
+}
+*/
+
+const Colors = {
+  cherry: "#F9193F",
+  mars: "#F19037",
+  meteor: "#FFE3C8"
+} as const;
+
+type ColorsTypeWithAsConst = typeof Colors;
+
+/* 
+const Colors: {
+    readonly cherry: "#F9193F";
+    readonly mars: "#F19037";
+    readonly meteor: "#FFE3C8";
+}
+*/
+
+// ========================================
+
+
+const people = [
+  { name: 'foo', age: 123 },
+  { name: 'bar', age: 200 },
+] as const;
+
+for (const person of people) {
+  console.log(person.name === 'bar')
+}
+
 ```
 </details>
