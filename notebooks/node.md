@@ -1,6 +1,7 @@
 # Node.js Notebook
 
 - [Event loop](#event-loop)
+- [Concepts](#concepts)
 - [Event Emitter](#event-emitter)
 - [Streams](#streams)
 - [package.json](#package-json)
@@ -18,9 +19,7 @@
 
 * in Node.js - **web APIs are replaced by C/C++ APIs**
 
-### Concepts
-
-#### Message/Event/Event loop queue
+### Message/Event/Event loop queue
 
 * is a **list of messages** to be processed(executed)
 
@@ -173,6 +172,18 @@ setTimeout ​​​​​
 */
 ```
 </details>
+
+---
+
+## Concepts
+
+### thread
+
+* a unit of operations that the CPU has to perform
+
+### OS Scheduler
+
+* decides **which thread** to be used by a process
 
 ---
 
