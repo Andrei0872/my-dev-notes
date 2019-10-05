@@ -5,6 +5,7 @@
 - [Subject](#subject)
 - [Operators](#operators)
    - [find](#find)
+   - [single](#single)
 - [Tricks](#tricks)
 
 ---
@@ -302,6 +303,29 @@ of(3, 1, 5, 9, 15, 14, 75, 30)
     find(v => v % 15 === 0)
   )
   .subscribe(console.log) // 15
+```
+</details>
+
+### `single`
+
+* like `first`, but if multiple values that match the condition are emitted, it will emit with error notification
+
+* if the source Observable emits items but **none** match the specified predicate, then `undefined` is emitted
+
+<details>
+<summary>Example</summary>
+<br>
+
+
+```typescript
+of(3, 1, 5, 9, 15, 14, 75, 30)
+  .pipe(
+    single(v => v % 15 === 0)
+  )
+  .subscribe(
+    console.log, // 15, if /* 14, 75, 30 */ - commented
+    console.warn // Sequence contains more than one element, if /* 14, 75, 30 */ - uncommented
+  ) 
 ```
 </details>
 
