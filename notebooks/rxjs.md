@@ -4,6 +4,7 @@
 - [Observable](#observable) 
 - [Subject](#subject)
 - [Operators](#operators)
+   - [find](#find)
 - [Tricks](#tricks)
 
 ---
@@ -283,6 +284,26 @@ example.pipe(debounce(() => timer(500)))
    */
    ```
    </details>
+
+### `find`
+
+* searches for the **first** item in the Observable that **matches the condition**, then **completes**
+
+* does **not** emit an error if a valid value is not found
+
+<details>
+<summary>Example</summary>
+<br>
+
+
+```typescript
+of(3, 1, 5, 9, 15, 14, 75, 30)
+  .pipe(
+    find(v => v % 15 === 0)
+  )
+  .subscribe(console.log) // 15
+```
+</details>
 
 ---
 
