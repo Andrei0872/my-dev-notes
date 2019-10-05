@@ -29,3 +29,9 @@
 * **false**
     * will ensure query matches that are dependent on binding resolution(`*ngIf` etc...)
     * accessible in `ngAfterViewChecked()` or `ngAfterContentChecked()`
+
+### `ngProjectAs`
+
+[Example](https://stackoverflow.com/questions/57820385/how-can-i-get-an-ng-content-select-filter-to-work-with-projected-template-conten/57822471#57822471) :sparkles:
+
+* useful when you want to project an `ng-container` with a certain selector
