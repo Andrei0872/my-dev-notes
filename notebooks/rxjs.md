@@ -329,6 +329,49 @@ of(3, 1, 5, 9, 15, 14, 75, 30)
 ```
 </details>
 
+### combineAll
+
+* **flattens** an Observable-of-Observables by using the `combineLatest` strategy when the source Observable-of-Observables **completes**
+
+<details>
+<summary>Example</summary>
+<br>
+
+
+```typescript
+// Observable-of-Observables
+const highOrder = of(3, 4, 2)
+  .pipe(
+    map(v => interval(v * 1000).pipe(take(3)))
+  )
+
+highOrder
+  .pipe(
+    combineAll()
+  )
+  .subscribe(
+    console.log,
+    null,
+    () => console.log('completed')
+  )
+
+/* 
+3  ------0------1------2
+4  --------0--------1--------2
+2  ----0----1----2-------------------------
+              combineAll()
+   3 4 2
+   0 0 0
+   0 0 1
+   1 0 1
+   1 0 2
+   1 1 2
+   2 1 2
+   2 2 2
+*/
+```
+</details>
+
 ---
 
 ## Tricks
