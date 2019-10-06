@@ -115,6 +115,8 @@ console.log("Andrei Gatej".replace(switchNames, "$<lastName> $<firstName>")) // 
 
 ## Lookbehind
 
+* step backwards and make the check; something (not) preceded by something else
+
 <details>
 <summary>Example</summary>
 <br>
@@ -131,6 +133,8 @@ console.log(re.exec('€199.30')) // ​​​​​​​​​​[ '199.30', '
 ---
 
 ## Lookahead
+
+* match something (not) followed by something else
 
 <details>
 <summary>Example</summary>
