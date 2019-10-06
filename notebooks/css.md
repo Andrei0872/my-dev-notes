@@ -55,9 +55,20 @@
     * the element is **replaced** by element's **contents** to appear as if the **element's children** were **direct descendants** of **element's parent**
     * on images or on form elements it acts as `display: none`, because their box is not defined
 
-### visibility
+### `visibility`
 
 * **hidden**: rendered, space allocated on the page, but not visible
+
+### `width`
+
+* **min-content**
+    * the **smallest width & height** of a box where box's content does **not overflow**
+
+* **max-content** 
+    * the **smallest size** the box could take while **still fitting around its contents**
+    * takes **all the available space** on axis **without wasting** it
+
+* **fit-content**: `min(maxSize content, minSize content)`
 
 ---
 
