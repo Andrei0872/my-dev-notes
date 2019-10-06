@@ -32,6 +32,7 @@
     * [git revert](#git-revert)
     * [git checkout](#git-checkout)
     * [git pull](#git-pull)
+    * [git cherry-pick](#git-cherry-pick)
 
 ## Concepts
 
@@ -268,3 +269,7 @@ _Note: you can undo/redo everything by using `git reflog`_
 _assuming the current branch is `master`_
 
 * it **copies** origin master into origin/master && **merges** origin/master into master(_master_ = local branch)
+
+### git cherry-pick
+
+* **use case**: bug hotfixes: before release, **create** a commit with the **fix** and then **cherry pick it into master**
