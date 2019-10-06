@@ -33,6 +33,13 @@
     * blocks parallel downloads
     * the browser will wait for the imported file to finish downloading before it starts downloading the rest of the content
 
+### extrinsic vs intrinsic dimensions
+
+* **extrinsic** - depends on the **parent**; ex: `width: 80%`
+
+* **intrinsic** - depends on the **content** it contains; ex: `width: max-content`
+
+
 ---
 
 ## Properties
