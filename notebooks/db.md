@@ -7,6 +7,7 @@
 * [Joins](#joins)
 * [Useful Commands](#useful-commands)
   * [Copying a table](#copying-a-table)
+* [Tricks](#tricks)
 
 ## Concepts
 
@@ -348,3 +349,13 @@ create table t1 like t2;
 insert t1 select * from t2;
 ```
 </details>
+
+--- 
+
+## Tricks
+
+### use the new value further in the update statement
+
+```sql
+set x = (@var = a_value), ... , set y = @var + 'it works!'
+```
