@@ -372,3 +372,13 @@ set x = (@var = a_value), ... , set y = @var + 'it works!'
 ```sql
 create view V_NAME as select name, age from customers where country = 'Brasil'
 ```
+
+### Commands
+
+#### `on duplicate key`
+
+* update row if duplicate rows will occur
+
+```sql
+insert into TABLE(c1, c2) values (vc1, vc2) on duplicate key update c1 = values(c1), c2 = values(c2)
+```
