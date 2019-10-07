@@ -21,11 +21,21 @@
 
 * in Node.js - **web APIs are replaced by C/C++ APIs**
 
+### Call Stack
+
+* a place in memory
+
+* **keeps track** of the **function executing** at that time and the **functions** that are going to be **executed later**
+
+* follows the **LIFO** principle
+
 ### Message/Event/Event loop queue
 
 * is a **list of messages** to be processed(executed)
 
 * each **message** has an **associated function** which gets called in order to handle the message
+
+* a **message** is **added** when an **event**(watched by an *event listener*) **occurs**
 
 * when the message is handled, it is **removed from the queue** and its corresponding function is called with the message as an input parameter
 
@@ -176,6 +186,10 @@ setTimeout ​​​​​
 */
 ```
 </details>
+
+### The `Event Loop` in the browser
+
+
 
 ---
 
