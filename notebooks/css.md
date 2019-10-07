@@ -9,6 +9,7 @@
 * [Accessibility](#accessibility)
 * [BEM](#bem)
 * [Cascade and Specificity](#cascade-and-specificity)
+* [CSS Grid](#css-grid)
 
 ## Knowledge
 
@@ -224,3 +225,11 @@ input:not(:placeholder-shown) {
 2. **class** selectors & **pseudo-classes**(`:hover`)
 
 3. elements(`p`) & pseudo-elements(`::before`)
+
+---
+
+## CSS Grid
+
+* **auto-fit**: the columns will **stretch** to fit into the row
+
+* **auto-fill**: an **empty column** is **added** to fill the remaining space
