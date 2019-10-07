@@ -11,6 +11,7 @@
 - [Typed Arrays](#typed-arrays)
 - [:sparkles:Cool Stuff :sparkles:](#cool-stuff)
 - [DOM](#dom)
+    - [Script tags](#script-tags)
 
 ## Concepts
 
@@ -1239,3 +1240,13 @@ console.log('salePrice = ', salePrice)
 * **initialize** DOM properties and then they are **done**
 
 * defined by HTML
+
+### Script tags
+
+#### `defer`
+
+* **delay** the **execution** until the **document** has **finished loading**
+
+#### `async`
+
+* **download** the script **without blocking**, but **execute as soon as possible**
