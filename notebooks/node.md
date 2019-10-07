@@ -13,6 +13,8 @@
 
 * in case of DOM events - the event listener **sits in the web APIs environment waiting** for a certain event to happen; when that event happens, the **cb function** is **placed in the message queue**, waiting to be executed
 
+* under the hood it uses `libuv`, which abstracts api/syscalls for async non-blocking I/O actions; it also has a **thread pool**(of size 4 by default)
+
 ### Introduction
 
 * the event loop, web APIs and the message queue(here goes stuff like: **callbacks**, **DOM events** etc..) are part of browser's JS runtime environment **or** Node.js JS runtime environment
@@ -26,6 +28,8 @@
 * each **message** has an **associated function** which gets called in order to handle the message
 
 * when the message is handled, it is **removed from the queue** and its corresponding function is called with the message as an input parameter
+
+* designed for callbacks
 
 ### Job Queue
 
