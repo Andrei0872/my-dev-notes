@@ -8,6 +8,7 @@
 * [Useful Commands](#useful-commands)
   * [Copying a table](#copying-a-table)
 * [Tricks](#tricks)
+* [MySQL](#mysql)
 
 ## Concepts
 
@@ -358,4 +359,16 @@ insert t1 select * from t2;
 
 ```sql
 set x = (@var = a_value), ... , set y = @var + 'it works!'
+```
+
+---
+
+## MySQL
+
+### Views
+
+* virtual table created from results from other tables
+
+```sql
+create view V_NAME as select name, age from customers where country = 'Brasil'
 ```
