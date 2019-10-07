@@ -32,6 +32,10 @@
 
 * abstract the logical data model such that the Business Layer is decoupled from this knowledge and is agnostic of it(giving you the ability to modify the logical data model without impacting the business layer)
 
+### ORM
+
+* map objects(found in OOP) to tables(rows & relations etc...)
+
 ---
 
 ## Indexing
