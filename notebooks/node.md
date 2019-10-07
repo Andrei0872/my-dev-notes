@@ -8,6 +8,8 @@
 
 ## Event Loop
 
+[Resource](https://dev.to/kapantzak/js-illustrated-the-event-loop-4mco) :sparkles:
+
 * its job is to look into the call stack and **determine** if the **call stack** is **empty or not**
     * if **empty**, it looks into the **message queue** to see if there's **any pending call back waiting to be executed**
 
@@ -187,9 +189,9 @@ setTimeout ​​​​​
 ```
 </details>
 
-### The `Event Loop` in the browser
+### The Web API
 
-
+* offers methods such as `setTimeout()`, `alert()` etc...
 
 ---
 
