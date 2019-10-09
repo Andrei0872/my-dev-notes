@@ -67,6 +67,18 @@ The observable knows when to call these methods throughout the **Subscription**
    ```
    </details>
 
+## High-order observable
+
+* frequently called `Observable-of-Observables`
+
+* emits **events** that are **Observable themselves**
+
+## Flattening a high-order observable
+
+By default, a **high-order observable** will emit values are that the **streams** resulted from the **inner observable**.
+
+**After** flattening, the **outer** observable will **emit** the **inner observable's events**, **instead of** emitting the **inner observable itself**.
+
 ---
 
 ## Subject
