@@ -210,6 +210,25 @@ clicks
 ```
 </details>
 
+
+#### `bufferToggle(openings, closingSelector)`
+
+* starts **collecting** values **when** `openings` emits and close the buffer when `closingSelector` emits
+
+<details>
+<summary>Example</summary>
+<br>
+
+```typescript
+const clicks = fromEvent(document, 'click');
+const openings = of(1, 2);
+const buffered = clicks.pipe(bufferToggle(openings, i =>
+  i % 2 === 0 ? timer(2000) : EMPTY
+));
+buffered.subscribe(x => console.log(x));
+```
+</details>
+
 ### `debounce($obs)`
 
 * the `$obs` determines the time span of emission silence
