@@ -7,6 +7,7 @@
     * [Move content from subdirectory x to subdirectory y](#move-content-from-subdirectory-x-to-subdirectory-y)
     * [Create a directory and cd into id immediately](#create-a-directory-and-cd-into-id-immediately)
     * [Update multiple npm packages](#update-multiple-npm-packages)
+    * [List only files in a directory](#list-only-files-in-a-directory)
 
 
 ## Useful Commands
@@ -42,4 +43,11 @@ mkdir <dir_name> && cd $_
 ```bash
 # Use case: Updating the packages that belong to `@angular`
 npm i $(npm outdated | grep @angular | cut -d ' ' -f1 | xargs -I $ echo '$@latest' | xargs echo)
+```
+
+### List only files in a directory
+
+```bash
+# -p - append `/` to directories
+ls -p | grep -v /
 ```
