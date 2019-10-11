@@ -6,6 +6,8 @@
 - [Operators](#operators)
    - [find](#find)
    - [single](#single)
+   - [combineAll](#combineAll)
+   - [race](#race)
 - [Tricks](#tricks)
 
 ---
@@ -381,6 +383,26 @@ highOrder
    2 1 2
    2 2 2
 */
+```
+</details>
+
+### `race`
+
+* first observable to emit is used, the others are being ignored
+
+<details>
+<summary>Example</summary>
+<br>
+
+
+```typescript
+race(
+  timer(1500).pipe(mapTo('1500!')),
+  timer(2000).pipe(mapTo('2000!')),
+  timer(1000).pipe(mapTo('1000!')),
+  timer(1200).pipe(mapTo('1200!')),
+)
+.subscribe(console.log) // 1000!
 ```
 </details>
 
