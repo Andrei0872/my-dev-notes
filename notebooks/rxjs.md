@@ -406,6 +406,33 @@ race(
 ```
 </details>
 
+### `generate`
+
+* generates a sequence of values based on an `initialValue`, `condition` and `iteratate`
+
+* very similar to a traditional for loop
+
+<details>
+<summary>Example</summary>
+<br>
+
+
+```typescript
+generate(
+  2, // Initial value
+  x => x < 300, // Condition
+  x => x ** 2 // Iterate
+).subscribe(console.log)
+/* 
+--->
+2
+4
+16
+256
+*/
+```
+</details>
+
 ---
 
 ## Tricks
