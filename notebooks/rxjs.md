@@ -18,7 +18,6 @@
 
 - wrapper around data source(stream of values)
 - async data (not limited to this)
-- http request
 
 ### Observer
 
@@ -142,6 +141,7 @@ By default, a **high-order observable** will emit values are that the **streams*
 ### `concatMap`
    - runs subscriptions/requests **in order**
    - will **wait** for the **current** inner observable to complete **before subscribing** to the **next** one
+   - does **buffer** emitted **values**
 
 ### `exhaustMap`
    - the **opposite** of `switchMap`
