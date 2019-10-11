@@ -9,6 +9,7 @@
    - [single](#single)
    - [combineAll](#combineAll)
    - [race](#race)
+   - [expand](#expand)
 - [Tricks](#tricks)
 
 ---
@@ -517,6 +518,30 @@ generate(
 16
 256
 */
+```
+</details>
+
+### `expand`
+
+* similar to `mergeMap`, but it applies the **project function** to **every source values** as well as **every output value** - it is **recursive**
+
+* it receives a [project function](#project-function) that will return an Observable;
+this function will be **applied** to **each emitted value** by the **source Observable**, but also to the **result** of the function, which will get **merged**
+
+<details>
+<summary>Example</summary>
+<br>
+
+
+```typescript
+const clicks = fromEvent(document, 'click');
+clicks
+  .pipe(
+    mapTo(1),
+    expand(v => of(v + 1).pipe(delay(1000))),
+    take(10)
+  )
+  .subscribe(console.log)
 ```
 </details>
 
