@@ -35,3 +35,7 @@
 [Example](https://stackoverflow.com/questions/57820385/how-can-i-get-an-ng-content-select-filter-to-work-with-projected-template-conten/57822471#57822471) :sparkles:
 
 * useful when you want to project an `ng-container` with a certain selector
+
+### Pure pipes
+
+* triggered on **pure** changes - changes to primitive data types(number, string, boolean etc...) or a **changed object reference**
