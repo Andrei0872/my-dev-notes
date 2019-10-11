@@ -10,6 +10,7 @@
    - [combineAll](#combineAll)
    - [race](#race)
    - [expand](#expand)
+   - [auditTime](#auditTime)
 - [Tricks](#tricks)
 
 ---
@@ -543,6 +544,45 @@ clicks
     take(10)
   )
   .subscribe(console.log)
+```
+</details>
+
+### `auditTime`
+
+* similar to `throttleTime`, but it will get the **last silenced value**
+
+* when a value is emitted, it is ignored and ignores the next ones for `durations` ms and then, when it is the case, it emits the most recent **ignored** value
+
+<details>
+<summary>Example</summary>
+<br>
+
+
+```typescript
+merge(
+  of(1), // Ignored, Printed if `throttleTime` was used
+  of(2), // Last Ignored
+  of(3).pipe(delay(400)), // Printed if `throttleTime` was used
+  of(4).pipe(delay(901)), // Printed if `throttleTime` was used
+  of(5).pipe(delay(600)), // Last ignored (400(referring to `3`) + 300 > 600)
+  of(6).pipe(delay(1200)), // Ignored (901 + 300 > 1200)
+)
+  .pipe(/* throttleTime */auditTime(300))
+  .subscribe(console.log) // 2 5
+
+// ===============================================
+
+merge(
+  of(1), // Ignored;
+  of(2), // Last ignored
+  of(3).pipe(delay(400)), // New value, ignored 3 and any value that will be emitted in the range [400, 400 + 300]!;
+  of(4).pipe(delay(800)), // New value!(outside of [400, 400 + 300]); will be that last ignored as `6` will appear outside of [800, 800 + 1100]
+  of(5).pipe(delay(600)), // Last ignored in the range [400, 400 + 300]
+  of(6).pipe(delay(1200)), // If this was missing, `4` wouldn't be printed
+)
+  .pipe(/* throttleTime */auditTime(300))
+  .subscribe(console.log) // 2 5 4
+
 ```
 </details>
 
