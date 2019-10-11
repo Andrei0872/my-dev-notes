@@ -40,6 +40,14 @@
 
 * **intrinsic** - depends on the **content** it contains; ex: `width: max-content`
 
+### stacking context
+
+* group of elements with the same parent
+
+* created by
+    * html root element
+    * an element with a **position other** than `static`
+    * an element with **opacity less than 1**
 
 ---
 
