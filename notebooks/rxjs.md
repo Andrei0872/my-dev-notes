@@ -22,6 +22,7 @@
 
 - wrapper around data source(stream of values)
 - async data (not limited to this)
+- is **push-based**(the observer pushes data into the observer)
 
 ### Observer
 
