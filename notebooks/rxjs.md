@@ -4,6 +4,7 @@
 - [Observable](#observable) 
 - [Subject](#subject)
 - [Operators](#operators)
+   - [Buffering](#buffering)
    - [find](#find)
    - [single](#single)
    - [combineAll](#combineAll)
@@ -150,7 +151,9 @@ By default, a **high-order observable** will emit values are that the **streams*
    - will **not** subscribe to the next observable **until** the current one **completes**
    - use for **login**(don't want more requests until the initial one is complete)
 
-### `buffer(obs$)`
+### Buffering
+
+#### `buffer(obs$)`
    - keeps **accumulating** values **until** observable **emits** values or **completes**
       <details>
       <summary>Example</summary>
@@ -180,6 +183,32 @@ By default, a **high-order observable** will emit values are that the **streams*
       })
       ```
       </details>
+
+
+
+
+#### `bufferWhen(fn: () => Observable<any>)`
+
+* **collects values** emitted from the source Observable and **stores** them as an **array**;   
+when it **starts collecting** values, it **calls** the provided **function**(the function returns an observable);
+**after** the returned **observable emits**, the buffer will be closed(thus, the collected items will be sent to the consumer) and then it will restart collecting value;
+
+
+<details>
+<summary>Example</summary>
+<br>
+
+
+```typescript
+const clicks = fromEvent(document, 'click');
+
+clicks
+  .pipe(
+    bufferWhen(() => timer(1000))
+  )
+  .subscribe(console.log)
+```
+</details>
 
 ### `debounce($obs)`
 
