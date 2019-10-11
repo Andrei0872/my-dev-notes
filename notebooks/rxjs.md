@@ -229,6 +229,45 @@ buffered.subscribe(x => console.log(x));
 ```
 </details>
 
+#### `bufferCount(bufferSize, startBufferEvery)`
+
+* collect values until `bufferSize` is reached
+
+* if `startBufferEvery` is specified, a new buffer will start each `startBufferEvery` values
+
+<details>
+<summary>Example</summary>
+<br>
+
+```typescript
+of(1, 2, 3, 4, 5, 6, 7, 8)
+  .pipe(
+    bufferCount(3)
+  )
+  // .subscribe(console.log)
+/* 
+--->
+[1, 2, 3]
+[4, 5, 6]
+[7, 8]
+*/
+
+
+of(1, 2, 3, 4, 5, 6, 7, 8)
+  .pipe(
+    bufferCount(3, 2)
+  )
+  .subscribe(console.log)
+/* 
+--->
+[1, 2, 3]
+[3, 4, 5]
+[5, 6, 7]
+[7, 8]
+*/
+```
+</details>
+
 ### `debounce($obs)`
 
 * the `$obs` determines the time span of emission silence
