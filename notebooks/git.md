@@ -33,6 +33,7 @@
     * [git checkout](#git-checkout)
     * [git pull](#git-pull)
     * [git cherry-pick](#git-cherry-pick)
+    * [git bisect](#git-bisect)
 
 ## Concepts
 
@@ -273,3 +274,31 @@ _assuming the current branch is `master`_
 ### git cherry-pick
 
 * **use case**: bug hotfixes: before release, **create** a commit with the **fix** and then **cherry pick it into master**
+
+### git bisect
+
+#### undo step
+
+1) ```bash 
+    git bisect log > bisect.log
+    ```
+
+2) delete lines
+
+3) ```bash 
+    git bisect replay bisect.log 
+    ```
+
+#### fint he first commit in which a function name appears
+
+1) ```bash 
+    git bisect start --term-old=dne --term-new=exists 
+    ```
+
+2) ```bash 
+    git bisect dne <commit> 
+    ```
+
+3) ```bash  
+    git grep -q <fn-name> && git bisect exists || git bisect dne 
+    ```
