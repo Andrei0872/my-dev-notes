@@ -242,6 +242,24 @@ console.log(Object.getOwnPropertyDescriptors(target2, 'foo'))
 
 ### this
 
+* it is about **where** a **function** is **invoked**
+
+#### Implicit binding
+
+* when **dot notation** is used to invoke the function
+
+* **whatever is to the left of the dot** - the context for `this` in the function
+
+#### Explicit binding
+
+* when `call()`, `apply()` or `bind()` are used
+
+* **explicit**: we are **explictly** passing in a `this` context
+
+### Default binding
+
+* `this` refers to the **global context** wherever the functions is invoked
+
 #### `bind()`
 
 <details>
