@@ -1,6 +1,7 @@
 # Angular Notebook
 
 * [Concepts](#concepts)
+* [Interceptors](#interceptors)
 
 ## Concepts
 
@@ -39,3 +40,47 @@
 ### Pure pipes
 
 * triggered on **pure** changes - changes to primitive data types(number, string, boolean etc...) or a **changed object reference**
+
+---
+
+## Interceptors
+
+[Understanding how interceptors act on HttpRequest and HttpResponse](https://dev.to/anduser96/angular-understanding-how-interceptors-act-on-httprequest-and-httpresponse-bf8) :sparkles:
+
+### The `HttpRequest` & `HttpResponse` flow
+
+Assuming a request will be intercepted by these interceptors:
+```typescript
+@NgModule({
+    /* ... */
+    providers: [
+        {
+            provide: HTTP_INTERCEPTORS,
+            useClass: Interceptor1
+            multi: true,
+        },
+        {
+            provide: HTTP_INTERCEPTORS,
+            useClass: Interceptor2
+            multi: true,
+        },
+        /* ... */
+        {
+            provide: HTTP_INTERCEPTORS,
+            useClass: InterceptorN
+            multi: true,
+        }
+    ]
+    /* ... */
+})
+```
+
+#### `HttpRequest`
+
+> INTERCEPTOR_1.request -> INTERCEPTOR_2.request -> INTERCEPTOR_3.request -> ... -> INTERCEPTOR_n.request
+
+#### `HttpResponse`
+
+> INTERCEPTOR_n.response -> ... -> INTERCEPTOR_3.response -> INTERCEPTOR_2.response -> INTERCEPTOR_1.response
+
+[Working Example](https://stackblitz.com/edit/ng-understanding-interceptors?file=src%2Fapp%2Fapp.component.ts)
