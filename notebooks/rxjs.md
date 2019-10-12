@@ -50,6 +50,12 @@ The observable knows when to call these methods throughout the **Subscription**
 
 * give shape to the emitted data so that the **subs** can only **see** the **final result** and not the variable collection of emitted values
 
+### High-order mapping operator
+
+* `mergeMap`/`flatMap`, `switchMap`, `concatMap`, `exhaustMap`
+
+* **maps outer** observable **to inner** observable and **automatically subscribes** to the inner one
+
 ---
 
 # Observable
