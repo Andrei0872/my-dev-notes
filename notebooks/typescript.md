@@ -2,6 +2,7 @@
 
 * [Knowledge](#knowledge)
   * [naked parameters](#naked-parameters)
+  * [Discriminated Unions](#discriminated-unions)
 * [Types](#types)
     * [Create a condition-based subset of types](#create-a-condition-based-subset-of-types)
     * [Type Assignments](#type-assignments)
@@ -54,6 +55,12 @@
 ### mapped types
 
 * types created based on old types
+
+### Discriminated Unions
+
+* **discriminant**: a **singleton type** that is **common** for each of the types of the union([Example here](#never))
+
+* to **discriminate a union** means to choose to **narrow on a specific one**
 
 ---
 
