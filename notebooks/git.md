@@ -34,6 +34,7 @@
     * [git pull](#git-pull)
     * [git cherry-pick](#git-cherry-pick)
     * [git bisect](#git-bisect)
+    * [git grep](#git-grep)
 
 ## Concepts
 
@@ -302,3 +303,8 @@ _assuming the current branch is `master`_
 3) ```bash  
     git grep -q <fn-name> && git bisect exists || git bisect dne 
     ```
+### git grep
+
+* `-o` - only match: `git grep -o bisect`
+
+* 
