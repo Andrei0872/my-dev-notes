@@ -31,6 +31,10 @@
 
 * follows the **LIFO** principle
 
+### Heap
+
+* where the memory allocation happens for the variables that you define
+
 ### Message/Event/Event loop queue
 
 * is a **list of messages** to be processed(executed)
