@@ -253,6 +253,12 @@ git stash && git add ./ && git stash pop
 
 ### git reset
 
+* will **override** `HEAD`
+
+* `git reset COMMIT -- files`: an exception of `git reset COMMIT -- files`, which does not make sense: why would override `HEAD` with only some files?  
+will **not** move `HEAD`;  
+does **not affect the working tree**
+
 * `git reset $commit-hash`: discard commits or throw away uncommited changes
 
 * `git reset $file-name`: unstange file
@@ -261,7 +267,7 @@ git stash && git add ./ && git stash pop
 
 * `--soft`(keeps all the changes in the staging area): staged snapshot & working dir not altered
 
-* `--mixed`(default): resets index, staged is updated to match the specified commit, working dir not altered;
+* `--mixed`(default): resets index, working dir not altered
 
 * `--hard`(not even unstaged, everything is gone!): both staged snapshot & working dir - altered
 
