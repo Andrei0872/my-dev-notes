@@ -1,5 +1,8 @@
 # Bash Scripting Notebook
 
+* [Concepts](#concepts)
+    * [2>&1](#2>&1)
+
 * [Useful Commands](#useful-commands)
 
     * [Move multiple files to another location](#move-multiple-files-to-another-location)  
@@ -9,6 +12,19 @@
     * [Update multiple npm packages](#update-multiple-npm-packages)
     * [List only files in a directory](#list-only-files-in-a-directory)
 
+## Concepts
+
+### 2>&1
+
+* **2**: file descriptor for *stderr*
+
+* **1**: file descriptor for *stdout*
+
+* **&**: indicates that what follows `>` is a file descriptor
+
+* **redirects** stderr to stdout
+
+---
 
 ## Useful Commands
 
