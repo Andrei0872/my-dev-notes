@@ -12,6 +12,8 @@
    - [expand](#expand)
    - [auditTime](#auditTime)
 - [Tricks](#tricks)
+- [Custom Operators](#custom-operators)
+  - [Understanding custom operators](#understanding-custom-operators)
 
 ---
 
@@ -627,5 +629,37 @@ done0
 done1000
 done4000
 */
+```
+</details>
+
+---
+
+## Custom Operators
+
+### Understanding custom operators
+
+<details>
+<summary>Example</summary>
+<br>
+
+
+```typescript
+const customFilter = (isEven: boolean) => 
+  filter((v: number) => v % 2 === 0 && isEven ? true : !isEven && v % 2 ? true: false)
+
+const customFilterTwo = isEven => obs => obs.pipe(
+  filter((v: number) => v % 2 === 0 && isEven ? true : !isEven && v % 2 ? true: false)
+)
+
+// The same behavior as `customFilter`
+const customFilterThree = isEven => customFilterTwo(isEven);
+
+of(1, 2, 3, 4, 5, 6, 7, 8)
+  .pipe(
+    // customFilter(false),
+    // customFilterTwo(true),
+    customFilterThree(false),
+  )
+  .subscribe(console.log)
 ```
 </details>
