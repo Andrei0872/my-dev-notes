@@ -1,11 +1,13 @@
 # TypeScript Notebook
 
-* [Knowledge](#knowledge)  
+* [Knowledge](#knowledge)
+  * [naked parameters](#naked-parameters)
 * [Types](#types)
     * [Create a condition-based subset of types](#create-a-condition-based-subset-of-types)
     * [Type Assignments](#type-assignments)
     * [infer](#infer)
     * [as const](#as-const)
+    * [never](#never)
 
 ## Knowledge
 
@@ -196,7 +198,7 @@ type AccType = GetAccumulatedTypes<ObjType>; // boolean | string
 
 ---
 
-## `as const`
+### `as const`
 
 [Resource](#https://dev.to/aexol/typescript-tutorial-use-as-const-to-export-colors-39fl) :sparkles:
 
@@ -255,5 +257,50 @@ for (const person of people) {
   console.log(person.name === 'bar')
 }
 
+```
+</details>
+
+### `never` 
+
+* used to **enforce checking exhaustiveness**: making sure you're covering all variants of a union type
+
+<details>
+<summary>Example</summary>
+<br>
+
+
+```typescript
+interface IFoo {
+  type: 'foo';
+  name: string;
+}
+
+interface IBar {
+  type: 'bar';
+  age: number;
+}
+
+interface IBaz {
+  type: 'baz';
+  city: string;
+}
+
+type Union = IFoo | IBar | IBaz;
+
+function func (u: Union) {
+  switch (u.type) {
+    case "foo": {
+      console.log(u.name);
+      break;
+    }
+    
+    default: {
+      // The compiled makes sure you're not leaving something unchecked!
+
+      // Type '"bar" | "baz"' is not assignable to type 'never'
+      const x: never = u.type;
+    }
+  }
+}
 ```
 </details>
