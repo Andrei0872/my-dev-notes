@@ -15,6 +15,7 @@
     * [Remove untracked files](#remove-untracked-files)
     * [Search commits by string](#search-commits-by-string)
     * [Search commits by file contents](#search-commits-by-file-contents)
+    * [Push something locally named X to remote name Y](#push-something-locally-named-x-to-remote-name-y)
 
 * [Branches](#branches)
     * [See where all my the branches are being tracked from](#see-where-all-my-the-branches-are-being-tracked-from)
@@ -170,6 +171,12 @@ git log --grep='your-string-here'
 
 ```bash
 git log -S $your-string
+```
+
+### Push something locally named X to remote name Y
+
+```bash
+git push origin X:Y
 ```
 
 ---
