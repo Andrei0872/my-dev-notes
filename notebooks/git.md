@@ -60,6 +60,12 @@
 
 * refers to a specific commit, as opposed to referring to a branch
 
+### commit
+
+* **store** the **state** of the filesystem at a **certain time** as well as a *pointer* to the **previous commit**
+
+* has a **checksum**: the ID Git uses to refer to it
+
 ---
 
 ## Aliases
