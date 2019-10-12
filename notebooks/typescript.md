@@ -3,6 +3,7 @@
 * [Knowledge](#knowledge)
   * [naked parameters](#naked-parameters)
   * [Discriminated Unions](#discriminated-unions)
+  * [Singleton Types](#singleton-types)
 * [Types](#types)
     * [Create a condition-based subset of types](#create-a-condition-based-subset-of-types)
     * [Type Assignments](#type-assignments)
@@ -61,6 +62,26 @@
 * **discriminant**: a **singleton type** that is **common** for each of the types of the union([Example here](#never))
 
 * to **discriminate a union** means to choose to **narrow on a specific one**
+
+### Singleton Types
+
+[Resource](#https://medium.com/@tar.viturawong/using-typescripts-singleton-types-in-practice-f8b20b1ec3a6)
+
+* allow TS to see a **specific primitive type exactly as that type**
+```typescript
+type Foo = 'foo';
+const foo: Foo = 'foo';
+```
+
+* singleton types are seen in **primitive literals** that are **directly returned**, **directly passed to a function** or **asssigned to a constant**, but **NOT** in those **nested in object or arrays**;  
+in order to mitigate that, delcare types explictly
+```typescript
+const v = 'andrei'; // Type: 'andrei'
+
+const o = { name: 'andrei' };
+const v2 = o.name; // Type: string
+const v3 = o.name as 'andrei'; // Type: 'andrei'
+```
 
 ---
 
