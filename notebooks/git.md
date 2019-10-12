@@ -275,9 +275,22 @@ _Note: you can undo/redo everything by using `git reflog`_
 
 ### git checkout
 
-* `git checkout $commit-hash`: **move** HEAD to a **specific** commit; useful when inspecting old snapshots
+* bring from anywhere(**commit in the repo**, **individual files from a commit** or **staging area**) into the current **working tree**
 
-* `git checkout $file-name`: discard changes in the working dir
+* `git checkout $commit-hash -- files`: will bring individual files from `$commit-hash` into the current working tree;  
+the `HEAD` will **not** be overwritten!
+the **working tree** will be **affected**
+
+* `git checkout $commit-hash`: **move** HEAD to a **specific** commit;  
+useful when inspecting old snapshots; this will bting the commit `$commit-hash` into the current working tree
+
+* `git checkout $file-name`: identical to `git checkout HEAD -- $file-name`;  
+discard `$file-name`'s changes in the working directory;  
+will bring the file `$file-name` from `HEAD` into the current working tree; that's why the changes that occurred in the file `file-name` will be discarded
+
+* `git checkout .`: discard changes in the working directory;  
+identical to `git checkout HEAD -- ./`, which basically means *'bring the most recent commit(`HEAD`) into the working tree'*, that's why the changes will be discarded
+
 
 ### git pull
 
