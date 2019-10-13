@@ -67,6 +67,12 @@
 
 * has a **checksum**: the ID Git uses to refer to it
 
+### fast-forward
+
+* when you **merge** a **topic branch** that is **ahead** of your **current** checked-out branch
+
+* in order for the fast-forward to happen, the **checked-out branch** must **not** have **other commits** **since** the **topic** branch **branched off**
+
 ---
 
 ## Aliases
