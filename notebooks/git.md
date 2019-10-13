@@ -36,6 +36,7 @@
     * [git cherry-pick](#git-cherry-pick)
     * [git bisect](#git-bisect)
     * [git grep](#git-grep)
+    * [git rebase](#git-rebase)
 
 ## Concepts
 
@@ -339,4 +340,12 @@ _assuming the current branch is `master`_
 
 * `-o` - only match: `git grep -o bisect`
 
-* 
+### git rebase
+
+* instead of combining 2 branches with a merge commit, rebasing **replays** the commits of the **feature** branch as a **series of new commits** on **top** of the **base** branch
+
+* the `HEAD` will **point to** the most **recently replayed commit**
+
+* after rebase, we can **fast-forward** the **base** branch's HEAD by
+    * `git checkout <base_branch>`
+    * `git merge <topic_branch>`
