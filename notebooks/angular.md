@@ -2,6 +2,7 @@
 
 * [Concepts](#concepts)
 * [Interceptors](#interceptors)
+* [Directives](#directives)
 
 ## Concepts
 
@@ -84,3 +85,9 @@ Assuming a request will be intercepted by these interceptors:
 > INTERCEPTOR_n.response -> ... -> INTERCEPTOR_3.response -> INTERCEPTOR_2.response -> INTERCEPTOR_1.response
 
 [Working Example](https://stackblitz.com/edit/ng-understanding-interceptors?file=src%2Fapp%2Fapp.component.ts)
+
+--- 
+
+## Directives
+
+* you can add an event on an element by attaching a directive to it and using `HostListener()` on the directive
