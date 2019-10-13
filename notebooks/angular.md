@@ -3,6 +3,7 @@
 * [Concepts](#concepts)
 * [Interceptors](#interceptors)
 * [Directives](#directives)
+* [Forms](#forms)
 
 ## Concepts
 
@@ -91,3 +92,39 @@ Assuming a request will be intercepted by these interceptors:
 ## Directives
 
 * you can add an event on an element by attaching a directive to it and using `HostListener()` on the directive
+
+---
+
+## Forms
+
+[Playground](https://stackblitz.com/edit/ng-working-with-forms?file=src/app/app.component.ts) :sparkles:
+
+### Two-way data binding
+
+*   ```html 
+    <input [(ngModel)]="value" />
+    ```
+
+*   ```html
+    <app-foo [(value)]="myValue" (valueChange)="customFnWhenValueChanged($event)"></app-foo>
+    ```
+    <details>
+    <summary><code>app-foo</code></summary>
+    <br>
+
+
+    ```typescript
+    @Component({ /* ... */ })
+    export class FooComponent {    
+        @Input()
+        value: string;
+
+        @Output()
+        valueChange = new EventEmitter<string>();
+
+        public chnageValue () {
+            this.valueChange.emit(this.value + '@');
+        }
+    }
+    ```
+    </details>
