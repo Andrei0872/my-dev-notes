@@ -359,3 +359,5 @@ _assuming the current branch is `master`_
 * after rebase, we can **fast-forward** the **base** branch's HEAD by
     * `git checkout <base_branch>`
     * `git merge <topic_branch>`
+
+* if conflicts are encountered during a `rebase` - don't need an *extra* `merge commit`, you can simply resolve it in the commit that is currently being applied
