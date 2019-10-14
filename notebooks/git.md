@@ -37,6 +37,7 @@
     * [git bisect](#git-bisect)
     * [git grep](#git-grep)
     * [git rebase](#git-rebase)
+    * [git fetch](#git-fetch)
 
 ## Concepts
 
@@ -361,3 +362,9 @@ _assuming the current branch is `master`_
     * `git merge <topic_branch>`
 
 * if conflicts are encountered during a `rebase` - don't need an *extra* `merge commit`, you can simply resolve it in the commit that is currently being applied
+
+### git fetch
+
+* get **changes from** the **remote** into your **local repository**
+
+* changes will **only** be integrated only in the **remotes** of the **local repository** and **not** in local branches
