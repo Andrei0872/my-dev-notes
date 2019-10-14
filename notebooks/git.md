@@ -38,6 +38,7 @@
     * [git grep](#git-grep)
     * [git rebase](#git-rebase)
     * [git fetch](#git-fetch)
+    * [git push](#git-push)
 
 ## Concepts
 
@@ -368,3 +369,12 @@ _assuming the current branch is `master`_
 * get **changes from** the **remote** into your **local repository**
 
 * changes will **only** be integrated only in the **remotes** of the **local repository** and **not** in local branches
+
+### git push
+
+#### Options
+
+* **--force-with-lease**
+    * will check if the **local version** of the **remote branch**(`origin/...`) and the **actual remote branch**, before `pushing`
+    * ensure that you **do not** accidentally **wipe changes** someone else might have pushed in the meanwhile
+    * you can pass the check by using `git fetch` instead of `git pull`
