@@ -73,6 +73,10 @@
 
 * in order for the fast-forward to happen, the **checked-out branch** must **not** have **other commits** **since** the **topic** branch **branched off**
 
+### local repository
+
+* a copy of the remote, the only difference is that you do not share it with anyone(it also **tracks** several **remotes**)
+
 ---
 
 ## Aliases
