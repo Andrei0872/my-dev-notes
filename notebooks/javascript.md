@@ -1235,6 +1235,10 @@ console.log('salePrice = ', salePrice)
 
 ## DOM
 
+* it is a tree-like representation of the HTML document
+
+* every time it encounters an element(ex: `div`, `p` etc...), it creates a **DOM node** from its respective class(ex: `HTMLDivElement`)
+
 ### Element.closest(_selectorString_)
 
 * search through element's ancestors until it finds a node that matches the provided _selectorString_
