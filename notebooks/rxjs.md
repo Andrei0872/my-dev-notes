@@ -104,6 +104,8 @@ By default, a **high-order observable** will emit values are that the **streams*
 
 ## Subject
 
+- is a **hot** observable: the new observers **won't** be able to get the previous values if they do not subscribe at the right time
+
 - is **multicast**: the observable execution is **shared** among __multiple__ subscribers
 
    <details>
@@ -122,7 +124,7 @@ By default, a **high-order observable** will emit values are that the **streams*
    ```
    </details>
 
-- when **subscribing** to a subject, it **registers** the given Observable in a __list of Observers__ 
+- when **subscribing** to a subject, it **registers** the given Observer in a __list of Observers__ 
 
 - can be used as __data producer__ and as __data consumer__: using subjects as a data consumer, you can **convert Observables from unicast to multicast**
 
