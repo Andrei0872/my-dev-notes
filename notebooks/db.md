@@ -92,6 +92,10 @@ explain select * from index_demo_2 where phone_no = '7111';
 
 * **dividing** data into multiple collections **with references** between these **collections**
 
+* a **collection** must live in **only** one place
+
+* data **retrieval** is **not the fastest**(comparing to a *denomarlized* data) 
+
 * efficient data representation
 
 <details>
@@ -134,6 +138,8 @@ db.accountsPref.findOne({_id: id})
 * will make data **reading efficient**
 
 * one **less query** to get the **information**
+
+* a **collection** lives in **multiple** places
 
 * takes up **more space** and is more **difficult** to keep in **sync**
 
