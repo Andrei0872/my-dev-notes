@@ -16,17 +16,31 @@
 ### Rendering
 [Source](https://dev.to/devdevcharlie/things-nobody-ever-taught-me-about-css-2lhj)
 
-- layout:  
-    * calculation of how much space an element takes when it is on screen
-    * modifying a layout prop(width, height) - the browser will re-render the page
-- paint:  
-    * filling pixels for every visual part of the elements (colors, borders etc..)
-    * often the most expensive part of the pipeline
-- composite:
-    * browser need to draw layers in the correct order
-    * some elements might overlap each other, so it is important to make sure elements appear in the order intended
+After the **Render-tree** has been constructed from **DOM + CSSOM**, the browser starts printing elements on the screen.
 
+#### layout
+* calculation of how much space an element takes when it is on screen
+* calculation of element's position
+* modifying a layout prop(width, height) - the browser will re-render the page
+* also called **reflow**
+* occurs on when you
+    * **insert/remove/update** a DOM element
+    * **modify content** on page(text in input box)
+    * **animate** a DOM element
+    * change **CSS style**
+    * change **className**
+    * resize the window
+    * scroll
 * `opacity` & `transform`: do **not** cause the browser to repaint or reflow the page
+
+#### paint  
+* filling pixels for every visual part of the elements (colors, borders etc..)
+* often the most expensive part of the pipeline
+
+#### composite
+* browser need to draw layers in the correct order
+* some elements might overlap each other, so it is important to make sure elements appear in the order intended
+
 
 ### `@import` vs `<link>`
 
