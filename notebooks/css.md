@@ -36,8 +36,9 @@ After the **Render-tree** has been constructed from **DOM + CSSOM**, the browser
 #### paint  
 * filling pixels for every visual part of the elements (colors, borders etc..)
 * often the most expensive part of the pipeline
+* here occurs the process called **rasterization**: where the browser **fills** the **pixels** inside each layer(`layer` - created for each Render-Tree element, as they will change look, position, geometry)
 
-#### composite
+#### compositing
 * browser need to draw layers in the correct order
 * some elements might overlap each other, so it is important to make sure elements appear in the order intended
 
