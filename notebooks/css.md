@@ -18,6 +18,8 @@
 
 After the **Render-tree** has been constructed from **DOM + CSSOM**, the browser starts printing elements on the screen.
 
+Changes in **one phase** will have **consequences** on the **following phases**.
+
 #### layout
 * calculation of how much space an element takes when it is on screen
 * calculation of element's position
@@ -32,6 +34,7 @@ After the **Render-tree** has been constructed from **DOM + CSSOM**, the browser
     * resize the window
     * scroll
 * `opacity` & `transform`: do **not** cause the browser to repaint or reflow the page
+* the **most expensive** to animate
 
 #### paint  
 * filling pixels for every visual part of the elements (colors, borders etc..)
@@ -41,6 +44,7 @@ After the **Render-tree** has been constructed from **DOM + CSSOM**, the browser
 #### compositing
 * browser need to draw layers in the correct order
 * some elements might overlap each other, so it is important to make sure elements appear in the order intended
+* the **least expensive** to animate(`transform`, `opacity`)
 
 
 ### `@import` vs `<link>`
