@@ -29,6 +29,10 @@ Changes in **one phase** will have **consequences** on the **following phases**.
 
 * `window.onload` - emitted when external stylesheets and files(`images`, `videos` etc...) are downloaded and ready
 
+* **CSS** is a **render-blocking** resource because **subsequent** rules my **override** the **previous** ones
+
+* `DOM` is **incremental**, `CSSOM` is not, because it gets constructed as CSS is parsed
+
 #### layout
 * calculation of how much space an element takes when it is on screen
 * calculation of element's position
