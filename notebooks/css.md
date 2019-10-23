@@ -13,6 +13,8 @@
 
 ## Knowledge
 
+* `speculative parsing`: **fetch** other needed **resources** while a **script** is being **executed**
+
 ### Rendering
 [Article 1](https://dev.to/devdevcharlie/things-nobody-ever-taught-me-about-css-2lhj)  
 [Article 2](https://itnext.io/how-the-browser-renders-a-web-page-dom-cssom-and-rendering-df10531c9969)
