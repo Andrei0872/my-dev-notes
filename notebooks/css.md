@@ -23,7 +23,8 @@ Changes in **one phase** will have **consequences** on the **following phases**.
 
 * when `<link rel="stylesheet">`(load external `css` file) is encountered: the browser will send a request to fetch the `.css` file **asynchronously** and **continue to parse** the **other HTML elements** below
 
-* when `<script src="">`(load external `js` file) is encountered: the **DOM construction** is stopped **until** the **js file** is **downloaded and parsed**
+* when `<script src="">`(load external `js` file) is encountered: the **DOM construction** is stopped **until** the **js file** is **downloaded and parsed**;  
+this is because the downloaded script might **alter** the DOM(by `creating`/`removing` DOM elements, by using `document.write()`)
 
 * `DOMContentLoaded` - emitted when both the **DOM** and **CSSOM** are constructed
 
