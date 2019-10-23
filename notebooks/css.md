@@ -19,6 +19,8 @@
 
 After the **Render-tree** has been constructed from **DOM + CSSOM**, the browser starts printing elements on the screen.
 
+* CSS does **not block** DOM construction, it **blocks rendering**: you won't be able to see anything on the page until the browser has **both DOM and CSSSOM**
+
 Changes in **one phase** will have **consequences** on the **following phases**.
 
 * when `<link rel="stylesheet">`(load external `css` file) is encountered: the browser will send a request to fetch the `.css` file **asynchronously** and **continue to parse** the **other HTML elements** below
