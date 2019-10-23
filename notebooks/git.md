@@ -69,6 +69,12 @@
 
 * has a **checksum**: the ID Git uses to refer to it
 
+#### merge commit
+
+* **automatically** created by Git
+
+* does **not** wrap related changes, its purpose is to connect 2 branches; as a result, it has 2 parents
+
 ### fast-forward
 
 * when you **merge** a **topic branch** that is **ahead** of your **current** checked-out branch
