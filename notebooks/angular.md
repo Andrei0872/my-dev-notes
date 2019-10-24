@@ -3,6 +3,7 @@
 * [Concepts](#concepts)
 * [Interceptors](#interceptors)
 * [Directives](#directives)
+    * [Structural directives](#structural-directives)
 * [Forms](#forms)
 
 ## Concepts
@@ -92,6 +93,55 @@ Assuming a request will be intercepted by these interceptors:
 ## Directives
 
 * you can add an event on an element by attaching a directive to it and using `HostListener()` on the directive
+
+### Structural directives
+
+* alter DOM's structure(`removing`/`adding`/`manipulating` elements)
+
+<details>
+<summary>Looping through data in template</summary>
+<br>
+
+
+```html
+<ng-template 
+    ngFor 
+    let-user 
+    let-index="index" 
+    [ngForOf]="users$ | async"
+>
+  <p>{{ user.name + ' ' + index }}</p>
+</ng-template>
+<!-- 
+Will yield: 
+    <p>USERNAME</p>
+-->
+
+<!-- --------------------------- -->
+
+<ng-container *ngFor="let user of users$ | async">
+  <p>{{ user.name }}</p>
+</ng-container>
+<!-- 
+Will yield:
+    <! ---- >
+    <p>USERNAME</p>
+ -->
+
+<!-- Here is why a comment is also rendered above its `p` tag -->
+<!-- The above snippet would be translated into this(ignore the `index` variable) -->
+<ng-template 
+    ngFor 
+    let-user 
+    let-index="index"
+    [ngForOf]="users$ | async"
+>
+  <ng-container>
+    <p>{{ user.name + ' ' + index }}</p>
+  </ng-container>
+</ng-template>
+```
+</details>
 
 ---
 
