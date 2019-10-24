@@ -1,5 +1,7 @@
 # VS Code Notebook
 
+[_Terminal Themes_](https://glitchbone.github.io/vscode-base16-term/#/)
+
 * [Shortcuts](#shortcuts)
     * [Go to previous mouse cursor](#go-to-previous-mouse-cursor)
 * [Keybindings](#keybindings)
