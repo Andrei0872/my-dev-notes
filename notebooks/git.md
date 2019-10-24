@@ -371,7 +371,16 @@ _assuming the current branch is `master`_
     ```
 ### git grep
 
+* list lines that match a certain pattern
+
+#### Options
+
 * `-o` - only match: `git grep -o bisect`
+
+* `-c`: the number of matching lines
+
+* `-n`: return the row numbers(with some context)
+
 
 ### git rebase
 
