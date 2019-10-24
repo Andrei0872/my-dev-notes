@@ -570,7 +570,7 @@ clicks
 
 * similar to `throttleTime`, but it will get the **last silenced value**
 
-* when a value is emitted, it is ignored and ignores the next ones for `durations` ms and then, when it is the case, it emits the most recent **ignored** value
+* when a value is emitted, **it is ignored and ignores the next ones** for `durations` ms and then, when it is the case, it emits the most recent **ignored** value
 
 <details>
 <summary>Example</summary>
@@ -595,7 +595,7 @@ merge(
   of(1), // Ignored;
   of(2), // Last ignored
   of(3).pipe(delay(400)), // New value, ignored 3 and any value that will be emitted in the range [400, 400 + 300]!;
-  of(4).pipe(delay(800)), // New value!(outside of [400, 400 + 300]); will be that last ignored as `6` will appear outside of [800, 800 + 1100]
+  of(4).pipe(delay(800)), // New value!(outside of [400, 400 + 300]); will be that last ignored as `6` will appear outside of [800, 800 + 300]
   of(5).pipe(delay(600)), // Last ignored in the range [400, 400 + 300]
   of(6).pipe(delay(1200)), // If this was missing, `4` wouldn't be printed
 )
