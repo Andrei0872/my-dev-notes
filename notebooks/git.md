@@ -24,6 +24,7 @@
     * [Compare the checked out branch to another branch](#compare-the-checked-out-branch-to-another-branch)
     * [Get current branch name](#get-current-branch-name)
     * [Clone a single branch](#clone-a-single-branch)
+    * [Use `git add -p` on untracked files](#use-git-add--p`-on-untracked-files)
 
 * [Commands](#commands)
     * [git diff](#git-diff)
@@ -250,6 +251,16 @@ git branch | grep \* | cut -d ' ' -f2
 
 ```bash
 git clone -b <branch_name> --single-branch <git://sub.domain.com/repo.git>
+```
+
+### Use `git add -p` on untracked files
+
+```bash
+
+# Will simply add the empty file to index
+git add -N
+
+git add -p
 ```
 
 ---
