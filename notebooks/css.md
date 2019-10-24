@@ -3,6 +3,7 @@
 
 * [Knowledge](#knowledge)  
 * [Properties](#properties)
+    * [backdrop-filter](#backdrop-filter)
 * [Tricks](#tricks)
     * [Hover Media Query](#hover-media-query)
     * [prefers-reduced-motion](#prefers-reduced-motion)
@@ -117,6 +118,10 @@ this is because the downloaded script might **alter** the DOM(by `creating`/`rem
     * takes **all the available space** on axis **without wasting** it
 
 * **fit-content**: `min(maxSize content, minSize content)`
+
+### `backdrop-filter`
+
+* for example, you can **set blur behind** the element
 
 ---
 
