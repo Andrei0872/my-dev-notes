@@ -10,6 +10,8 @@
 * [BEM](#bem)
 * [Cascade and Specificity](#cascade-and-specificity)
 * [CSS Grid](#css-grid)
+* [SCSS](#scss)
+    * [mixin vs placeholder](#mixin-vs-placeholder)
 
 ## Knowledge
 
@@ -278,3 +280,73 @@ input:not(:placeholder-shown) {
 * **auto-fit**: the columns will **stretch** to fit into the row
 
 * **auto-fill**: an **empty column** is **added** to fill the remaining space
+
+## SCSS
+
+### mixin vs placeholder
+
+* **mixin**: will apply the same set of styles to each selector **individually**, **even if** **multiple selectors** use the **exact same set of styles**
+
+* **placeholder**: will **enumerate** multiple **selectors** for the **same styles**
+
+<details>
+<summary>Comparison</summary>
+<br>
+
+
+```css
+@mixin m () {
+ color: red;
+ height: 100%;
+}
+
+%a-placeholder {
+ color: blue;
+ width: 100%;
+}
+
+.a1 {
+ @include m();
+}
+
+.a2 {
+ @include m();
+ font-size: 12rem;
+ background-color: green;
+}
+
+.a3 {
+ @extend %a-placeholder;
+}
+
+.a4 {
+ @extend %a-placeholder;
+ font-style: italic;
+ font-weight: bold;
+}
+
+/* compiled css */
+
+.a1 {
+ color: red;
+ height: 100%;
+}
+
+.a2 {
+ color: red;
+ height: 100%;
+ font-size: 12rem;
+ background-color: green;
+}
+
+.a3, .a4 {
+ color: blue;
+ width: 100%;
+}
+
+.a4 {
+ font-style: italic;
+ font-weight: bold;
+}
+```
+</details>
