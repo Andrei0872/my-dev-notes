@@ -92,6 +92,10 @@ Assuming a request will be intercepted by these interceptors:
 
 ## Directives
 
+* unlike components, directives do **not require a view**
+
+* can add **custom behavior** to a DOM element or component
+
 * you can add an event on an element by attaching a directive to it and using `HostListener()` on the directive
 
 ### Structural directives
