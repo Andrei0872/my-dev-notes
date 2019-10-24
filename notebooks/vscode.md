@@ -4,6 +4,7 @@
 
 * [Shortcuts](#shortcuts)
     * [Go to previous mouse cursor](#go-to-previous-mouse-cursor)
+    * [Trim whitespace from selection](#trim-whitespace-from-selection)
 * [Keybindings](#keybindings)
 * [Debugging](#debugging)
     * [Debugging TS](#debugging-ts)
@@ -21,6 +22,12 @@ CTRL + ALT + -
 CTRL + SHIFT + -
 ```
 
+### Trim whitespace from selection
+
+```bash
+CTRL + K + CTRL + X
+```
+
 ---
 
 ## Keybindings
@@ -34,7 +41,7 @@ CTRL + SHIFT + -
 [
     {
         "key": "ctrl+shift+5",
-        "command": "editor.emmet.action.matchTag" 
+        "command": "editor.emmet.action.matchTag"
     },
     {
         "key": "ctrl+`",
@@ -59,7 +66,7 @@ CTRL + SHIFT + -
     {
         "key": "ctrl+shift+2",
         "command": "workbench.action.terminal.focusNextPane"
-    }, 
+    },
     {
         "key": "ctrl+shift+4",
         "command": "editor.action.addSelectionToNextFindMatch"
