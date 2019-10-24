@@ -85,6 +85,10 @@
 
 * a copy of the remote, the only difference is that you do not share it with anyone(it also **tracks** several **remotes**)
 
+### patch file
+
+* a file that **contains changes** that can be **applied** to any **branch**, in any order
+
 ---
 
 ## Aliases
