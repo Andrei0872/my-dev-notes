@@ -11,6 +11,7 @@
    - [race](#race)
    - [expand](#expand)
    - [auditTime](#auditTime)
+   - [catchError](#catchError)
 - [Tricks](#tricks)
 - [Custom Operators](#custom-operators)
   - [Understanding custom operators](#understanding-custom-operators)
@@ -601,6 +602,32 @@ merge(
   .pipe(/* throttleTime */auditTime(300))
   .subscribe(console.log) // 2 5 4
 
+```
+</details>
+
+### `catchError`
+
+* you can get the **source observable**(second parameter) and you can **return** it in order to **re-subscribe**
+
+<details>
+<summary>Example</summary>
+<br>
+
+
+```typescript
+  let cnt = 0;
+
+  concat(of('OK!'), throwError('foo'))
+    .pipe(
+      tap(v => console.log('emitted value!', v)),
+      catchError((err , $src) => {
+        console.log('performing logic...', err)
+
+        // Beware! This is a closure...
+        return (++cnt) <= 3 ? $src.pipe(map((v) => 'hmm!' + '*'.repeat(cnt) + v)) : of(`err caught: ${err}`);
+      })
+    )
+    .subscribe(console.warn)
 ```
 </details>
 
