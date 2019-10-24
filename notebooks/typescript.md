@@ -83,6 +83,10 @@ const v2 = o.name; // Type: string
 const v3 = o.name as 'andrei'; // Type: 'andrei'
 ```
 
+### index signature
+
+* defines how an type can be extended
+
 ---
 
 ## Types
