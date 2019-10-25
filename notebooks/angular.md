@@ -35,7 +35,7 @@
 
 * **false**
     * will ensure query matches that are dependent on binding resolution(`*ngIf` etc...)
-    * accessible in `ngAfterViewChecked()` or `ngAfterContentChecked()`
+    * accessible in `ngAfterViewChecked()` | `ngAfterContentChecked()` | `ngAfterViewInit()` | `ngAfterContentInit()`
 
 ### Pure pipes
 
