@@ -4,6 +4,7 @@
 * [Interceptors](#interceptors)
 * [Directives](#directives)
     * [Structural directives](#structural-directives)
+* [Dependency Injection](#dependency-injection)
 * [Forms](#forms)
 * [Cool Stuff](#cool-stuff)
     * [`ngProjectAs`](#ngProjectAs)
@@ -147,6 +148,78 @@ Will yield:
 #### `*ngFor`
 
 * accepts any object that **implements** the `Iterable` inteface(exept for `Map`, which returns entries as `[k, v]`) 
+
+---
+
+## Dependency Injection
+
+* if a **directive** `X` **comes with providers**, any directive that will inject `X`, will also get access to `X`'s providers
+
+* if an element/component uses a directive `X`(which comes with providers) and directive `Y`, `Y` will be able to inject `X`'s providers;  
+in this case, the providers will be singletons: **one singleton per element/component**
+
+<details>
+<summary>Example</summary>
+<br>
+
+
+```typescript
+class FooDep {
+  constructor () { console.log('this is foo!') }
+}
+
+@Directive({
+  selector: '[s1]',
+  providers: [FooDep],
+})
+export class Dir1 {
+  constructor (private fooDep: FooDep) {
+    console.log('[DIR 1]: foo deep');
+  }
+}
+
+@Directive({
+  selector: '[s2]',
+})
+export class Dir2 {
+  constructor (private fooDep: FooDep) {
+    console.log('[DIR 2]: foo deep');
+  }
+}
+
+@Directive({
+  selector: '[s3]',
+})
+export class Dir3 {
+  constructor (private fooDep: FooDep) {
+    console.log('[DIR 3]: foo deep');
+  }
+}
+
+@Component({
+  selector: 'app-bar',
+  template: `
+    bar!
+  `,
+})
+export class BarComponent { }
+
+@Component({
+  selector: 'my-app',
+  template: `
+    <app-bar s1 s2 s3></app-bar>
+  `,
+})
+export class AppComponent { }
+/* 
+--->
+this is foo!
+[DIR 1]: foo deep
+[DIR 2]: foo deep
+[DIR 3]: foo deep
+*/
+```
+</details>
 
 ---
 
