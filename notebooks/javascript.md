@@ -265,6 +265,8 @@ console.log(Object.getOwnPropertyDescriptors(target2, 'foo'))
 
 #### `bind()`
 
+* you can only **bind** to a function **once**; once the value is bound, **subsequent** calls to bind **won't change** the `this` context
+
 <details>
 <summary>Example</summary>
 <br>
