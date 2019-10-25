@@ -2,6 +2,7 @@
 
 ## Notebooks
 
+* [My Thoughts](https://github.com/Andrei0872/my-dev-notes/blob/master/notebooks/my-thoughts.md)
 * [Bash Scripting](https://github.com/Andrei0872/my-dev-notes/blob/master/notebooks/bash-scripting.md)
 * [CSS](https://github.com/Andrei0872/my-dev-notes/blob/master/notebooks/css.md)
 * [Database](https://github.com/Andrei0872/my-dev-notes/blob/master/notebooks/db.md)
