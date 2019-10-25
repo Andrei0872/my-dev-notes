@@ -9,11 +9,13 @@
 
 ### Container
 
-* a **unit of software**(**code**, **libraries**, **services**, **dependencies** - all **packaged up** together)
+* an **isolated unit of software**(**code**, **libraries**, **services**, **dependencies**, **processes** - all **packaged up** together)
 
 * virtualizes the OS
 
 * is a **running instance** of an **image**
+
+* more resources are shared between containers
 
 ### VM
 
