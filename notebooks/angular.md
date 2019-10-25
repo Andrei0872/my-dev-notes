@@ -144,6 +144,10 @@ Will yield:
 ```
 </details>
 
+#### `*ngFor`
+
+* accepts any object that **implements** the `Iterable` inteface(exept for `Map`, which returns entries as `[k, v]`) 
+
 ---
 
 ## Forms
