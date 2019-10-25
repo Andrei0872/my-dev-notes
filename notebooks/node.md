@@ -5,6 +5,8 @@
 - [Event Emitter](#event-emitter)
 - [Streams](#streams)
 - [package.json](#package-json)
+    - [Accessing fields inside `package.json`](#accessing-fields-inside-`package.json`)
+    - [Restrict to a certain version of `npm` / `yarn`](#restrict-to-a-certain-version-of-npm-/-yarn)
 
 ## Event Loop
 
@@ -499,4 +501,14 @@ const server = http.createServer((req, resp) => {
     "test": "echo $npm_package_config_me"
     },
 } // npm run test: `andrei`
+```
+
+### Restrict to a certain version of `npm` / `yarn`
+
+```json
+{
+    "engines": {
+        "yarn": ">=1.17<=1.18"
+    }
+}
 ```
