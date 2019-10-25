@@ -3,6 +3,7 @@
 - [Concepts](#concepts)
     * [Debouncing and Throttling](#debouncing-and-throttling)
 - [Objects and Classes](#objects-and-classes)
+    * [Extending Objects](#extending-objects)
 - [Functions](#functions)
 - [Asynchronous Programming](#asynchronous-programming)
 - [Iterables and Generators](#iterables-and-generators)
@@ -257,7 +258,7 @@ console.log(Object.getOwnPropertyDescriptors(target2, 'foo'))
 
 * **explicit**: we are **explictly** passing in a `this` context
 
-### Default binding
+#### Default binding
 
 * `this` refers to the **global context** wherever the functions is invoked
 
@@ -360,7 +361,87 @@ console.log({ ...car2 }) // { type: 'Seat Leon' }​​​​​
 ```
 </details>
 
----
+### Extending Objects
+
+* `Object.isExtensible(o)`: verify whether you can add more properties to the object or not
+
+* `Object.preventExtensions(o)`
+    * **cannot add** new properties to the object
+    * **can remove** properties
+    * **can modify** properties
+
+    <details>
+    <summary>Example</summary>
+    <br>
+    
+    
+    ```typescript
+    const o = { name: 'andrei', age: 18 }
+    Object.preventExtensions(o)
+    
+    o.name = "ANDREI"
+    console.log(o) // {name: "ANDREI", age: 18}
+    
+    delete o.age
+    console.log(o) // {name: "ANDREI"}
+    
+    o.city = "targoviste"
+    console.log(o) // {name: "ANDREI"}
+    ```
+    </details>
+
+* `Object.freeze(o)`
+    * **cannot add** properties
+    * **cannot remove** properties
+    * **cannot modify** properties
+
+    <details>
+    <summary>Example</summary>
+    <br>
+    
+    
+    ```typescript
+    const o = { name: 'andrei', age: 18 }
+    Object.freeze(o)
+    Object.isFrozen(o) // true
+    
+    o.name = "ANDREI"
+    o // {name: "andrei", age: 18}
+    
+    delete o.age 
+    o // {name: "andrei", age: 18}
+    
+    o.city = 'targoviste'
+    o // {name: "andrei", age: 18}
+    ```
+    </details>
+
+* `Object.seal(o)`
+    * **cannot add** properties
+    * **cannot delete** properties
+    * **can modify** existing properties
+
+    <details>
+    <summary>Example</summary>
+    <br>
+    
+    
+    ```typescript
+    const o = { name: 'andrei', age: 18 }
+    Object.seal(o)
+    Object.isSealed(o) // true
+
+    o.name = "ANDREI"
+    o // {name: "ANDREI", age: 18}
+    
+    delete o.age
+    o // {name: "ANDREI", age: 18}
+    
+    o.city = 'targoviste'
+    o // {name: "ANDREI", age: 18}
+    ```
+    </details>
+--- 
 
 ## Functions
 
