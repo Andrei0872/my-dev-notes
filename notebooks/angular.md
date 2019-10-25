@@ -5,6 +5,9 @@
 * [Directives](#directives)
     * [Structural directives](#structural-directives)
 * [Forms](#forms)
+* [Cool Stuff](#cool-stuff)
+    * [`ngProjectAs`](#ngProjectAs)
+
 
 ## Concepts
 
@@ -33,12 +36,6 @@
 * **false**
     * will ensure query matches that are dependent on binding resolution(`*ngIf` etc...)
     * accessible in `ngAfterViewChecked()` or `ngAfterContentChecked()`
-
-### `ngProjectAs`
-
-[Example](https://stackoverflow.com/questions/57820385/how-can-i-get-an-ng-content-select-filter-to-work-with-projected-template-conten/57822471#57822471) :sparkles:
-
-* useful when you want to project an `ng-container` with a certain selector
 
 ### Pure pipes
 
@@ -182,3 +179,41 @@ Will yield:
     }
     ```
     </details>
+
+---
+
+## Cool Stuff
+
+### `ngProjectAs`
+
+[A use case for `ngProjectAs`](https://dev.to/anduser96/angular-a-use-case-for-ngprojectas-pnj)  
+
+[SO post](https://stackoverflow.com/questions/57820385/how-can-i-get-an-ng-content-select-filter-to-work-with-projected-template-conten/57822471#57822471)
+
+* can be used when  you want to **project** an `ng-container` with a certain selector
+
+<details>
+    <summary>Example</summary>
+    
+<h3>test.component.html</h3>
+
+```html
+<ng-content select="[test]"></ng-content>
+```
+
+<h3>consumer.component.html</h3>
+
+```html
+<app-test>
+  <ng-container 
+    *ngTemplateOutlet="testTemplate; context: { $implicit: 'andrei' }" 
+    ngProjectAs="[test]"
+  ></ng-container>
+</app-test>
+
+<ng-template #testTemplate let-implicitVar>
+  <p>this is test!</p>
+  <b>{{ implicitVar }}</b>
+</ng-template>
+```
+</details>
