@@ -3,6 +3,7 @@
 * [Concepts](#concepts)
     * [Container](#container)
     * [VM](#vm)
+* [Useful Commands](#useful-commands)
 
 ## Concepts
 
@@ -21,3 +22,13 @@
 ### Image 
 
 * shareable chunk of functionality (server, db engine, Linux distribution)
+
+---
+
+### Useful Commands
+
+#### List names of all containers
+
+```bash
+docker ps -a --format="{{.Names}}"
+```
