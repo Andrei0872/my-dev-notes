@@ -25,6 +25,10 @@
 
 * shareable chunk of functionality (server, db engine, Linux distribution)
 
+### OS kernel
+
+- **interacts** with the **hardware**
+
 ---
 
 ### Useful Commands
