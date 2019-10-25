@@ -10,6 +10,7 @@
 - [Symbol](#symbol)
 - [Typed Arrays](#typed-arrays)
 - [:sparkles:Cool Stuff :sparkles:](#cool-stuff)
+    - [Replacing Strings](#replacing-strings)
 - [DOM](#dom)
     - [Script tags](#script-tags)
 
@@ -1230,6 +1231,34 @@ data.discount = 7.5;
 console.log('salePrice = ', salePrice)
 ```
 </details>
+
+### Replacing strings
+
+`String.prototype.replace`
+
+* `$&` - the **current** matched string
+
+```typescript
+const s = 'my name is andrei';
+
+s.replace('name', '$& [$&]'); // "my name [name] is andrei"
+```
+
+* ` $` ` - the string that **precedes** the current match
+
+```typescript
+const s = 'my name is andrei';
+
+s.replace('name', '$`[$`]'); // "my my [my ] is andrei"
+```
+
+* `$'` - the string that **follows** the current match
+
+```typescript
+const s = 'my name is andrei';
+
+s.replace('name', "$' *$'*"); // "my  is andrei * is andrei* is andrei"
+```
 
 ---
 
