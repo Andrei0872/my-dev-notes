@@ -14,6 +14,7 @@
     - [Replacing Strings](#replacing-strings)
 - [DOM](#dom)
     - [Script tags](#script-tags)
+- [Closures](#closures)
 
 ## Concepts
 
@@ -1382,3 +1383,25 @@ s.replace('name', "$' *$'*"); // "my  is andrei * is andrei* is andrei"
 #### `async`
 
 * **download** the script **without blocking**, but **execute as soon as possible**
+
+---
+
+## Closures
+
+* when a value is **captured inside a closure**, the function **captures** the **variable reference**, **not the value**
+
+    <details>
+    <summary>Example</summary>
+    <br>
+
+
+    ```typescript
+    function foo () {
+        return name;
+    }
+
+    let name = 'andrei';
+
+    console.log(foo()) // 'andrei'
+    ```
+    </details>
