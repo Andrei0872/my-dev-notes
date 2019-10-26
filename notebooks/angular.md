@@ -1,6 +1,7 @@
 # Angular Notebook
 
 * [Concepts](#concepts)
+  * [View](#view)
 * [Interceptors](#interceptors)
 * [Directives](#directives)
     * [Structural directives](#structural-directives)
@@ -43,6 +44,14 @@
 * triggered on **pure** changes - changes to primitive data types(number, string, boolean etc...) or a **changed object reference**
 
 ---
+
+### View
+
+* an **abstraction** that **binds** the **component class** to a **DOM** element
+
+#### view container
+
+* **holds the views** and **provides** an **API** to **manipulate** these views
 
 ## Interceptors
 
