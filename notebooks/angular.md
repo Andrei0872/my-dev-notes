@@ -5,6 +5,7 @@
 * [Interceptors](#interceptors)
 * [Directives](#directives)
     * [Structural directives](#structural-directives)
+    * [`ngIf` with async pipe](#ngIf-with-async-pipe)
 * [Dependency Injection](#dependency-injection)
 * [Forms](#forms)
 * [Cool Stuff](#cool-stuff)
@@ -158,6 +159,33 @@ Will yield:
 
 * accepts any object that **implements** the `Iterable` inteface(exept for `Map`, which returns entries as `[k, v]`) 
 
+### `ngIf` with async pipe
+
+<details>
+<summary>Example</summary>
+<br>
+
+
+```html
+<ng-container *ngIf="{
+  users: users$ | async,
+  todos: todos$ | async
+} as foo">
+  <ng-template ngFor let-user let-index="index" [ngForOf]="foo.users" >
+    <ng-container>
+      <p>{{ user.name + ' ' + index }}</p>
+    </ng-container>
+  </ng-template>
+
+
+  <ng-template ngFor let-todo let-index="index" [ngForOf]="foo.todos" >
+    <ng-container>
+      <p>{{ todo.title }}</p>
+    </ng-container>
+  </ng-template>
+</ng-container>
+```
+</details>
 ---
 
 ## Dependency Injection
