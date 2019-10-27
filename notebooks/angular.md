@@ -10,6 +10,7 @@
 * [Forms](#forms)
 * [Cool Stuff](#cool-stuff)
     * [`ngProjectAs`](#ngProjectAs)
+    * [Load module as a child route](#load-module-as-a-child-route)
 
 
 ## Concepts
@@ -329,5 +330,25 @@ this is foo!
   <p>this is test!</p>
   <b>{{ implicitVar }}</b>
 </ng-template>
+```
+</details>
+
+### Load module as a child route
+
+<details>
+<summary>Example</summary>
+<br>
+
+
+```typescript
+{
+  path: '...'
+  children: [
+    {
+      path: 'path-to-module',
+      loadChildren: () => YourEagerlyLoadedModule
+    }
+  ]
+}
 ```
 </details>
