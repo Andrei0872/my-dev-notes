@@ -4,6 +4,7 @@
   * [naked parameters](#naked-parameters)
   * [Discriminated Unions](#discriminated-unions)
   * [Singleton Types](#singleton-types)
+  * [Predicate functions](#predicate-functions)
 * [Types](#types)
     * [Create a condition-based subset of types](#create-a-condition-based-subset-of-types)
     * [Type Assignments](#type-assignments)
@@ -86,6 +87,45 @@ const v3 = o.name as 'andrei'; // Type: 'andrei'
 ### index signature
 
 * defines how an type can be extended
+
+### Predicate functions
+
+* get the **right type** at **runtime**
+
+<details>
+<summary>Example</summary>
+<br>
+
+
+```typescript
+type Dog = {
+  breed: string;
+  wof: VoidFunction;
+}
+
+type Cat = {
+  lives: number;
+  meow: VoidFunction;
+}
+
+type Animal = Dog | Cat;
+
+function isDog(p: Animal): p is Dog {
+  // Leveraging the power of type guards!
+  return 'breed' in p;
+}
+
+let animal: Animal;
+
+if (isDog(animal)) {
+  console.log(animal.wof)
+  console.log(animal.breed)
+} else {
+  console.log(animal.meow)
+  console.log(animal.lives)
+}
+```
+</details>
 
 ---
 
