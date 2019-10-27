@@ -1,7 +1,8 @@
 # RxJS Notebook
 
 - [Concepts](#concepts)  
-- [Observable](#observable) 
+- [Observable](#observable)
+  - [Observable vs Promise](#observable-vs-Promise)
 - [Subject](#subject)
 - [Operators](#operators)
    - [Buffering](#buffering)
@@ -35,6 +36,8 @@
 #### `cold` observable
 
 - starts **emitting** values when it has **at least one observer**
+
+#### Observable vs Promise
 
 ### Observer
 
@@ -101,9 +104,26 @@ By default, a **high-order observable** will emit values are that the **streams*
 
 **After** flattening, the **outer** observable will **emit** the **inner observable's events**, **instead of** emitting the **inner observable itself**.
 
+## Observable vs Promise
+
+### Observable
+
+* 0-N values
+* sync or async
+* lazy(`cold`) or eager(`hot`)
+* cancellable or non cancellable
+* unicast or multicast
+
+### Promise
+
+* 1 value
+* eager
+* async
+* multicast only
+
 ---
 
-## Subject
+# Subject
 
 - is a **hot** observable: the new observers **won't** be able to get the previous values if they do not subscribe at the right time
 
