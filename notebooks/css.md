@@ -11,6 +11,7 @@
 * [BEM](#bem)
 * [Cascade and Specificity](#cascade-and-specificity)
 * [CSS Grid](#css-grid)
+    * [`fr` and `auto`](#fr-and-auto)
 * [SCSS](#scss)
     * [mixin vs placeholder](#mixin-vs-placeholder)
 
@@ -285,6 +286,43 @@ input:not(:placeholder-shown) {
 * **auto-fit**: the columns will **stretch** to fit into the row
 
 * **auto-fill**: an **empty column** is **added** to fill the remaining space
+
+### `fr` and `auto`
+
+[Resource](https://www.rawkblog.com/2018/03/css-grid-understanding-grid-gap-and-fr-vs-auto-units/)
+
+* both have the minimun length of their content: if **space** is **avaiable**, they will **take it**, **otherwise**, they will **shrink** to their **content width**
+
+* when used **together**, `auto` will shrink down to the **min-width** of **its content** and `fr` will take the **remaining space**
+
+    <details>
+    <summary>Sticky footers</summary>
+
+    ```css
+    body {
+        height: 100vh;
+        display: grid;
+        grid-template-rows: auto 1fr auto;
+    }
+    ```
+
+    ```html
+    <body> 
+        <header> <!-- auto-sizes to natural height -->
+        <main> <!-- 1fr takes up remaining 100vh of screen height -->
+        <footer> <!-- auto-sizes to natural height -->
+    </body>
+    ```
+    </details>
+
+
+#### `auto`
+
+* in declarations **without** `fr` units, `auto` will operate identically to `1fr`
+
+#### `fr`
+
+* the `fr` values will be **divided between** the **space** that's **left after** the **other values** have **taken their space**
 
 ## SCSS
 
