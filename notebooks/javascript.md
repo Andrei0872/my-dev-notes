@@ -1362,9 +1362,15 @@ s.replace('name', "$' *$'*"); // "my  is andrei * is andrei* is andrei"
 
 * the size of the allocation is proportional to the size of the DOM change
 
+* the framework does **not** interpret the component 
+
+* the component **references intructions**; as a result, if some instructions are not referenced, they will not be included in the bundle, since we would know this at **compile time**
+
 ### Virtual DOM
 
-* creates a new tree from scratch on re-render
+* creates a **new tree** from scratch on **re-render**
+
+* requires an **interpreter**; as a result, we **can't know** what is needed and is not **at compile time**, so we have to **ship the whole thing** to the browser
 
 ### Properties
 
