@@ -1360,6 +1360,8 @@ s.replace('name', "$' *$'*"); // "my  is andrei * is andrei* is andrei"
 
 * only **allocate** memory when a **node** gets **removed or added**
 
+* the size of the allocation is proportional to the size of the DOM change
+
 ### Virtual DOM
 
 * creates a new tree from scratch on re-render
