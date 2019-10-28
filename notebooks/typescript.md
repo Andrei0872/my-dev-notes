@@ -12,6 +12,7 @@
     * [infer](#infer)
     * [as const](#as-const)
     * [never](#never)
+    * [Merge Types](#merge-types)
 
 ## Knowledge
 
@@ -393,5 +394,43 @@ function func (u: Union) {
     }
   }
 }
+```
+</details>
+
+### Merge Types
+
+<details>
+  <summary>Example</summary>
+
+  ```typescript
+type Omit<T, U extends keyof T> = Pick<T, Exclude<keyof T, U>>;
+
+type Merge<M, N> = Pick<M, Exclude<keyof M, keyof N>> & N;
+
+type Merge<M, N> = Omit<M, Extract<keyof M, keyof N>> & N;
+
+interface Person {
+  name: string;
+  age: number;
+}
+
+interface Random {
+  a: string;
+  b: number;
+  c: boolean;
+  p: Person;
+}
+
+type Merge<M, N> = Omit<M, Extract<keyof M, keyof N>> & N
+
+type Random2 = Merge<Random, { b: boolean, p: Merge<Person, { age: string }> }>;
+const r2: Random2 = {
+  a: 'str',
+  b: true,
+  c: true,
+  p: { name: 'name', age: '123' }
+}
+
+
 ```
 </details>
