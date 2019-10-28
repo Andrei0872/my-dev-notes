@@ -5,6 +5,7 @@
   * [Discriminated Unions](#discriminated-unions)
   * [Singleton Types](#singleton-types)
   * [Predicate functions](#predicate-functions)
+  * [Union and Intersection types](#union-and-intersection-types)
 * [Types](#types)
     * [Create a condition-based subset of types](#create-a-condition-based-subset-of-types)
     * [Type Assignments](#type-assignments)
@@ -125,6 +126,24 @@ if (isDog(animal)) {
   console.log(animal.lives)
 }
 ```
+</details>
+
+### Union and Intersection types
+
+#### Union Types
+
+<details>
+  <summary>Example</summary>
+
+  ```typescript
+  type AType = 'a' extends 'a' | 'b' ? number :  string; // number
+
+  type BType = 'a' | 'b' extends 'a' ? number : string; // string
+
+  type CType = 'a' | 'b' | 'c' extends 'a' | 'b' ? number : string; // string
+
+  type DType = 'a' | 'b' extends 'a' | 'b' | 'c' ? number : string; // number
+  ```
 </details>
 
 ---
