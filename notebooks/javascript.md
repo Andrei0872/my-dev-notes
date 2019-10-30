@@ -15,6 +15,7 @@
 - [DOM](#dom)
     - [Script tags](#script-tags)
 - [Closures](#closures)
+- [Scope](#scope)
 
 ## Concepts
 
@@ -1415,3 +1416,80 @@ s.replace('name', "$' *$'*"); // "my  is andrei * is andrei* is andrei"
     console.log(foo()) // 'andrei'
     ```
     </details>
+
+--- 
+
+### Scope
+
+[Resource](https://codeburst.io/js-scope-static-dynamic-and-runtime-augmented-5abfee6223fe)
+
+* JS has **all three** types of scope: **static**, **dynamic**, **runtime-augmented**
+
+* defines the area in which a `variable/function` can be accessed
+
+#### Static Scope
+
+* cares **where** the `variable/function` was defined
+
+* determined at **write-time**(the code you see **before compilation**)
+
+* you can **look** at the **source code** and **determine** the **environment** in which a **binding is resolved**
+
+* is it implemented by [*closures*](#Closures)
+
+#### Dynamic Scope
+
+* a **caller** defines an **activation environment** for a **callee**
+
+* determined at **runtime**
+
+* provides the right value for the `variable/function` depending on **who called** it 
+
+* the value of `this` is **dynamically scoped**, **unless** used in an **arrow function**
+
+* [*arrow functions*](#arrow-functions) use **lexical scope**
+
+<details>
+<summary>Example</summary>
+<br>
+
+
+```typescript
+x = 'global!!!';
+
+const obj = {
+    // Provide `own` value for `x`
+    x: 10,
+    foo () {
+        console.log(this.x) // 10
+
+        /**
+         * Even if the function is declared within a method call,
+         * the `this` value will still be `dynamically scoped`
+         */
+        function dynamicallyScopedThis () {
+            console.log(this.x); // 'global!!!'
+        }
+        dynamicallyScopedThis();
+        
+        /**
+         * The `this` value will be the one from the `lexical environment`
+         */
+        const capturedThis = () => {
+            console.log(this.x)
+        }
+        capturedThis(); // 10
+    }
+}
+
+/**
+ * The value of `this` is **determined** and **provided** by the **caller**
+ * In this case, it's `obj`.
+ */
+obj.foo();
+```
+</details>
+
+#### Runtime-augmented scope
+
+* an **activation frame** is **not statically** determined and can be **mutated** by the **callee** itself
