@@ -91,6 +91,14 @@
 
 * a file that **contains changes** that can be **applied** to any **branch**, in any order
 
+### working directory/tree
+
+* in **sync** with the **local filesystem**
+
+* **reflects** the **immediate changes** made to content to **files and directories**
+
+* use `git status` to show the changes to the working directory
+
 ---
 
 ## Aliases
