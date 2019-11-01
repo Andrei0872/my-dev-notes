@@ -291,7 +291,7 @@ git stash && git add ./ && git stash pop
 
 * `git reset COMMIT -- files`: an exception of `git reset COMMIT -- files`, which does not make sense: why would override `HEAD` with only some files?  
 will **not** move `HEAD`;  
-does **not affect the working tree**
+does **not affect the working tree**, it only **updates** the **staged snapshot** to match the version specified in the `COMMIT`
 
 * `git reset $commit-hash`: discard commits or throw away uncommited changes
 
