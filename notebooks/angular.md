@@ -11,6 +11,7 @@
 * [Cool Stuff](#cool-stuff)
     * [`ngProjectAs`](#ngProjectAs)
     * [Load module as a child route](#load-module-as-a-child-route)
+    * [Dynamically load components within `ngIf`](#dynamically-load-components-within-ngif)
 
 
 ## Concepts
@@ -351,4 +352,122 @@ this is foo!
   ]
 }
 ```
+</details>
+
+### Dynamically load components within `ngIf`
+
+* [SO thread](https://stackoverflow.com/questions/58646928/load-dynamic-component-within-ngif-createcomponent-is-undefined/58651746#58651746)
+
+* [StackBlitz](https://stackblitz.com/edit/ng-dynamic-comp-3-ways)
+
+<details>
+  <summary>
+    <code>changeDetectorRef.detectChanges()</code>
+  </summary>
+
+  ```html
+  <button (click)="showContent()">Show Panel</button>
+
+  <div *ngIf="showPanel">
+      <ng-template #ref></ng-template>
+  </div>
+  ```
+
+  ```typescript
+  showContent () {
+    this.showPanel = !this.showPanel;
+
+   if (this.showPanel) {
+      this.cdr.detectChanges();
+      this.loadComponent();
+    }
+  }
+  ```
+</details>
+
+<br>
+
+<details>
+  <summary>
+    setter for<code> ViewChild</code>
+  </summary>
+
+  ```html
+  <button (click)="showContent()">Show Panel</button>
+
+  <div *ngIf="showPanel">
+      <ng-template #ref></ng-template>
+  </div>
+  ```
+
+  ```typescript
+  private _ref: ViewContainerRef;
+
+  private get ref () {
+    return this._ref;
+  }
+
+  @ViewChild('ref', { static: false, read: ViewContainerRef })
+  private set ref (r) {
+    console.log('setting ref', r)
+    this._ref = r;
+
+    if (this._ref) {
+      this.loadComponent();
+    }
+  }
+
+  showPanel = false;
+
+  constructor (
+    private cdr: ChangeDetectorRef,
+    private cfr: ComponentFactoryResolver,
+  ) { }
+
+  loadComponent () {
+    const factory = this.cfr.resolveComponentFactory(ChildComponent);
+    const component = this.ref.createComponent(factory);
+  }
+
+  showContent () {
+    this.showPanel = !this.showPanel;
+  }
+  ```
+</details>
+
+<br>
+
+<details>
+  <summary>
+    using <code>ng-container</code>
+  </summary>
+
+  ```html
+  <button (click)="showContent()">Show Panel</button>
+
+  <ng-container #vcr></ng-container>
+  ```
+
+  ```typescript
+  @ViewChild('vcr', { static: true, read: ViewContainerRef })
+  vcr: ViewContainerRef;
+
+  showContent () {
+    this.showPanel = !this.showPanel;  
+
+    this.showPanel && this.attachComponent();
+
+    !this.showPanel && this.removeComponent();  
+}
+
+  private attachComponent () {
+    const compFactory = this.cfr.resolveComponentFactory(ChildComponent);
+
+    const compView = this.vcr.createComponent(compFactory);
+  }
+
+  private removeComponent () {
+      this.vcr.clear();
+  }
+  ```
 </details>
