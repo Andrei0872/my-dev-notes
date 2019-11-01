@@ -322,11 +322,13 @@ the `HEAD` will **not** be overwritten!
 the **working tree** will be **affected**
 
 * `git checkout $commit-hash`: **move** HEAD to a **specific** commit;  
-useful when inspecting old snapshots; this will bting the commit `$commit-hash` into the current working tree
+useful when inspecting old snapshots; this will bting the commit `$commit-hash` into the current working tree  
+it will move the `HEAD` ref pointer to the specified commit
 
 * `git checkout $file-name`: identical to `git checkout HEAD -- $file-name`;  
 discard `$file-name`'s changes in the working directory;  
-will bring the file `$file-name` from `HEAD` into the current working tree; that's why the changes that occurred in the file `file-name` will be discarded
+will bring the file `$file-name` from `HEAD` into the current working tree; that's why the changes that occurred in the file `file-name` will be discarded  
+the **working tree** will be **updated**
 
 * `git checkout .`: discard changes in the working directory;  
 identical to `git checkout HEAD -- ./`, which basically means *'bring the most recent commit(`HEAD`) into the working tree'*, that's why the changes will be discarded
