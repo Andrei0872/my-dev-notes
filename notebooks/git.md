@@ -297,6 +297,22 @@ git add -p
 
 * `git diff --name--only HEAD^`: show the changes between **HEAD** and the previous commit **HEAD^**; with other words, this will list the **files** that are included in the **last commit**
 
+#### `git diff ..` vs `git diff ...`
+
+* `git diff master..topic`: will print the changes from `G` to `C`(with effects on `F` and `G`); with other words, it will print the changes that occurred in `A`, `B` and `C`
+
+* `git diff master...topic`: similar to the above results, except that it will also **include** the **common ancestor**, `E`
+
+<details>
+<summary>Example</summary>
+
+```
+     A---B---C topic
+    /
+D---E---F---G master
+```
+</details>
+
 ### git stash
 
 * put files in a separate stack(will eventually be garbage collected)
