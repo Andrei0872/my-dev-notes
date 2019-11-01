@@ -16,6 +16,7 @@
     * [Search commits by string](#search-commits-by-string)
     * [Search commits by file contents](#search-commits-by-file-contents)
     * [Push something locally named X to remote name Y](#push-something-locally-named-x-to-remote-name-y)
+    * [Create a separate commit that includes changes of a file](#create-a-separate-commit-that-includes-changes-of-a-file)
 
 * [Branches](#branches)
     * [See where all my the branches are being tracked from](#see-where-all-my-the-branches-are-being-tracked-from)
@@ -207,6 +208,19 @@ git log -S $your-string
 
 ```bash
 git push origin X:Y
+```
+
+### Create a separate commit that includes changes of a file
+
+```bash
+# Assuming that you have commited some changes,
+# but you want to create a separate commit 
+# that will include changes of a specific file
+
+git reset HEAD^ -- path/to/file
+git commit --amend --no-edit
+git add .
+git commit -m 'added changes for `path/to/file`'
 ```
 
 ---
