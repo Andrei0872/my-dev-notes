@@ -952,6 +952,8 @@ console.log(Reflect.ownKeys(myObj)) // ​​​​​[ Symbol(name) ]​​​�
 
 ## Symbol
 
+* a **primitive data type** that is **immutable** and **globally-unique**
+
 ### Symbol.description
 
 * its goal is to avoid getting the provided description from `Symbol.prototype.toString()`
