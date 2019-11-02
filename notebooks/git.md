@@ -384,6 +384,8 @@ _assuming the current branch is `master`_
 
 ### git bisect
 
+* `git bisect start <bad-commit> <good-commit>`
+
 #### undo step
 
 1) ```bash 
@@ -409,6 +411,32 @@ _assuming the current branch is `master`_
 3) ```bash  
     git grep -q <fn-name> && git bisect exists || git bisect dne 
     ```
+#### resuming work
+
+* instead of scribbling the answers somewhere, you can repeat them later, using the `git bisect replay` command
+
+<details>
+<summary>Example</summary>
+<br>
+
+
+```bash
+git bisect start <bad-commit> <good-commit>
+
+# Applying some answers
+# ...
+git bisect good
+# ...
+git bisect bad
+
+# Time to save what we've done so far
+git bisect log > bisect.log
+
+# Once we're done with our new work, we can resume bisecting right were we left off
+git bisect replay bisect.log
+```
+</details>
+
 ### git grep
 
 * list lines that match a certain pattern
