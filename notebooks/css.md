@@ -90,6 +90,12 @@ this is because the downloaded script might **alter** the DOM(by `creating`/`rem
     * an element with a **position other** than `static`
     * an element with **opacity less than 1**
 
+### replaced element
+
+* element whose **content** **cannot be affected** by CSS; however, the **position** of the content can be altered(by using `object-fit`, `object-position`)
+
+* `<img>`, `<video>`
+
 ---
 
 ## Properties
