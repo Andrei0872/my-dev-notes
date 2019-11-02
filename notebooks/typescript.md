@@ -6,6 +6,7 @@
   * [Singleton Types](#singleton-types)
   * [Predicate functions](#predicate-functions)
   * [Union and Intersection types](#union-and-intersection-types)
+  * [Generic type inference](#generic-type-inference)
 * [Types](#types)
     * [Create a condition-based subset of types](#create-a-condition-based-subset-of-types)
     * [Type Assignments](#type-assignments)
@@ -146,6 +147,53 @@ if (isDog(animal)) {
   type DType = 'a' | 'b' extends 'a' | 'b' | 'c' ? number : string; // number
   ```
 </details>
+
+### Generic type inference
+
+#### Generic Class
+
+* the type `T` of the class will be **inferred** by the compiler if the `T` is **required in the constructor**
+
+  <details>
+  <summary>Example</summary>
+  <br>
+
+
+  ```typescript
+  class Bar<T> {
+    randomVar: T;
+
+    constructor (public name: T) { }
+  }
+
+  const b = new Bar(true);
+
+  b.name // boolean
+  b.randomVar // boolean
+  ```
+  </details>
+
+* if the type `T` is **neither manually specified or inferred** as above, each class variable which is of type `T` will have the `unknown` type
+
+  <details>
+  <summary>Example</summary>
+  <br>
+
+
+  ```typescript
+  class Bar<T> {
+    randomVar: T;
+
+    constructor (public name: boolean) { }
+  }
+
+  const b = new Bar(true);
+
+  b.name // boolean
+  b.randomVar // unknown
+
+  ```
+  </details>
 
 ---
 
