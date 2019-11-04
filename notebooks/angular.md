@@ -7,6 +7,7 @@
     * [Structural directives](#structural-directives)
     * [`ngIf` with async pipe](#ngIf-with-async-pipe)
 * [Dependency Injection](#dependency-injection)
+  * [Dynamically configure an injector for dynamic views](#dynamically-configure-an-injector-for-dynamic-views)
 * [Forms](#forms)
 * [Cool Stuff](#cool-stuff)
     * [`ngProjectAs`](#ngProjectAs)
@@ -259,6 +260,11 @@ this is foo!
 */
 ```
 </details>
+
+### Dynamically configure an injector for dynamic views
+
+* [SO thread](https://stackoverflow.com/questions/58686590/create-dynamic-components-with-different-location-in-logical-component-tree/58688619#58688619)
+* [Article](https://dev.to/anduser96/angular-dynamically-configure-an-injector-for-dynamic-views-1lb4)
 
 ---
 
