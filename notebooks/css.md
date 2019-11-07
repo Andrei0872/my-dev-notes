@@ -12,6 +12,7 @@
 * [Cascade and Specificity](#cascade-and-specificity)
 * [CSS Grid](#css-grid)
     * [`fr` and `auto`](#fr-and-auto)
+    * [`justify-self` vs `justify-content` vs `justify-items`](#justify-self-vs-justify-content-vs-justify-items)
 * [SCSS](#scss)
     * [mixin vs placeholder](#mixin-vs-placeholder)
 
@@ -329,6 +330,20 @@ input:not(:placeholder-shown) {
 #### `fr`
 
 * the `fr` values will be **divided between** the **space** that's **left after** the **other values** have **taken their space**
+
+#### `justify-self` vs `justify-content` vs `justify-items`
+
+[SO thread](https://stackoverflow.com/questions/48535585/the-difference-between-justify-self-justify-items-and-justify-content-in-css-gr)
+
+__Analogy for `align-{self, content, items}`, but for `rows`__
+
+* `justify-self` - controls the alignment of grid **columns** for an **individual item**
+
+* `justify-content` - controls the alignment of grid **columns**
+
+* `justify-items` - controls the alignment of grid **items**
+
+---
 
 ## SCSS
 
