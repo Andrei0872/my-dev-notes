@@ -2,6 +2,7 @@
 
 - [Concepts](#concepts)
     * [Debouncing and Throttling](#debouncing-and-throttling)
+    * [thunk functions](#thunk-functions)
 - [Objects and Classes](#objects-and-classes)
     * [Extending Objects](#extending-objects)
 - [Functions](#functions)
@@ -54,6 +55,28 @@
 * **compiled**: other program converts the code into machine code
 
 * **interpreted**: an interpreter reads the code line by line
+
+### thunk functions
+
+- **delay** the **evaluation** of a value
+
+<details>
+<summary>Example</summary>
+<br>
+
+
+```typescript
+const config = {
+    // foo: Foo //! Error: Class 'Foo' used before its declaration
+    foo: () => Foo // Thunk functions to the rescue!
+};
+
+// Classes are not hoisted
+class Foo { }
+
+console.log(config.foo().prototype)
+```
+</details>
 
 ---
 
