@@ -78,6 +78,10 @@ console.log(config.foo().prototype)
 ```
 </details>
 
+### free variable
+
+- a variable that is **neither locally declared** or **passed as a parameter**
+
 ---
 
 ## Objects and Classes
