@@ -1428,6 +1428,8 @@ s.replace('name', "$' *$'*"); // "my  is andrei * is andrei* is andrei"
 
 ## Closures
 
+* functions that refer to [free variables](#free-variable)
+
 * when a value is **captured inside a closure**, the function **captures** the **variable reference**, **not the value**
 
     <details>
