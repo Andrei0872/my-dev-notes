@@ -2,6 +2,7 @@
 
 * [Concepts](#concepts)
   * [View](#view)
+  * [View Encapsulation](#view-encapsulation)
 * [Interceptors](#interceptors)
 * [Directives](#directives)
     * [Structural directives](#structural-directives)
@@ -47,8 +48,6 @@
 
 * triggered on **pure** changes - changes to primitive data types(number, string, boolean etc...) or a **changed object reference**
 
----
-
 ### View
 
 * an **abstraction** that **binds** the **component class** to a **DOM** element
@@ -56,6 +55,61 @@
 #### view container
 
 * **holds the views** and **provides** an **API** to **manipulate** these views
+
+### View Encapsulation
+
+[StackBlitz](https://stackblitz.com/edit/pass-ng-content-to-children)
+
+* **Emulated**(_default_)
+  * will identify each component using `_nghost-*` and `_ngcontent-*`
+  * achieves **best support** across **browsers**
+
+  <details>
+    <summary>Example</summary>
+
+    ```html
+    <my-app _nghost-xnu-c6="" ng-version="8.0.0">
+        <h1 _ngcontent-xnu-c6="">App comp</h1>
+        <hook _ngcontent-xnu-c6="" class="foo" _nghost-xnu-c7="">
+            <h2 _ngcontent-xnu-c7="">Hook comp</h2>
+            <!---->
+            <!---->
+            <hook-child>
+                <h3>Hook child comp</h3>
+                <!--bindings={
+        "ng-reflect-ng-template-outlet": "[object Object]"
+      }--> awesome content here!!
+                <!---->
+            </hook-child>
+        </hook>
+    </my-app>
+    ```
+  </details>
+
+* **Native**
+  * use the **Native Shadow DOM**
+  * note that if you want a **stricter** encapsulation, you must provide this option to the **children** of this shadow root as well
+
+  <details>
+    <summary>Example</summary>
+
+    ```html
+    <my-app ng-version="8.0.0">
+      #shadow-root (open)
+        <style>h1, h2, h3 { color: red; }</style>
+        <h1>App Comp</h1>
+
+        <hook class="foo">
+          #shadow-root (open)
+        </hook>
+    </my-app>
+    ```
+  </details>
+
+* **None**
+  * **disable encapsulation** for a **specific component**; its **children** will still **keep** the **default behavior**, unless something else is manually specified
+
+---
 
 ## Interceptors
 
