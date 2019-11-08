@@ -3,6 +3,7 @@
 * [Concepts](#concepts)
   * [View](#view)
   * [View Encapsulation](#view-encapsulation)
+  * [Shadow DOM vs Light DOM](#shadow-dom-vs-light-dom)
 * [Interceptors](#interceptors)
 * [Directives](#directives)
     * [Structural directives](#structural-directives)
@@ -109,6 +110,39 @@
 * **None**
   * **disable encapsulation** for a **specific component**; its **children** will still **keep** the **default behavior**, unless something else is manually specified
 
+### Shadow DOM vs Light DOM
+
+* **Shadow DOM**
+  * **DOM elements** or **child components** that a **component internally** creates or/and manages
+
+  <details>
+    <summary>Example</summary>
+
+    ```typescript
+    @Component({
+      selector: 'foo',
+      template: `
+        <h1>Hello!</h1>
+        <foo-child></foo-child>
+      `
+    })
+    ```
+  </details>
+
+* **Light DOM**
+  * refers to the **projected content**
+
+  <details>
+    <summary>Example</summary>
+
+    ```html
+    <foo>
+      <h1>Hello!</h1>
+      <foo-child></foo-child>
+    </foo>
+    ```
+  </details>
+  
 ---
 
 ## Interceptors
