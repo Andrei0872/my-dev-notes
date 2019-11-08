@@ -10,6 +10,8 @@
     * [Debugging TS](#debugging-ts)
     * [Debugging TS with Tests](#debugging-ts-with-tests)
 * [Snippets](#snippets)
+* [Tricks](#tricks)
+    * [Compare Files](#compare-files)
 
 ## Shortcuts
 
@@ -207,3 +209,12 @@ _Using **Mocha**_
 }
 ```
 </details>
+
+---
+
+## Tricks
+
+### Compare Files
+
+1) **Right Click** on a file and choose **Select for Compare**
+2) **Right Click** on **another file** and choose **Compare with Selected**
