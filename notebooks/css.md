@@ -15,6 +15,8 @@
     * [`justify-self` vs `justify-content` vs `justify-items`](#justify-self-vs-justify-content-vs-justify-items)
 * [SCSS](#scss)
     * [mixin vs placeholder](#mixin-vs-placeholder)
+* [Animations](#animations)
+    * [`@keyframes`](#keyframes)
 
 ## Knowledge
 
@@ -414,3 +416,38 @@ __Analogy for `align-{self, content, items}`, but for `rows`__
 }
 ```
 </details>
+
+---
+
+## Animations
+
+### `@keyframes`
+
+* if, let's say, `100%` is not specified, it will get **automatically generated** from the **styles** that were **already set** on the elements
+
+    <details>
+    <summary>Example</summary>
+    <br>
+
+
+    ```css
+    @keyframes foo-animation {
+        %0 { transform: translate(50vw, 50vh); }
+        /* %100 - will be inferred by the browser */
+    }
+    ```
+    </details>
+
+    same thing happens when using `to`
+    
+    <details>
+    <summary>Example</summary>
+    <br>
+    
+    ```css
+    @keyframes fade {
+        to { opacity: 0; }
+        /* from { opacity: 1; } - inferred */
+    }
+    ```
+    </details>
