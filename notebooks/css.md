@@ -13,6 +13,7 @@
 * [CSS Grid](#css-grid)
     * [`fr` and `auto`](#fr-and-auto)
     * [`justify-self` vs `justify-content` vs `justify-items`](#justify-self-vs-justify-content-vs-justify-items)
+* [Flexbox](#flexbox)
 * [SCSS](#scss)
     * [mixin vs placeholder](#mixin-vs-placeholder)
 * [Animations](#animations)
@@ -347,6 +348,12 @@ __Analogy for `align-{self, content, items}`, but for `rows`__
 
 ---
 
+## Flexbox
+
+* each **flex item** will **stretch vertically** to **fill** the **height** of the **flex container**
+
+---
+
 ## SCSS
 
 ### mixin vs placeholder
@@ -443,7 +450,7 @@ __Analogy for `align-{self, content, items}`, but for `rows`__
     <details>
     <summary>Example</summary>
     <br>
-    
+
     ```css
     @keyframes fade {
         to { opacity: 0; }
