@@ -17,6 +17,7 @@
     * [Search commits by file contents](#search-commits-by-file-contents)
     * [Push something locally named X to remote name Y](#push-something-locally-named-x-to-remote-name-y)
     * [Create a separate commit that includes changes of a file](#create-a-separate-commit-that-includes-changes-of-a-file)
+    * [View a deleted and not commited yet file](#view-a-deleted-and-not-commited-yet-file)
 
 * [Branches](#branches)
     * [See where all my the branches are being tracked from](#see-where-all-my-the-branches-are-being-tracked-from)
@@ -229,6 +230,12 @@ git reset HEAD^ -- path/to/file
 git commit --amend --no-edit
 git add .
 git commit -m 'added changes for `path/to/file`'
+```
+
+### View a deleted and not commited yet file
+
+```
+git show HEAD^:path/to/file
 ```
 
 ---
