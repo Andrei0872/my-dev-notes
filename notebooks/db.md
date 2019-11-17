@@ -2,6 +2,7 @@
 
 
 * [Concepts](#concepts)
+  * [foreign key](#foreign-key)
 * [Indexing](#indexing)
 * [Normalization and Denormalization](#normalization-and-denormalization)
 * [Joins](#joins)
@@ -35,6 +36,12 @@
 ### ORM
 
 * map objects(found in OOP) to tables(rows & relations etc...)
+
+### foreign key
+
+* **primary key** from **other tables**
+
+* **connects** two **separate** tables together
 
 ---
 
