@@ -19,6 +19,7 @@
     * [Create a separate commit that includes changes of a file](#create-a-separate-commit-that-includes-changes-of-a-file)
     * [View a deleted and not commited yet file](#view-a-deleted-and-not-commited-yet-file)
     * [Rebase with `autostash`](#rebase-with-autostash)
+    * [Undo merge while keeping unstaged files](#undo-merge-while-keeping-unstaged-files)
 
 * [Branches](#branches)
     * [See where all my the branches are being tracked from](#see-where-all-my-the-branches-are-being-tracked-from)
@@ -269,6 +270,30 @@ error: Please commit or stash them.
 
 # The solution
 git rebase master --autostash
+```
+</details>
+
+### Undo merge while keeping unstaged files
+
+<details>
+<summary>Example</summary>
+<br>
+
+* `ORIG_HEAD` - point to a commit that existed right before the merge
+
+* `--merge` - resets everything that is between `<commit>`(_ORIG_HEAD_) and `HEAD`, but keeps the difference between `index` and `working tree`: changes that have not been added yet
+
+```bash
+git merge --no-ff feat/my-awesome-feat
+
+# Make some changes to a file that were not altered by the merge
+
+# Will keep the changes that were made to the aforementioned file
+git reset --merge ORIG_HEAD
+
+# As opposed to this, which will reset that file as well, forgetting about all those changes
+git reset --hard ORIG_HEAD
+
 ```
 </details>
 
