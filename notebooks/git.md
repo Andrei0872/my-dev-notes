@@ -18,6 +18,7 @@
     * [Push something locally named X to remote name Y](#push-something-locally-named-x-to-remote-name-y)
     * [Create a separate commit that includes changes of a file](#create-a-separate-commit-that-includes-changes-of-a-file)
     * [View a deleted and not commited yet file](#view-a-deleted-and-not-commited-yet-file)
+    * [Rebase with `autostash`](#rebase-with-autostash)
 
 * [Branches](#branches)
     * [See where all my the branches are being tracked from](#see-where-all-my-the-branches-are-being-tracked-from)
@@ -237,6 +238,39 @@ git commit -m 'added changes for `path/to/file`'
 ```
 git show HEAD^:path/to/file
 ```
+
+### Rebase with `autostash`
+
+<details>
+<summary>Example</summary>
+<br>
+
+
+```bash
+# Branching off of master
+git checkout -b feat/awesome-feat
+
+# Add some changes and commit
+git commit -am 'feat(awesome-feat): add foo'
+
+# Go back on master and create another commit there
+git checkout -
+git commit -am 'chore: update bar dependency'
+
+# Go back on the feature branch and make some changes, but do NOT commit
+git checkout -
+
+# Try to rebase
+git rebase master
+
+# You should see this error
+error: cannot rebase: You have unstaged changes.
+error: Please commit or stash them.
+
+# The solution
+git rebase master --autostash
+```
+</details>
 
 ---
 
