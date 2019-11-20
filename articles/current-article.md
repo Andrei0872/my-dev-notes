@@ -1,12 +1,37 @@
-# Demystifying the HttpClientModule in Angular 
+# Exploring the HttpClientModule in Angular
 
 <!-- Preface -->
+In this post, we are going to understand how the `HttpClientModule` actually works behind the scenes and find answers to some questions that might have arisen while using this module.
 
-## What is HttpClientModule and how does it work?
+_Note: This article is based on **Angular 8.2.x**_.
+
+## What is HttpClientModule?
 
 <!-- A brief description -->
-* a service module - only instantiates services, does exports any components, directives or pipes
+The `HttpClientModule` is a **service module** provided by Angular that allows us to perform **HTTP requests** and easily manipulate those requests and their responses. It is called a **service module** because it **only instantiates services** and **does not export** any components, directives or pipes.
 
+## Let's start exploring 🚧
+
+_This is a section that I'll be referencing a lot during the next section, [A practical example](#a-practical-example). 
+Here I'm just exposing each significant **entity** that belongs to this module along with its explanation_.
+
+* show module
+* paragraphs which describe the purpose of each entity
+* `HTTP_INTERCEPTORS`
+
+### P1
+
+### P2
+
+### P3
+
+...
+
+## A practical example
+
+## Questions
+
+<!-- Notes -->
 
 ### Other topics
 * how does Angular send the HTTP requests?
@@ -16,6 +41,7 @@
 * understanding the `reduceRight` method and eventually why it has been used
 * understanding the flow of the request
 * how does Angular aborts requests ? `xhr.abort()`
+* why should the module be imported only once, in the `AppModule` ?
 
 ### HttpInterceptingHandler
   * explain(if u haven't doen it already), to the this class got there
