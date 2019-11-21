@@ -12,14 +12,67 @@ The `HttpClientModule` is a **service module** provided by Angular that allows u
 
 ## Let's start exploring 🚧
 
-_This is a section that I'll be referencing a lot during the next section, [A practical example](#a-practical-example). 
+_This is a section that I'll be referencing a lot during the next section, [Connecting the dots](#connecting-the-dots). 
 Here I'm just exposing each significant **entity** that belongs to this module along with its explanation_.
 
 * show module
 * paragraphs which describe the purpose of each entity
 * `HTTP_INTERCEPTORS`
 
-### P1
+These are the *services* this module provides:
+
+<img src="../screenshots/articles/current-article/_http-client-module.png" style="text-align: center">
+
+
+### HttpClient
+
+With the help of this service, we are able to specify how we want to communicate with the server. It comprises the methods for the well-known HTTP verbs:
+
+```typescript
+export class HttpClient {
+    constructor(private handler: HttpHandler) {}
+  
+    /* ... Method overloads ... */
+    request(first: string|HttpRequest<any>, url?: string, options: {}): Observable<any> {
+      /* ... */
+    }
+   
+    /* ... Method overloads ... */
+    delete(url: string, options: {}): Observable<any> {
+      return this.request<any>('DELETE', url, options as any);
+    }
+    
+    /* ... Method overloads ... */
+    get(url: string, options: { /* ... */ } ): Observable<any> {
+      return this.request<any>('GET', url, options as any);
+    }
+
+    /* ... Method overloads ... */
+    post(url: string, body: any|null, options: { /* ... */ }): Observable<any> {
+      return this.request<any>('POST', url, addBody(options, body));
+    }
+    
+    /* ... Method overloads ... */
+    put(url: string, body: any|null, options: { /* ... */ }): Observable<any> {
+      return this.request<any>('PUT', url, addBody(options, body));
+    }
+  }
+```
+
+<!-- TODO: add link for `DI token` -->
+The `HttpHandler` is a **DI token** which maps to `HttpInterceptingHandler`, to which we will have a look later.  
+As you can see, the `request()` method is called in each case.  
+The `addBody()` function simply **merges** the provided **objects**.
+
+#### `HttpClient.request()`
+
+This method returns an **observable** that, when subscribed to, will allow us to **send the request** to the server.
+
+Here's the gist of it:
+
+```typescript
+```
+
 
 ### P2
 
@@ -27,7 +80,7 @@ Here I'm just exposing each significant **entity** that belongs to this module a
 
 ...
 
-## A practical example
+## Connecting the dots
 
 ## Questions
 
