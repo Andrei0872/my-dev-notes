@@ -60,18 +60,68 @@ export class HttpClient {
 ```
 
 <!-- TODO: add link for `DI token` -->
-The `HttpHandler` is a **DI token** which maps to `HttpInterceptingHandler`, to which we will have a look later.  
-As you can see, the `request()` method is called in each case.  
-The `addBody()` function simply **merges** the provided **objects**.
+* `HttpHandler` - a **DI token** which maps to `HttpInterceptingHandler`, to which we will have a look later.  
+
+* `addBody(options, body)` - function simply **merges** the provided 2 objects(`options` & `body`) into a single object
 
 #### `HttpClient.request()`
 
-This method returns an **observable** that, when subscribed to, will allow us to **send the request** to the server.
+* called by each method of the `HttpClient` that represents an HTTP verb(`get`, `delete` etc...)
 
-Here's the gist of it:
+* returns an **observable** that, when subscribed to, will allow us to **send the request** to the server.
+
 
 ```typescript
+request(first: string|HttpRequest<any>, url?: string, options: {
+    body?: any,
+    headers?: HttpHeaders|{[header: string]: string | string[]},
+    observe?: HttpObserve,
+    params?: HttpParams|{[param: string]: string | string[]},
+    reportProgress?: boolean,
+    responseType?: 'arraybuffer'|'blob'|'json'|'text',
+    withCredentials?: boolean,
+  } = {}): Observable<any> {
+    let req: HttpRequest<any>;
+
+    // If `req` is not already an instance of `HttpRequest`
+
+      /* ... Figure out the headers from `options` ... */
+
+      /* ... Figure out the params from `options` ... */
+
+    // Construct the request.
+    req = new HttpRequest(first, url !, (options.body !== undefined ? options.body : null), {
+      headers,
+      params,
+      reportProgress: options.reportProgress,
+      responseType: options.responseType || 'json',
+      withCredentials: options.withCredentials,
+    });
+    
+    const events$: Observable<HttpEvent<any>> =
+        of (req).pipe(concatMap((req: HttpRequest<any>) => this.handler.handle(req)));
+
+    const res$: Observable<HttpResponse<any>> = <Observable<HttpResponse<any>>>events$.pipe(
+        filter((event: HttpEvent<any>) => event instanceof HttpResponse));
+
+  // Most of the times you will want to map to the response body
+  return res$.pipe(map((res: HttpResponse<any>) => res.body));
 ```
+
+[_Original source here_](https://github.com/angular/angular/blob/8.2.x/packages/common/http/src/client.ts#L100)
+
+The most significant line here is this one:
+```typescript
+of (req).pipe(concatMap((req: HttpRequest<any>) => this.handler.handle(req)));
+```
+
+There are a few things that can be deduced from the above snippet:
+
+<!-- TODO: reference link to the code -->
+* we can know for sure that if the request has completed successfully, the observable will complete, due to `of`'s nature
+
+<!-- TODO: link to the interceptors' section -->
+* `this.handler.handle(req)` will return an observable as well, which explains why it used along with the `concatMap` operator; here is where the **interceptors** are **composed and applied** to the request
 
 
 ### P2
@@ -157,3 +207,19 @@ o3 = intHandl(i1, o2);
 
 o3.handle(req)
 ```
+
+## TODO
+
+* add links between sections
+
+* try the `retry` stuff
+```typescript
+// Start with an Observable.of() the initial request, and run the handler (which
+    // includes all interceptors) inside a concatMap(). This way, the handler runs
+    // inside an Observable chain, which causes interceptors to be re-run on every
+    // subscription (this also makes retries re-run the handler, including interceptors).
+    const events$: Observable<HttpEvent<any>> =
+      of (req).pipe(concatMap((req: HttpRequest<any>) => this.handler.handle(req)));
+```
+
+* `HttpHeaders` - `this.lazyInit()`
