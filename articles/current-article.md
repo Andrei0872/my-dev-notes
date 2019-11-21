@@ -67,12 +67,17 @@ If we were to inspect the above variable, we would get something like this:
 
 ---
 
+### HttpClientModule
+
+* [HttpClient](#httpclient)
+* [`HttpHandler` and `HttpInterceptingHandler`](#httphandler-and-httpinterceptinghandler)
+
 These are the *services* this module provides:
 
 <img src="../screenshots/articles/current-article/_http-client-module.png" style="text-align: center">
 
 
-### HttpClient
+#### HttpClient
 
 With the help of this service, we are able to specify how we want to communicate with the server. It comprises the methods for the well-known HTTP verbs:
 
@@ -108,11 +113,11 @@ export class HttpClient {
 ```
 
 <!-- TODO: add link for `DI token` -->
-* `HttpHandler` - a **DI token** which maps to `HttpInterceptingHandler`, to which we will have a look later.  
+* `HttpHandler` - a **DI token** which maps to `HttpInterceptingHandler`; a detailed explanation can be found here: [`HttpHandler` and `HttpInterceptingHandler`](#httphandler-and-httpinterceptinghandler)
 
 * `addBody(options, body)` - function simply **merges** the provided 2 objects(`options` & `body`) into a single object
 
-#### `HttpClient.request()`
+##### `HttpClient.request`
 
 * called by each method of the `HttpClient` that represents an HTTP verb(`get`, `delete` etc...)
 
@@ -171,16 +176,68 @@ There are a few things that can be deduced from the above snippet:
 <!-- TODO: link to the interceptors' section -->
 * `this.handler.handle(req)` will return an observable as well, which explains why it used along with the `concatMap` operator; here is where the **interceptors** are **composed and applied** to the request
 
+_Back to [HttpClientModule](#httpclientmodule)_.
 
-### P2
+---
 
-### P3
+#### `HttpHandler` and `HttpInterceptingHandler`
 
-...
+The `HttpHandler` is a DI token that maps to `HttpInterceptingHandler`.
+
+```typescript
+export abstract class HttpHandler {
+  abstract handle(req: HttpRequest<any>): Observable<HttpEvent<any>>;
+}
+
+/* ... */
+
+@Injectable()
+export class HttpInterceptingHandler implements HttpHandler {
+  private chain: HttpHandler|null = null;
+
+  constructor(private backend: HttpBackend, private injector: Injector) {}
+
+  handle(req: HttpRequest<any>): Observable<HttpEvent<any>> {
+    if (this.chain === null) {
+      const interceptors = this.injector.get(HTTP_INTERCEPTORS, []);
+      this.chain = interceptors.reduceRight(
+          (next, interceptor) => new HttpInterceptorHandler(next, interceptor), this.backend);
+    }
+    return this.chain.handle(req);
+  }
+}
+```
+
+<!-- TODO: add link to HttpBackend and HttpXhrBackend -->
+`HttpBackend` is a DI token that maps to `HttpXhrBackend`; here is where the HTTP request is performed
+
+##### HttpInterceptingHandler.handle()
+
+It is the method that is called in the [`HttpClient.request`](#httpclientrequest):
+
+```typescript
+of (req).pipe(concatMap((req: HttpRequest<any>) => this.handler.handle(req)));
+```
+
+As you can see, here we are able to inject the `HTTP_INTERCEPTORS` token that will help us to gather all the interceptors.
+
+The next step consists of creating the **interceptors chain**.
+
+<!-- 
+* linked list analogy
+  * node: HttpInterceptorHandler
+* explain the observable chain
+* create one from scratch
+* add image
+-->
+
+_Back to [HttpClientModule](#httpclientmodule)_.
+
+---
 
 ## Connecting the dots
 
-## Questions
+## Try it yourself
 
 <!-- Notes -->
 
@@ -274,3 +331,5 @@ o3.handle(req)
 * `HttpClientModule` - imported once
 
 * interceptors on lazy-loaded modules
+
+* `switchMap` - how does `aborting a request work!` :)
