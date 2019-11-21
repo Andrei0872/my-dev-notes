@@ -12,12 +12,60 @@ The `HttpClientModule` is a **service module** provided by Angular that allows u
 
 ## Let's start exploring 🚧
 
+<!-- 
 _This is a section that I'll be referencing a lot during the next section, [Connecting the dots](#connecting-the-dots). 
-Here I'm just exposing each significant **entity** that belongs to this module along with its explanation_.
+Here I'm just exposing each significant **entity** that belongs to this module along with its explanation_. 
+-->
 
-* show module
-* paragraphs which describe the purpose of each entity
-* `HTTP_INTERCEPTORS`
+Before delving into the internals, let's first have a look at parts that are exposed to us.
+
+### HTTP_INTERCEPTORS
+
+This is how we can define an interceptor:
+
+```typescript
+@NgModule({
+  /* ... */
+  providers: [
+    {
+      provide: HTTP_INTERCEPTORS,
+      useClass: MyAwesomeInterceptor_1,
+      multi: true,
+    },
+    {
+      provide: HTTP_INTERCEPTORS,
+      useClass: MyAwesomeInterceptor_2,
+      multi: true,
+    },
+  ],
+})
+```
+
+Because this is a **multi-provider token**, we can tell that when this **token** is **injected**, we will be able to **get** all the **registered classes** under this token.
+
+This is how this token will be injected:
+
+```typescript
+/* ... */
+const interceptors = this.injector.get(HTTP_INTERCEPTORS, []);
+/* ... */
+```
+
+<!-- TODO: add reference to HttpInterceptingHandler -->
+
+_Excerpted from [HttpInterceptingHandler]()_.
+
+Notice that the **order** of the provided interceptors **matters**.
+If we were to inspect the above variable, we would get something like this:
+```typescript
+[
+  0: HttpXsrfInterceptor { /* ... */ } // Provided by default
+  1: MyAwesomeInterceptor_1 {}
+  2: MyAwesomeInterceptor_2 {}
+]
+```
+
+---
 
 These are the *services* this module provides:
 
@@ -157,7 +205,6 @@ There are a few things that can be deduced from the above snippet:
 * where it comes from
 * explain what's inside that file(the interface, the )
 * `HttpInterceptorHandler`
-* explain the order of HttpInterceptors
 * why `next.hadle(req).pipe(/* access the response here */)`
 * how does **retrying** work?
 
@@ -223,3 +270,7 @@ o3.handle(req)
 ```
 
 * `HttpHeaders` - `this.lazyInit()`
+
+* `HttpClientModule` - imported once
+
+* interceptors on lazy-loaded modules
