@@ -1,69 +1,6 @@
-# Exploring the HttpClientModule in Angular
-
-<!-- Preface -->
-In this post, we are going to understand how the `HttpClientModule` actually works behind the scenes and find answers to some questions that might have arisen while using this module.
-
-_Note: This article is based on **Angular 8.2.x**_.
-
-## What is HttpClientModule?
-
-<!-- A brief description -->
-The `HttpClientModule` is a **service module** provided by Angular that allows us to perform **HTTP requests** and easily manipulate those requests and their responses. It is called a **service module** because it **only instantiates services** and **does not export** any components, directives or pipes.
 
 ## Let's start exploring 🚧
 
-<!-- 
-_This is a section that I'll be referencing a lot during the next section, [Connecting the dots](#connecting-the-dots). 
-Here I'm just exposing each significant **entity** that belongs to this module along with its explanation_. 
--->
-
-Before delving into the internals, let's first have a look at parts that are exposed to us.
-
-### HTTP_INTERCEPTORS
-
-This is how we can define an interceptor:
-
-```typescript
-@NgModule({
-  /* ... */
-  providers: [
-    {
-      provide: HTTP_INTERCEPTORS,
-      useClass: MyAwesomeInterceptor_1,
-      multi: true,
-    },
-    {
-      provide: HTTP_INTERCEPTORS,
-      useClass: MyAwesomeInterceptor_2,
-      multi: true,
-    },
-  ],
-})
-```
-
-Because this is a **multi-provider token**, we can tell that when this **token** is **injected**, we will be able to **get** all the **registered classes** under this token.
-
-This is how this token will be injected:
-
-```typescript
-/* ... */
-const interceptors = this.injector.get(HTTP_INTERCEPTORS, []);
-/* ... */
-```
-
-<!-- TODO: add reference to HttpInterceptingHandler -->
-
-_Excerpted from [HttpInterceptingHandler]()_.
-
-Notice that the **order** of the provided interceptors **matters**.
-If we were to inspect the above variable, we would get something like this:
-```typescript
-[
-  0: HttpXsrfInterceptor { /* ... */ } // Provided by default
-  1: MyAwesomeInterceptor_1 {}
-  2: MyAwesomeInterceptor_2 {}
-]
-```
 
 ---
 
@@ -81,84 +18,13 @@ These are the *services* this module provides:
 
 With the help of this service, we are able to specify how we want to communicate with the server. It comprises the methods for the well-known HTTP verbs:
 
-```typescript
-export class HttpClient {
-    constructor(private handler: HttpHandler) {}
-  
-    /* ... Method overloads ... */
-    request(first: string|HttpRequest<any>, url?: string, options: {}): Observable<any> {
-      /* ... */
-    }
-   
-    /* ... Method overloads ... */
-    delete(url: string, options: {}): Observable<any> {
-      return this.request<any>('DELETE', url, options as any);
-    }
-    
-    /* ... Method overloads ... */
-    get(url: string, options: { /* ... */ } ): Observable<any> {
-      return this.request<any>('GET', url, options as any);
-    }
-
-    /* ... Method overloads ... */
-    post(url: string, body: any|null, options: { /* ... */ }): Observable<any> {
-      return this.request<any>('POST', url, addBody(options, body));
-    }
-    
-    /* ... Method overloads ... */
-    put(url: string, body: any|null, options: { /* ... */ }): Observable<any> {
-      return this.request<any>('PUT', url, addBody(options, body));
-    }
-  }
-```
 
 <!-- TODO: add link for `DI token` -->
 * `HttpHandler` - a **DI token** which maps to `HttpInterceptingHandler`; a detailed explanation can be found here: [`HttpHandler` and `HttpInterceptingHandler`](#httphandler-and-httpinterceptinghandler)
 
 * `addBody(options, body)` - function simply **merges** the provided 2 objects(`options` & `body`) into a single object
 
-##### `HttpClient.request`
 
-* called by each method of the `HttpClient` that represents an HTTP verb(`get`, `delete` etc...)
-
-* returns an **observable** that, when subscribed to, will allow us to **send the request** to the server.
-
-
-```typescript
-request(first: string|HttpRequest<any>, url?: string, options: {
-    body?: any,
-    headers?: HttpHeaders|{[header: string]: string | string[]},
-    observe?: HttpObserve,
-    params?: HttpParams|{[param: string]: string | string[]},
-    reportProgress?: boolean,
-    responseType?: 'arraybuffer'|'blob'|'json'|'text',
-    withCredentials?: boolean,
-  } = {}): Observable<any> {
-    let req: HttpRequest<any>;
-
-    // If `req` is not already an instance of `HttpRequest`
-
-      /* ... Figure out the headers from `options` ... */
-
-      /* ... Figure out the params from `options` ... */
-
-    // Construct the request.
-    req = new HttpRequest(first, url !, (options.body !== undefined ? options.body : null), {
-      headers,
-      params,
-      reportProgress: options.reportProgress,
-      responseType: options.responseType || 'json',
-      withCredentials: options.withCredentials,
-    });
-    
-    const events$: Observable<HttpEvent<any>> =
-        of (req).pipe(concatMap((req: HttpRequest<any>) => this.handler.handle(req)));
-
-    const res$: Observable<HttpResponse<any>> = <Observable<HttpResponse<any>>>events$.pipe(
-        filter((event: HttpEvent<any>) => event instanceof HttpResponse));
-
-  // Most of the times you will want to map to the response body
-  return res$.pipe(map((res: HttpResponse<any>) => res.body));
 ```
 
 [_Original source here_](https://github.com/angular/angular/blob/8.2.x/packages/common/http/src/client.ts#L100)
