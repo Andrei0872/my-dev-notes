@@ -13,6 +13,11 @@
     * put a breakpoint on line 42
 
 
+## TODO
+* delay interceptor
+* retry interceptor
+* re-subscribe to interceptor(`next.handle(req)`)
+
 # Exploring the HttpClientModule in Angular
 
 In this post, we are going to understand how the `HttpClientModule` actually works behind the scenes and find answers to some questions that might have arisen while using this module.
@@ -83,7 +88,7 @@ What's left to do is to go into `HttpInterceptingHandler` class and set a breakp
 
 After successufully identifying its location, switch back to your dev tools, add your breakpoint and resume the execution!
 
-<img src="../screenshots/articles/exploring-httpclientmodule/httpintercepting.png" style="text-align: center;">
+<div style="text-align: center;"><img src="../screenshots/articles/exploring-httpclientmodule/httpintercepting.png"></div>
 
 _`BarInterceptor` is provided in `app.module`_
 
@@ -102,40 +107,19 @@ Now, we can go through the list starting off from the `head node` by stepping in
 
 Here's how this linked list could look like:
 
-```typescript
-// chain - the head node
+<div style="text-align: center;">
+    <img src="../screenshots/articles/exploring-httpclientmodule/httpinterceptors.jpg">
+</div>
 
-chain { 
-    interceptor; // HttpXsrfInterceptor
-    next; // TokenInterceptor
+* HttpBackend
+    * here the request is dispatched
+    * how can a request be `aborted` ?(show `switchMap` example)
+    * returns the response as a **cold observable** 
 
-    handle (req) {
-        /* ... inside this.interceptor.intercept() ... */
-        return next.handle(req) // (1)
-    }
-}
 
-(1) {
-   interceptor // TokenInterceptor
-   next // BarInterceptor
+Judging by the image above, we can tell that every `next.handle()` **returns** an **observable**.
+What this means is that every interceptor can add custom behavior to the returned observable. Those **changes** will **propagate** in the **previous interceptors**.
 
-   handle (req) {
-        /* ... inside this.interceptor.intercept() ... */
-        return next.handle(req) // (2)
-    }
-}
-
-(2) {
-    interceptor // BarInterceptor
-    next // HttpXhrBackend
-
-    handle (req) {
-        /* ... inside this.interceptor.intercept() ... */
-        return next.handle(req) // (3)
-    }
-}
-
-(3) {
-    Here is where the request is fired.
-}
-```
+* show retry behavior
+    * retry operator
+    * resubscribe(after refresh token is received)
