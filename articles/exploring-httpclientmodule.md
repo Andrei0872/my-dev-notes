@@ -11,6 +11,7 @@
         * explain `HttpInterceptorHandler`
             * just provide the image
     * put a breakpoint on line 42
+* try using `progress` - how can Angular allow to keep track of the progress of the request(`xhr.addEventListener('progress')`)
 
 
 ## TODO
@@ -80,7 +81,7 @@ At this point, we can't step into `this.handler.handle()` because the observable
 To do so, switch over to your text editor and scroll up to the `constructor`.
 The `HttpHandler` is a **DI token** that maps to `HttpInterceptingHandler`. 
 
-Here's a list of all providers: 
+<span id="providers">Here's a list of all providers</span>: 
 
 <img src="../screenshots/articles/exploring-httpclientmodule/img2.png" style="text-align: center;">
 
@@ -111,14 +112,29 @@ Here's how this linked list could look like:
     <img src="../screenshots/articles/exploring-httpclientmodule/httpinterceptors.jpg">
 </div>
 
+Judging by the image above, we can tell that every `next.handle()` **returns** an **observable**.
+What this means is that every interceptor can add custom behavior to the returned observable. Those **changes** will **propagate** in the **precedent interceptors**.
+
+Before going any further, let's focus our attention on `this.backend`. Where does it come from? If you take a look at the **constructor**, you should see that is provided by `HttpBackend`, which maps to `HttpXhrBackend`(if not sure why, check [what this module provides](#providers)).
+
+#### Let's explore `HttpXhrBackend`
+
+<div style="text-align: center;">
+    <img src="../screenshots/articles/exploring-httpclientmodule/httpbackend.png">
+</div>
+
+The first thing that leaps to the eye is the `handle()` method, which is also the last method called in the **interceptor chain** because it sits in the **tail** node. It is also responsible for **dispatching** the request.
+
+* explain each _significant_ method
+* this will get subscribed to through `concatMap`
+* the returned function(`switchMap` example): `switchMap` will unsubscribe to the observable(which will emit as soon as the response is received); on unsubscription, the returned function will be called
+
 * HttpBackend
     * here the request is dispatched
     * how can a request be `aborted` ?(show `switchMap` example)
     * returns the response as a **cold observable** 
+    * explain the response events
 
-
-Judging by the image above, we can tell that every `next.handle()` **returns** an **observable**.
-What this means is that every interceptor can add custom behavior to the returned observable. Those **changes** will **propagate** in the **previous interceptors**.
 
 * show retry behavior
     * retry operator
