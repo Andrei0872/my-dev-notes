@@ -117,7 +117,11 @@ What this means is that every interceptor can add custom behavior to the returne
 
 Before going any further, let's focus our attention on `this.backend`. Where does it come from? If you take a look at the **constructor**, you should see that is provided by `HttpBackend`, which maps to `HttpXhrBackend`(if not sure why, check [what this module provides](#providers)).
 
-#### Let's explore `HttpXhrBackend`
+### Let's explore `HttpXhrBackend`
+
+_Setting some breakpoints here and there will definitely lead to a better understanding! :)_
+
+<div id="httphandle"></div>
 
 <div style="text-align: center;">
     <img src="../screenshots/articles/exploring-httpclientmodule/httpbackend.png">
@@ -125,15 +129,155 @@ Before going any further, let's focus our attention on `this.backend`. Where doe
 
 The first thing that leaps to the eye is the `handle()` method, which is also the last method called in the **interceptor chain** because it sits in the **tail** node. It is also responsible for **dispatching** the request.
 
-* explain each _significant_ method
+* `partialFromXhr` - extracts the `HttpHeaderResponse` from the current `XMLHttpRequest` and memoizes it; this object needs to be computed only once can be used in multiple places. For example, it used in the `onLoad` and `onError` events
+
+* `onLoad` -  the callback function **triggered** when the **response** is **fully available**; it also **parses** and **validates** the **body** of the response
+
+<div style="text-align: center;">
+    <img src="../screenshots/articles/exploring-httpclientmodule/canLoad.png">
+</div>
+
+* `onError` - the callback function called when a **network error** occurred during the request
+
+Lastly, it is important to mention that the returned observable from `HttpXhrBackend.handle()` will dispatch the request when we subscribe to one of the `HttpClient`'s methods(`get`, `post` etc). This means that `HttpXhrBackend.handle()` returns a **cold observable**.
+
+
 * this will get subscribed to through `concatMap`
-* the returned function(`switchMap` example): `switchMap` will unsubscribe to the observable(which will emit as soon as the response is received); on unsubscription, the returned function will be called
+
+<!-- IMAGE! -->
+```typescript
+this.httpClient.get(url).subscribe() -> of(req).pipe(concatMap(req => this.handler.handle))
+```
+
+The callback returned from the observable will be **invoked** when the **observable**  **stops emitting** values. That is, when an **error** or a **complete** notification occurs.
+
+<details>
+<summary>onComplete</summary>
+<br>
+
+
+```typescript
+const obsBE$ = new Observable(obs => {
+  timer(1000)
+    .subscribe(() => {
+      obs.next({ response: { data: ['foo', 'bar'] } });
+
+      // Stop receiving values!
+      obs.complete();
+    })
+
+    return () => {
+      console.warn("I've had enough values!");
+    }
+});
+
+obsBE$.subscribe(console.log)
+/* 
+-->
+response
+I've had enough values!
+*/
+```
+</details>
+
+<details>
+<summary>onError</summary>
+<br>
+
+
+```typescript
+const be$ = new Observable(o => {
+  o.next('foo');
+
+  return () => {
+    console.warn('NO MORE VALUES!');
+  }
+});
+
+be$
+ .pipe(
+    flatMap(v => throwError('foo')),
+ )
+  .subscribe(null, console.error)
+/* 
+-->
+foo
+NO MORE VALUES
+*/
+```
+</details>
+
+---
+
+Based on the acquired knowledge, we are now able to answer some questions!
+
+## How can a request be canceled?
+
+A common case is the **typeahead** feature:
+
+```typescript
+this.keyPressed
+    .pipe(
+        debounceTime(300),
+        switchMap(v => this.http.get(url + '?key=' + v))
+    )
+```
+
+It is advised to do things this way. The reason is due to `switchMap`'s magic, which will **unsubscribe** from the **inner observable** to handle the next emitted value.
+
+```typescript
+const src = new Observable(obs => {
+  obs.next('src 1');
+  obs.next('src 2');
+  
+  setTimeout(() => {
+    obs.next('src 3');
+    obs.complete(); 
+  }, 1000);
+
+  return () => {
+    console.log('called on unsubscription')
+  };
+});
+
+of(1, 2)
+  .pipe(
+    switchMap(() => src)
+  )
+  .subscribe(console.log)
+
+/* 
+src 1
+src 2
+called on unsubscription
+src 1
+src 2
+src 3
+called on unsubscription
+*/
+```
+
+`1` is emitted and while we are **waiting** for the **inner observable** to complete, another value, `2`, comes straight away and will make `switchMap` unsubscribe from the current inner observable which in turn will invoke the returned function from the observable.
+
+Here is what is going on inside the function returned from the observable that dispatches the request(found in [HttpXhrBackend.handle](#httphandle)):
+
+```typescript
+return () => {
+    /* Skipped some lines for brevity... */
+
+    xhr.removeEventListener('error', onError);
+    xhr.removeEventListener('load', onLoad);
+    
+    // Finally, abort the in-flight request.
+    xhr.abort();
+}
+```
+
+Thus, we can infer that if the observable that made the request is unsubscribed from, the above callback will be invoked.
+
 
 * HttpBackend
-    * here the request is dispatched
-    * how can a request be `aborted` ?(show `switchMap` example)
-    * returns the response as a **cold observable** 
-    * explain the response events
+    * explain the response events and how can they be `intercepted`
 
 
 * show retry behavior
