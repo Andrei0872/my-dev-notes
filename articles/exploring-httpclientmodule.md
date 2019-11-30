@@ -1,24 +1,3 @@
-* put breakpoint in your interceptor
-* once in `client.ts` 
-    * provide image with all well-known methods
-    * explain `events$`(the `request()` method)
-* once in `HttpInterceptingHandler.handle`
-    * explain the `HTTP_INTERCEPTORS`token
-    * explain the `HttpBackend`
-        * where the request is fired
-    * put a breakpoint inside the `reduceRight`'s cb function to understand how the interceptor chain is built(line 40) + refresh
-        * rebuild the mechanism
-        * explain `HttpInterceptorHandler`
-            * just provide the image
-    * put a breakpoint on line 42
-* try using `progress` - how can Angular allow to keep track of the progress of the request(`xhr.addEventListener('progress')`)
-
-
-## TODO
-* delay interceptor
-* retry interceptor
-* re-subscribe to interceptor(`next.handle(req)`)
-
 # Exploring the HttpClientModule in Angular
 
 In this post, we are going to understand how the `HttpClientModule` actually works behind the scenes and find answers to some questions that might have arisen while using this module.
@@ -105,6 +84,8 @@ I like to think of this **chain** as a **linked list** that is built starting of
 In order to get a better overview of this, I'd suggest that you keep resuming the execution until you reach `line 42`, while paying attention to what's going on in the `Scope` tab.
 
 Now, we can go through the list starting off from the `head node` by stepping into the `handle` function from `line 42`. 
+
+<div id="interceptors"></div>
 
 Here's how this linked list could look like:
 
@@ -275,11 +256,172 @@ return () => {
 
 Thus, we can infer that if the observable that made the request is unsubscribed from, the above callback will be invoked.
 
+---
 
-* HttpBackend
-    * explain the response events and how can they be `intercepted`
+## How can interceptors retry requests?
 
+A token interceptor might look like this:
 
-* show retry behavior
-    * retry operator
-    * resubscribe(after refresh token is received)
+```typescript
+intercept (req: HttpRequest<any>, next: HttpHandler) {
+  /* ... Attach token and all that good stuff ... */
+
+  return next.handle()
+    .pipe(
+      catchError(err => {
+        if (err instanceof HttpErrorResponse && err.status === 401) {
+          return this.handle401Error(req, next)
+        }
+
+        // Simply propagate the error to other interceptors or to the consumer
+        return throwError(err);
+      })
+    )
+}
+
+private handle401Error (req: HttpRequest<any>, next: HttpHandler) {
+  return this.authService.refreshToken()
+    .pipe(
+      tap(token => this.authService.setToken(token)),
+      map(token => this.attachToken(req, token))
+      switchMap(req => next.handle(req))
+    )
+}
+
+private attachToken(req: HttpRequest<any>, token: string): HttpRequest<any> {
+  return req.clone({ setHeaders: { 'x-access-token': token } })
+}
+```
+
+The retry logic can be achieved with `switchMap(() => next.handle(req))`.
+
+If we reach the code inside `catchError`, it means that the **consumer** will **unsubscribe** from the **observable**(the one that is returned from [HttpXhrBackend.handle](#httphandle)). 
+This will allow us to **re-subscribe** to that observable, which will cause the request to be sent again as well as the interceptors that follow this interceptor to run their `intercept` function again.
+
+Let's narrow it down to a simpler example:
+
+```typescript
+const obsBE$ = new Observable(obs => {
+  timer(1000)
+    .subscribe(() => {
+      // console.log('%c [OBSERVABLE]', 'color: red;');
+
+      obs.next({ response: { data: ['foo', 'bar'] } });
+
+      // Stop receiving values!
+      obs.complete();
+    })
+
+    return () => {
+      console.warn("I've had enough values!");
+    }
+});
+
+// Composing interceptors the chain
+const obsI1$ = obsBE$
+  .pipe(
+    tap(() => console.log('%c [i1]', 'color: blue;')),
+    map(r => ({ ...r, i1: 'intercepted by i1!' }))
+  );
+
+let retryCnt = 0;
+const obsI2$ = obsI1$
+  .pipe(
+    tap(() => console.log('%c [i2]', 'color: green;')),
+    map(() => { 
+      if (++retryCnt <=3) {
+        throw new Error('err!') 
+      }
+    }),
+    // retry(2),
+    catchError((err, caught) => {
+      // return of('err caught')
+      
+      return getRefreshToken()
+        .pipe(
+          flatMap(() => /* obsI2$ */caught),
+        )
+    })
+  );
+
+const obsI3$ = obsI2$
+  .pipe(
+    tap(() => console.log('%c [i3]', 'color: orange;')),
+    map(r => ({ ...r, i3: 'intercepted by i3!' }))
+  );
+
+function getRefreshToken () {
+  return timer(1500)
+    .pipe(
+      map(() => ({ token: 'TOKEN HERE' })),
+    );
+}
+
+function get () {
+  return obsI3$
+}
+
+get()
+  .subscribe(console.log)
+
+/* 
+-->
+[i1]
+[i2]
+I've had enough values!
+[i1]
+[i2]
+I've had enough values!
+[i1]
+[i2]
+I've had enough values!
+[i1]
+[i2]
+[i3]
+{i3: "intercepted by i3!"}
+I've had enough values!
+*/
+```
+
+_[StackBlitz](https://stackblitz.com/edit/rx-playground-3locfw)_
+
+This is, in my view, this is the effect of `next.handle()` inside each interceptor(Image [here](#interceptors)). Imagine that instead of `const obsI3$ = obsI2$` we would have something like this:
+
+```typescript
+// Interceptor Nr.2
+const next = {
+  handle(req) {
+    /* ... Some logic here ... */
+
+    return of({ response: '' })
+  }
+}
+
+const obsI3$ = next.handle(req)
+  .pipe(
+    map(r => ({ ...r, i3: 'this is interceptor 3!!' })),
+    /* ... */
+  )
+```
+
+`obsI3$` will now be the observable returned by `next.handle()` which means it can add now its own custom behavior and if something goes wrong, it can reinvoke the source observable.
+
+When using interceptors you would want to retry the request by using `switchMap(() => next.handle(req)`(as it is done in the first code snippet), because, besides the each interceptor's returned observable, you would also want to run their logic that sits inside their `intercept()` function.
+
+From this line `switchMap(() => /* obsI2$ */caught)` we can see that `catchError` can have a second argument, `caught`, which is the source observable.(More on this [here](https://github.com/ReactiveX/rxjs/blob/master/src/internal/operators/catchError.ts#L99-L106)).
+
+---
+
+## Why is it necessary to clone the request object inside an interceptor?
+
+---
+
+## Why is it recommeneded to load the HttpClientModule only once, in the `AppModule` ?
+
+---
+
+## How can interceptors be bypassed?
+
+ 
+* (HttpBackend): explain the response events and how can they be `intercepted`
+* jsonp
