@@ -328,15 +328,14 @@ let retryCnt = 0;
 const obsI2$ = obsI1$
   .pipe(
     tap(() => console.log('%c [i2]', 'color: green;')),
-    map(() => { 
+    map(r => { 
       if (++retryCnt <=3) {
         throw new Error('err!') 
       }
+
+      return r;
     }),
-    // retry(2),
     catchError((err, caught) => {
-      // return of('err caught')
-      
       return getRefreshToken()
         .pipe(
           flatMap(() => /* obsI2$ */caught),
@@ -352,7 +351,7 @@ const obsI3$ = obsI2$
 
 function getRefreshToken () {
   return timer(1500)
-    .pipe(
+    .pipe(q
       map(() => ({ token: 'TOKEN HERE' })),
     );
 }
@@ -378,7 +377,16 @@ I've had enough values!
 [i1]
 [i2]
 [i3]
-{i3: "intercepted by i3!"}
+{
+  "response": {
+    "data": [
+      "foo",
+      "bar"
+    ]
+  },
+  "i1": "intercepted by i1!",
+  "i3": "intercepted by i3!"
+}
 I've had enough values!
 */
 ```
