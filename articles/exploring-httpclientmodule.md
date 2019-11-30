@@ -412,7 +412,22 @@ From this line `switchMap(() => /* obsI2$ */caught)` we can see that `catchError
 
 ---
 
-## Why is it necessary to clone the request object inside an interceptor?
+## Why is it sometimes necessary to clone the request object inside an interceptor?
+
+The process of adding the JWT token to your request might look like this:
+
+```typescript
+if (token) {
+  request = request.clone({
+    setHeaders: { [this.AuthHeader]: token },
+  });
+}
+
+return next.handle(request)
+```
+
+The most important reason would be **immutability**. You wouldn't want to mutate the **request object** from multiple places. Thus, every interceptor should configure the request independently.
+The cloned request would eventually be passed to the next interceptor in the chain.
 
 ---
 
@@ -422,6 +437,17 @@ From this line `switchMap(() => /* obsI2$ */caught)` we can see that `catchError
 
 ## How can interceptors be bypassed?
 
+---
+
+## What is the difference between `setHeaders` and `headers`?
+
+* `setHeaders` appends
+
+* `headers` rewrites
+
+---
  
 * (HttpBackend): explain the response events and how can they be `intercepted`
 * jsonp
+* progress events
+* check Bartosz's dev article
