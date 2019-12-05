@@ -28,6 +28,8 @@ The `HttpClientModule` is a **service module** provided by Angular that allows u
 
 ---
 
+<div style="display: none;" id="start"></div>
+
 ## Let's start exploring 🚧
 
 Once in the StackBlitz project:
@@ -52,6 +54,8 @@ I'd kindly recommend switching over to your text editor and start exploring this
 
 
 Continuing on, put a breakpoint on the `line 492` and refresh the browser. The most interesting part is just about to begin!
+
+<div style="display: none;" id="httpvents"></div>
 
 <img src="../screenshots/articles/exploring-httpclientmodule/httpevents.png" style="text-align: center;">
 
@@ -443,7 +447,132 @@ The cloned request would eventually be passed to the next interceptor in the cha
 
 ---
 
-## How can interceptors be bypassed?
+## How can interceptors be completely bypassed?
+
+### TLDR;
+
+Make sure that `HttpHandler` maps to `HttpXhrBackend`:
+
+```typescript
+@NgModule({
+  imports: [
+    /* ... */
+    HttpClientModule,
+    /* ... */
+  ],
+  declarations: [ /* ... */ ],
+  providers: [
+    /* ... */
+    {
+      provide: HttpHandler,
+      useExisting: HttpXhrBackend,
+    },
+    /* ... */
+  ]
+})
+export class AppModule { }
+```
+
+### Detailed Explanation
+
+_It is recommended to first explore the [HttpClientModule](#start)_.
+
+Whenever you do something like `HttpClient.get()`(or any other **HTTP verb**), the `HttpClient.request()` method will be eventually called. In this method, this line will be reached:
+
+```typescript
+const events$: Observable<HttpEvent<any>> =
+        of (req).pipe(concatMap((req: HttpRequest<any>) => this.handler.handle(req)));
+```
+
+Let's see how `this.handler` is retrieved:
+
+```typescript
+@Injectable()
+export class HttpClient {
+  constructor(private handler: HttpHandler) {}
+
+  /* ... */
+}
+```
+
+If we take a look at `HttpClientModule`'s providers,
+
+<div style="text-align: center;">
+  <img src="../screenshots/articles/exploring-httpclientmodule/img2.png" style="text-align: center;">
+</div>
+
+we can tell that `HttpHandler` maps to `HttpInterceptingHandler`:
+
+```typescript
+@Injectable()
+export class HttpInterceptingHandler implements HttpHandler {
+  private chain: HttpHandler|null = null;
+
+  constructor(private backend: HttpBackend, private injector: Injector) {}
+
+  handle(req: HttpRequest<any>): Observable<HttpEvent<any>> {
+    if (this.chain === null) {
+      const interceptors = this.injector.get(HTTP_INTERCEPTORS, []);
+      this.chain = interceptors.reduceRight(
+          (next, interceptor) => new HttpInterceptorHandler(next, interceptor), this.backend);
+    }
+    return this.chain.handle(req);
+  }
+}
+```
+
+`HttpInterceptingHandler` constructs the **interceptor chain**, which will in the end allow us to **apply** all the **registered interceptors** to the request.
+
+We can also see that `HttpInterceptingHandler` **implements** `HttpHandler`:
+
+```typescript
+export abstract class HttpHandler {
+  abstract handle(req: HttpRequest<any>): Observable<HttpEvent<any>>;
+}
+```
+
+`HttpHandler` is implemented by `HttpBackend`
+
+```typescript
+export abstract class HttpBackend implements HttpHandler {
+  abstract handle(req: HttpRequest<any>): Observable<HttpEvent<any>>;
+}
+```
+
+`HttpBackend` is implemented by `HttpXhrBackend`, which will eventually **send the request** to the server(More on this [here](#interceptors)).
+
+```typescript
+@Injectable()
+export class HttpXhrBackend implements HttpBackend {
+  constructor(private xhrFactory: XhrFactory) {}
+
+  handle(req: HttpRequest<any>): Observable<HttpEvent<any>> {
+    /* ... */
+  }
+}
+```
+As you can see, both `HttpInterceptingHandler` and `HttpXhrBackend` will have to **implement** the `handle()` method.
+Consequently, the solution to this problem would be to make `HttpHandler` map to `HttpXhrBackend`.
+
+```typescript
+@NgModule({
+  imports: [
+    /* ... */
+    HttpClientModule,
+    /* ... */
+  ],
+  declarations: [ /* ... */ ],
+  providers: [
+    /* ... */
+    {
+      provide: HttpHandler,
+      useExisting: HttpXhrBackend,
+    },
+    /* ... */
+  ]
+})
+export class AppModule { }
+```
 
 ---
 
