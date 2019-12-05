@@ -443,7 +443,40 @@ The cloned request would eventually be passed to the next interceptor in the cha
 
 ---
 
-## Why is it recommeneded to load the HttpClientModule only once, in the `AppModule` ?
+## Why is it recommended to load the HttpClientModule only once in AppModule or CoreModule?
+
+A lazy-loaded module `A` will create its own child injector which will resolve the `providers` from that module. This means that the **providers provided inside** `A` and those **provided by modules imported by** `A` will be **scoped** to module `A`.
+
+Importing `HttpClientModule` in `A` will result in only **applying** the **interceptors** that are **provided** inside **`A`**, excluding anything that is up in the injector tree. This is because `HttpClientModule` comes with its **own providers** which, as mentioned above, will be scoped to `A`.
+
+```
+             { provide: HttpHandler, useClass: ... }
+  AppModule {    /
+    imports: [  /
+      HttpClientModule
+    ]
+  }
+                  { provide: HttpHandler, useClass: HttpInterceptingHandler } <- where interceptors are gathered
+  FeatureModule { /  <- lazy-loaded                  |
+    imports: [   /                                   |
+      HttpClientModule <------------------           |
+    ]                                     |          |
+                                          |          |
+    declarations: [FeatureComponent]       <------------------------
+    providers: [                                     |              |
+                                                    /               |
+      { provide: HTTP_INTERCEPTORS, useClass: FeatInterceptor_1 },  |
+      { provide: HTTP_INTERCEPTORS, useClass: FeatInterceptor_2 }   |
+    ]                                      ------------------------>
+  }                                       |
+                                          | httpClient.get()
+  FeatureComponent {                      |
+    constructor (private httpClient: HttpClient) { }
+  }
+```
+
+
+If `HttpClientModule` was **not imported** in `A`, it would **look up** the **injector tree** until it finds the needed providers(in this case, it would be in `AppModule`). This also means that any interceptors provided in `A` will be **excluded**.
 
 ---
 
@@ -587,4 +620,4 @@ export class AppModule { }
 * (HttpBackend): explain the response events and how can they be `intercepted`
 * jsonp
 * progress events
-* check Bartosz's dev article
+* https://stackoverflow.com/questions/46469349/how-to-make-an-angular-module-to-ignore-http-interceptor-added-in-a-core-module
