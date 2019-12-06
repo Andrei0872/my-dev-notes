@@ -611,9 +611,44 @@ export class AppModule { }
 
 ## What is the difference between `setHeaders` and `headers`?
 
-* `setHeaders` appends
+### `setHeaders`
 
-* `headers` rewrites
+```typescript
+req = req.clone({
+  setHeaders: { foo: 'bar' },
+})
+```
+
+With `setHeaders`, we can **append** the provided headers to the existing ones.
+
+### `headers`
+
+```typescript
+req = req.clone({
+  setHeaders: { foo: 'bar' },
+})
+```
+
+With `headers`(an instance of `HttpHeaders`), we can **override** the **existing** headers.
+
+Here is the excerpt from the sources:
+
+```typescript
+// Headers and params may be appended to if `setHeaders` or
+// `setParams` are used.
+let headers = update.headers || this.headers;
+let params = update.params || this.params;
+
+// Check whether the caller has asked to add headers.
+if (update.setHeaders !== undefined) {
+  // Set every requested header.
+  headers =
+      Object.keys(update.setHeaders)
+          .reduce((headers, name) => headers.set(name, update.setHeaders ![name]), headers);
+}
+```
+
+_Note: The same goes for `setParams` & `params`;_.
 
 ---
 
@@ -641,12 +676,14 @@ The magic about this is that it will only initialize the headers(**key-value pai
 Here's how the constructor looks like:
 
 ```typescript
-if (!headers) {
-  this.headers = new Map<string, string[]>();
-} else if (typeof headers === 'string') {
-  this.lazyInit = () => { /* ... */ }
-} else {
-  this.lazyInit = () => { /* ... */ }
+constructor(headers?: string|{[name: string]: string | string[]}) {
+  if (!headers) {
+    this.headers = new Map<string, string[]>();
+  } else if (typeof headers === 'string') {
+    this.lazyInit = () => { /* ... */ }
+  } else {
+    this.lazyInit = () => { /* ... */ }
+  }
 }
 ```
 
@@ -760,9 +797,24 @@ In `HttpHeaders.copyFrom()`, `other` will be the first instance of `HttpHeaders`
 
 We are then left with two other things to do:
 
-1) copy the state of the first instance into this current instance(_last clone_)
+1) copy the state of the first instance into this current instance(_last clone_); this is achieved in these lines from `HttpHeaders.copyFrom()`:
+```typescript
+Array.from(other.headers.keys()).forEach(key => {
+  this.headers.set(key, other.headers.get(key) !);
+  this.normalizedNames.set(key, other.normalizedNames.get(key) !);
+});
+```
 
-2) apply the collected actions onto the copied state.
+2) apply the collected actions onto the copied state:
+
+```typescript
+// HttpHeaders.init()
+if (!!this.lazyUpdate) {
+  this.lazyUpdate.forEach(update => this.applyUpdate(update));
+  this.lazyUpdate = null;
+}
+```
+
 
 ---
  
