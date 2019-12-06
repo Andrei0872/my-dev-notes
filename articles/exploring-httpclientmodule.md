@@ -616,8 +616,158 @@ export class AppModule { }
 * `headers` rewrites
 
 ---
+
+## What's the magic behind `HttpHeaders`?
+
+`HttpHeaders` is a class that allows us to manipulate(perform **CRUD operations** on) headers for our requests.
+
+Have a look at this example:
+
+```typescript
+const headers = new HttpHeaders({
+  foo: 'foo',
+  bar: 'bar',
+});
+
+const newHeaders = headers
+  .append('name', 'andrei')
+  .set('city', 'tgv')
+  .delete('foo')
+  .has('abcd');
+```
+
+The magic about this is that it will only initialize the headers(**key-value pairs**) when they are actually needed. That is, when you want to query for their current state(`HttpHeaders.forEach()`, `HttpHeaders.get()` etc...).
+
+Here's how the constructor looks like:
+
+```typescript
+if (!headers) {
+  this.headers = new Map<string, string[]>();
+} else if (typeof headers === 'string') {
+  this.lazyInit = () => { /* ... */ }
+} else {
+  this.lazyInit = () => { /* ... */ }
+}
+```
+
+As we can see, the `lazyInit` function is initialized in the constructor of `HttpHeaders`.  
+As a result, in order to perform actions such as `HttpHeaders.append`, `HttpHeaders.set` or `HttpHeaders.delete`, which would eventually mutate the **initial state** that was provided to the **constructor**, there will be a clone created that will store the new actions(`create` -> `set`, `update` -> `append`, `delete` -> `delete`). 
+These **stored actions** will be **merged** with the **initial state**.
+
+Here's how the `HttpHeaders.clone` looks like:
+
+```typescript
+// action
+interface Update {
+  name: string;
+  value?: string|string[];
+  op: 'a'|'s'|'d';
+}
+
+private clone(update: Update): HttpHeaders {
+  const clone = new HttpHeaders();
+  // Preserve the initialization across multiple clones
+  clone.lazyInit =
+      (!!this.lazyInit && this.lazyInit instanceof HttpHeaders) ? this.lazyInit : this;
+  // Accumulate actions 
+  clone.lazyUpdate = (this.lazyUpdate || []).concat([update]);
+  return clone;
+}
+```
+
+Let's understand this logic by using our initial example:
+
+```typescript
+const headers = new HttpHeaders({
+  foo: 'foo',
+  bar: 'bar',
+});
+/* 
+-->
+h1.lazyInit = () => {
+  // Initialize headers
+}
+*/
+
+const newHeaders = headers
+  .append('name', 'andrei')
+  /* 
+  -->
+  // Creating a clone
+  h2.lazyInit = h1 // Preserving the first `instance` across multiple clones
+  h2.lazyUpdate = { "name": "name", "value": "andrei", "op": "a" }
+  */
+  .set('city', 'tgv')
+  /* 
+  -->
+  // Creating a clone
+  // h2.lazyInit = h1
+  h3.lazyInit = h2.lazyInit // Preserving the first `instance` across multiple clones
+  h3.lazyUpdate = [
+    { "name": "name", "value": "andrei", "op": "a" }, // append
+    { "name": "city", "value": "tgv", "op": "s" } // set
+  ]
+  */
+  .delete('foo')
+  /* 
+  -->
+  // Creating a clone
+  // h3.lazyInit = h2.lazyInit
+  h4.lazyInit = h3.lazyInit // Preserving the first `instance` across multiple clones
+  h4.lazyUpdate = [
+    { "name": "name", "value": "andrei", "op": "a" },
+    { "name": "city", "value": "tgv", "op": "s" },
+    { "name": "foo", "op": "d" }
+  ]
+  */
+  .has('abcd');
+  /* 
+  -->
+  Here is where the initialization takes place
+  */
+```
+
+The **merging process** would look like this:
+
+```typescript
+private init(): void {
+  if (!!this.lazyInit) {
+    if (this.lazyInit instanceof HttpHeaders) {
+      this.copyFrom(this.lazyInit);
+    } else {
+      this.lazyInit();
+    }
+    this.lazyInit = null;
+    if (!!this.lazyUpdate) {
+      this.lazyUpdate.forEach(update => this.applyUpdate(update));
+      this.lazyUpdate = null;
+    }
+  }
+}
+
+private copyFrom(other: HttpHeaders) {
+  other.init();
+  Array.from(other.headers.keys()).forEach(key => {
+    this.headers.set(key, other.headers.get(key) !);
+    this.normalizedNames.set(key, other.normalizedNames.get(key) !);
+  });
+}
+```
+
+The `HttpHeaders.init()` method is called when querying for the state of the headers(by using methods like `HttpHeaders.get()`, `HttpHeaders.has()`)
+
+In `HttpHeaders.copyFrom()`, `other` will be the first instance of `HttpHeaders`, which contains the initialization logic: `lazyInit`. Calling `other.init()` will eventually reach this part of the `HttpHeaders.init()`: `this.lazyInit();`. Here the initial state is created into the first instance.
+
+We are then left with two other things to do:
+
+1) copy the state of the first instance into this current instance(_last clone_)
+
+2) apply the collected actions onto the copied state.
+
+---
  
 * (HttpBackend): explain the response events and how can they be `intercepted`
 * jsonp
 * progress events
 * https://stackoverflow.com/questions/46469349/how-to-make-an-angular-module-to-ignore-http-interceptor-added-in-a-core-module
+* check tests
