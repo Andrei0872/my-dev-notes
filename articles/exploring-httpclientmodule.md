@@ -4,6 +4,24 @@ In this post, we are going to understand how the `HttpClientModule` actually wor
 
 _Note: This article is based on **Angular 8.2.x**_.
 
+## Content
+
+* [Setting up](#setting-up)
+* [What is HttpClientModule?](#what-is-httpClientModule)
+* [Let's start exploring](#start-exploring)
+  * [Let's explore HttpXhrBackend](#explore-backend)
+* [How can a request be canceled?](#how-can-a-request-be-canceled)
+* [How can interceptors retry requests?](#how-can-interceptors-retry-requests)
+* [Why is it sometimes necessary to clone the request object inside an interceptor?](#why-is-it-sometimes-necessary-to-clone-the-request-object-inside-an-interceptor)
+* [Why is it recommended to load the HttpClientModule only once in AppModule or CoreModule?](#why-is-it-recommended-to-load-the-HttpClientModule-only-once-in-AppModule-or-coreModule)
+* [How can interceptors be completely bypassed?](#how=can=interceptors=be=completely=bypassed)
+* [What is the difference between `setHeaders` and `headers`?](#what-is-the-difference-between-setHeaders-and-headers)
+* [What's the magic behind `HttpHeaders`?](#headers-magic)
+* [What about `HttpClientJsonpModule`?](#what-about-HttpClientJsonpModule)
+* [Conclusion](#conclusion)
+
+---
+
 ## Setting up
 
 My favorite way to understand how things really work is by using the debugger while having the source code in my text editor so that I can explore and make assumptions easily.
@@ -26,11 +44,15 @@ We are going to use it throughout the article in order to get a better understan
 
 The `HttpClientModule` is a **service module** provided by Angular that allows us to perform **HTTP requests** and easily manipulate those requests and their responses. It is called a **service module** because it **only instantiates services** and **does not export** any components, directives or pipes.
 
+_Back to [content](#content)_.
+
 ---
 
 <div style="display: none;" id="start"></div>
 
 ## Let's start exploring 🚧
+
+<div id="start-exploring"></div>
 
 Once in the StackBlitz project:
 
@@ -87,7 +109,7 @@ I like to think of this **chain** as a **linked list** that is built starting of
 
 In order to get a better overview of this, I'd suggest that you keep resuming the execution until you reach `line 42`, while paying attention to what's going on in the `Scope` tab.
 
-Now, we can go through the list starting off from the `head node` by stepping into the `handle` function from `line 42`. 
+Now, after the chain has been built, we can go through the list starting off from the `head node` by stepping into the `handle` function from `line 42`. 
 
 <div id="interceptors"></div>
 
@@ -98,13 +120,15 @@ Here's how this linked list could look like:
 </div>
 
 Judging by the image above, we can tell that every `next.handle()` **returns** an **observable**.
-What this means is that every interceptor can add custom behavior to the returned observable. Those **changes** will **propagate** in the **precedent interceptors**.
+What this means is that every interceptor can add custom behavior to the returned observable. Those **changes** will **propagate** in the **precedent interceptors** in the chain.
 
 Before going any further, let's focus our attention on `this.backend`. Where does it come from? If you take a look at the **constructor**, you should see that is provided by `HttpBackend`, which maps to `HttpXhrBackend`(if not sure why, check [what this module provides](#providers)).
 
 <div id="httpxhrbackend"></div>
 
 ### Let's explore `HttpXhrBackend`
+
+<div id="explore-backend"></div>
 
 _Setting some breakpoints here and there will definitely lead to a better understanding! :)_
 
@@ -114,7 +138,7 @@ _Setting some breakpoints here and there will definitely lead to a better unders
     <img src="../screenshots/articles/exploring-httpclientmodule/httpbackend.png">
 </div>
 
-The first thing that leaps to the eye is the `handle()` method, which is also the last method called in the **interceptor chain** because it sits in the **tail** node. It is also responsible for **dispatching** the request.
+The first thing that leaps to the eye is the `handle()` method, which is also the last method called in the **interceptor chain** because it sits in the **tail** node. It is also responsible for **dispatching** the request to the backend.
 
 * `partialFromXhr` - extracts the `HttpHeaderResponse` from the current `XMLHttpRequest` and memoizes it; this object needs to be computed only once can be used in multiple places. For example, it used in the `onLoad` and `onError` events
 
@@ -126,17 +150,23 @@ The first thing that leaps to the eye is the `handle()` method, which is also th
 
 * `onError` - the callback function called when a **network error** occurred during the request
 
-Lastly, it is important to mention that the returned observable from `HttpXhrBackend.handle()` will dispatch the request when we subscribe to one of the `HttpClient`'s methods(`get`, `post` etc). This means that `HttpXhrBackend.handle()` returns a **cold observable**.
+Lastly, it is important to mention that the returned observable from `HttpXhrBackend.handle()` will dispatch the request when we subscribe to one of the `HttpClient`'s methods(`get`, `post` etc). This means that `HttpXhrBackend.handle()` returns a **cold observable** which can be subscribed to by using `concatMap`:
 
-
-* this will get subscribed to through `concatMap`
-
-<!-- IMAGE! -->
 ```typescript
 this.httpClient.get(url).subscribe() -> of(req).pipe(concatMap(req => this.handler.handle))
 ```
 
-The callback returned from the observable will be **invoked** when the **observable**  **stops emitting** values. That is, when an **error** or a **complete** notification occurs.
+The callback returned from the observable 
+
+```typescript
+return () => {
+  xhr.removeEventListener('error', onError);
+  xhr.removeEventListener('load', onLoad);
+  xhr.abort();
+};
+```
+
+will be **invoked** when the **observable**  **stops emitting** values. That is, when an **error** or a **complete** notification occurs.
 
 <details>
 <summary>onComplete</summary>
@@ -194,9 +224,9 @@ NO MORE VALUES
 ```
 </details>
 
----
+_Back to [content](#content)_
 
-Based on the acquired knowledge, we are now able to answer some questions!
+---
 
 ## How can a request be canceled?
 
@@ -236,7 +266,7 @@ of(1, 2)
 /* 
 src 1
 src 2
-called on unsubscription
+called on unsubscription ---> unsubscribed from because the next value(`2`) kicked in
 src 1
 src 2
 src 3
@@ -261,6 +291,8 @@ return () => {
 ```
 
 Thus, we can infer that if the observable that made the request is unsubscribed from, the above callback will be invoked.
+
+_Back to [content](#content)_
 
 ---
 
@@ -399,7 +431,7 @@ I've had enough values!
 
 _[StackBlitz](https://stackblitz.com/edit/rx-playground-3locfw)_
 
-This is, in my view, this is the effect of `next.handle()` inside each interceptor(Image [here](#interceptors)). Imagine that instead of `const obsI3$ = obsI2$` we would have something like this:
+This is, in my view, the effect of `next.handle()` inside each interceptor(Image [here](#interceptors)). Imagine that instead of `const obsI3$ = obsI2$` we would have something like this:
 
 ```typescript
 // Interceptor Nr.2
@@ -424,6 +456,8 @@ When using interceptors you would want to retry the request by using `switchMap(
 
 From this line `switchMap(() => /* obsI2$ */caught)` we can see that `catchError` can have a second argument, `caught`, which is the source observable.(More on this [here](https://github.com/ReactiveX/rxjs/blob/master/src/internal/operators/catchError.ts#L99-L106)).
 
+_Back to [content](#content)_
+
 ---
 
 ## Why is it sometimes necessary to clone the request object inside an interceptor?
@@ -442,6 +476,8 @@ return next.handle(request)
 
 The most important reason would be **immutability**. You wouldn't want to mutate the **request object** from multiple places. Thus, every interceptor should configure the request independently.
 The cloned request would eventually be passed to the next interceptor in the chain.
+
+_Back to [content](#content)_
 
 ---
 
@@ -479,6 +515,8 @@ Importing `HttpClientModule` in `A` will result in only **applying** the **inter
 
 
 If `HttpClientModule` was **not imported** in `A`, it would **look up** the **injector tree** until it finds the needed providers(in this case, it would be in `AppModule`). This also means that any interceptors provided in `A` will be **excluded**.
+
+_Back to [content](#content)_
 
 ---
 
@@ -609,6 +647,8 @@ Consequently, the solution to this problem would be to make `HttpHandler` map to
 export class AppModule { }
 ```
 
+_Back to [content](#content)_
+
 ---
 
 ## What is the difference between `setHeaders` and `headers`?
@@ -652,9 +692,13 @@ if (update.setHeaders !== undefined) {
 
 _Note: The same goes for `setParams` & `params`;_.
 
+_Back to [content](#content)_
+
 ---
 
 ## What's the magic behind `HttpHeaders`?
+
+<div id="headers-magic"></div>
 
 `HttpHeaders` is a class that allows us to manipulate(perform **CRUD operations** on) headers for our requests.
 
@@ -691,7 +735,7 @@ constructor(headers?: string|{[name: string]: string | string[]}) {
 
 As we can see, the `lazyInit` function is initialized in the constructor of `HttpHeaders`.  
 As a result, in order to perform actions such as `HttpHeaders.append`, `HttpHeaders.set` or `HttpHeaders.delete`, which would eventually mutate the **initial state** that was provided to the **constructor**, there will be a clone created that will store the new actions(`create` -> `set`, `update` -> `append`, `delete` -> `delete`). 
-These **stored actions** will be **merged** with the **initial state**.
+These **stored actions** will be **merged** with the **initial state** in the end.
 
 Here's how the `HttpHeaders.clone` looks like:
 
@@ -817,6 +861,8 @@ if (!!this.lazyUpdate) {
 }
 ```
 
+_Back to [content](#content)_
+
 ---
 
 ## What about `HttpClientJsonpModule`?
@@ -918,4 +964,8 @@ const onLoad = (event: Event) => {
 }
 ```
 
+_Back to [content](#content)_
+
 ---
+
+## Conclusion
