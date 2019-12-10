@@ -102,6 +102,8 @@ What this means is that every interceptor can add custom behavior to the returne
 
 Before going any further, let's focus our attention on `this.backend`. Where does it come from? If you take a look at the **constructor**, you should see that is provided by `HttpBackend`, which maps to `HttpXhrBackend`(if not sure why, check [what this module provides](#providers)).
 
+<div id="httpxhrbackend"></div>
+
 ### Let's explore `HttpXhrBackend`
 
 _Setting some breakpoints here and there will definitely lead to a better understanding! :)_
@@ -815,11 +817,105 @@ if (!!this.lazyUpdate) {
 }
 ```
 
+---
+
+## What about `HttpClientJsonpModule`?
+
+[JSONP](https://en.wikipedia.org/wiki/JSONP) is a way to solve the well-known [CORS](https://developer.mozilla.org/en-US/docs/Web/HTTP/CORS) issue. It does so by treating the resource as a `script` file.
+
+When we are requesting a resource with the `script` tag we can pass along a **defined callback** which the resource will eventually wrap the json response in. The **callback** will be **called while** the `script` is **loading**.
+
+This module provides as a way to use **JSONP** without worrying too much about the aforementioned details.
+
+Let's quickly explore it and see why it is awesome!
+
+```typescript
+@NgModule({
+  providers: [
+    JsonpClientBackend,
+    {provide: JsonpCallbackContext, useFactory: jsonpCallbackContext},
+    {provide: HTTP_INTERCEPTORS, useClass: JsonpInterceptor, multi: true},
+  ],
+})
+export class HttpClientJsonpModule {
+}
+```
+
+**JsonpCallbackContext** maps to `jsonpCallbackContext` which will return either the **window object** or an **empty object**(used in a testing environment). The returned object is used to **store** the **callback** which will in the end be called by script.
+
+It also provides an interceptor, namely `JsonpInterceptor`. What this interceptor does is that it makes sure that our request never reaches the [HttpBackend](#httpxhrbackend)(which will contain completely different logic) when the request method is `JSONP`. 
+
+```typescript
+@Injectable()
+export class JsonpInterceptor {
+  constructor(private jsonp: JsonpClientBackend) {}
+
+  intercept(req: HttpRequest<any>, next: HttpHandler): Observable<HttpEvent<any>> {
+    if (req.method === 'JSONP') {
+      return this.jsonp.handle(req as HttpRequest<never>);
+    }
+
+    // Fall through for normal HTTP requests.
+    return next.handle(req); // Next interceptor in the chain
+  }
+}
+```
+
+**JsonpClientBackend** is where the magic happens. It automatically generates a callback that will be called later by the script. It does so by **replacing** the `JSONP_CALLBACK` parameter value in the url with the **newly generated callback name**.  
+
+```typescript
+export class JsonpClientBackend implements HttpBackend {
+  private nextCallback(): string { return `ng_jsonp_callback_${nextRequestId++}`; }
+
+  /* ... */
+
+  handle (/* ... */) {
+    return new Observable<HttpEvent<any>>((observer: Observer<HttpEvent<any>>) => {
+      /* ... */
+      const callback = this.nextCallback();
+      const url = req.urlWithParams.replace(/=JSONP_CALLBACK(&|$)/, `=${callback}$1`);
+    });
+  }
+}
+```
+
+Then, it stores the **callback function** in the object returned by `jsonpCallbackContext` using the **generated callback name**.
+
+```typescript
+this.callbackMap[callback] = (data?: any) => {
+  delete this.callbackMap[callback];
+
+  if (cancelled) {
+    return;
+  }
+
+  body = data;
+  finished = true;
+};
+```
+
+It is important to notice once again that the above callback should be called **before** the script finished downloading. This way, we can **determine whether** the **provided callback was called or not** in case we decide to provide the callback name ourselves.
+This is done when the script has finished loading:
+
+```typescript
+// Inside `JsonpClientBackend.handle`
+const onLoad = (event: Event) => {
+    // Maybe due to `switchMap`
+    if (cancelled) {
+      return;
+    }
+
+    cleanup();
+
+    // Was the callback called with the response?
+    if (!finished) {
+      // If not, send the error response to the stream
+      
+      return;
+    }
+
+    // If yes, sent the response to the stream - everything was successful
+}
+```
 
 ---
- 
-* (HttpBackend): explain the response events and how can they be `intercepted`
-* jsonp
-* progress events
-* https://stackoverflow.com/questions/46469349/how-to-make-an-angular-module-to-ignore-http-interceptor-added-in-a-core-module
-* check tests
