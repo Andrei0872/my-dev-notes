@@ -66,7 +66,7 @@ Now, you should see something like this:
 
 <img src="../screenshots/articles/exploring-httpclientmodule/img1.png" style="text-align: center;">
 
-By clicking on the _anonymous function_ from `clint.ts`, you are now in the `HttpClient` class, which is the one you usually inject in your services.
+By clicking on the _anonymous function_ from `client.ts`, you are now in the `HttpClient` class, which is the one you usually inject in your services.
 
 As you might have expected, this class comprises the methods for the well-known HTTP verbs.
 
@@ -969,3 +969,7 @@ _Back to [content](#content)_
 ---
 
 ## Conclusion
+
+I hope exploring this module was a fun adventure! 
+
+Thanks for reading!
