@@ -11,6 +11,7 @@
 - [Proxy](#proxy)
 - [Symbol](#symbol)
 - [Typed Arrays](#typed-arrays)
+- [Blob](#blob)
 - [:sparkles:Cool Stuff :sparkles:](#cool-stuff)
     - [Replacing Strings](#replacing-strings)
 - [DOM](#dom)
@@ -1073,6 +1074,29 @@ const num = dv2.getInt8(1);
 console.log(num) // 42
 ```
 </details>
+
+---
+
+## Blob
+
+- a `Blob` object is **immutable**
+- `File` inherits from `Blob`
+- `FileReader` reads data from `Blob`(and from `File`) objects
+
+### Convert a `Blob` to another format
+
+We can use `FileReader`'s API.
+
+- `FileReader.readAsDataURL(blob)` - convert to a **base64 url**
+- `FileReader.readAsArrayBuffer(blob)` - convert to a [ArrayBuffer](#typed-arrays)
+
+### `Blob` as URL
+
+- a blob object can be used as an URL for `<a>`, `<img>` to show its contents
+
+- `URL.createObjectURL(blob)`
+    - creates a unique URL form a blob
+    - free the blob from memory by using `URL.revokeObjectURL(url)`
 
 ---
 
