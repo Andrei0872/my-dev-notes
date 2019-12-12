@@ -5,6 +5,7 @@
   * [View Encapsulation](#view-encapsulation)
   * [Shadow DOM vs Light DOM](#shadow-dom-vs-light-dom)
 * [Interceptors](#interceptors)
+* [Change Detection](#change-detection)
 * [Directives](#directives)
     * [Structural directives](#structural-directives)
     * [`ngIf` with async pipe](#ngIf-with-async-pipe)
@@ -187,7 +188,20 @@ Assuming a request will be intercepted by these interceptors:
 
 [Working Example](https://stackblitz.com/edit/ng-understanding-interceptors?file=src%2Fapp%2Fapp.component.ts)
 
---- 
+---
+
+## Change Detection
+
+### OnPush
+
+Will **check** the component, but **only run change detection** if:
+
+* input property's reference changes
+* an **event** is **internally emitted**(**DOM** event/**EventEmitter**)
+* the **async pipe** receives a **new event**
+* change detection is manually invoked: `ChangeDetectorRef.detectChanges()`
+
+---
 
 ## Directives
 
