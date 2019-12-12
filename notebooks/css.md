@@ -94,6 +94,11 @@ this is because the downloaded script might **alter** the DOM(by `creating`/`rem
     * an element with a **position other** than `static`
     * an element with **opacity less than 1**
 
+### `z-index`
+
+* **only** works on **positioned elements**(with the `position` property other than `static`)
+
+
 ### replaced element
 
 * element whose **content** **cannot be affected** by CSS; however, the **position** of the content can be altered(by using `object-fit`, `object-position`)
