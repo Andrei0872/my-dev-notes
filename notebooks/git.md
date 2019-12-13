@@ -1,49 +1,66 @@
 # Git Notebook
 
-* [Concepts](#concepts)
-
-* [Aliases](#aliases)
-    * [List all files in a commit](#list-all-files-in-a-commit)
-    * [List tracked files in the current branch](#list-tracked-files-in-the-current-branch)
-
-* [Useful commands](#useful-commands)
-    * [Switching back and forth between two branches](#switching-back-and-forth-between-two-branches)
-    * [Store your credentials for a certain period of time](#store-your-credentials-for-a-certain-period-of-time)
-    * [Remove file from existing commit while keeping the changes](#remove-file-from-existing-commit-while-keeping-the-changes)
-    * [Stage all the tracked files across the entire repo](#stage-all-the-tracked-files-across-the-entire-repo)
-    * [Add only tracked files to index](#add-only-tracked-files-to-index)
-    * [Remove untracked files](#remove-untracked-files)
-    * [Search commits by string](#search-commits-by-string)
-    * [Search commits by file contents](#search-commits-by-file-contents)
-    * [Push something locally named X to remote name Y](#push-something-locally-named-x-to-remote-name-y)
-    * [Create a separate commit that includes changes of a file](#create-a-separate-commit-that-includes-changes-of-a-file)
-    * [View a deleted and not commited yet file](#view-a-deleted-and-not-commited-yet-file)
-    * [Rebase with `autostash`](#rebase-with-autostash)
-    * [Undo merge while keeping unstaged files](#undo-merge-while-keeping-unstaged-files)
-
-* [Branches](#branches)
-    * [See where all my the branches are being tracked from](#see-where-all-my-the-branches-are-being-tracked-from)
-    * [Fetch remote branch](#fetch-remote-branch)
-    * [Change remote branch name](#change-remote-branch-name)
-    * [Compare the checked out branch to another branch](#compare-the-checked-out-branch-to-another-branch)
-    * [Get current branch name](#get-current-branch-name)
-    * [Clone a single branch](#clone-a-single-branch)
-    * [Use `git add -p` on untracked files](#use-git-add--p`-on-untracked-files)
-
-* [Commands](#commands)
-    * [git diff](#git-diff)
-    * [git stash](#git-stash)
-        * [Add untracked files in current directory](#add-untracked-files-in-current-directory)
-    * [git reset](#git-reset)
-    * [git revert](#git-revert)
-    * [git checkout](#git-checkout)
-    * [git pull](#git-pull)
-    * [git cherry-pick](#git-cherry-pick)
-    * [git bisect](#git-bisect)
-    * [git grep](#git-grep)
-    * [git rebase](#git-rebase)
-    * [git fetch](#git-fetch)
-    * [git push](#git-push)
+- [Git Notebook](#git-notebook)
+  - [Concepts](#concepts)
+    - [master](#master)
+    - [origin/$branch](#originbranch)
+    - [index](#index)
+    - [detached HEAD](#detached-head)
+    - [commit](#commit)
+      - [merge commit](#merge-commit)
+    - [fast-forward](#fast-forward)
+    - [local repository](#local-repository)
+    - [patch file](#patch-file)
+    - [working directory/tree](#working-directorytree)
+  - [Aliases](#aliases)
+    - [Show the whole tree](#show-the-whole-tree)
+    - [Show just the tree your branch](#show-just-the-tree-your-branch)
+    - [List all files in a commit](#list-all-files-in-a-commit)
+    - [List tracked files in the current branch](#list-tracked-files-in-the-current-branch)
+  - [Useful Commands](#useful-commands)
+    - [Switching back and forth between two branches](#switching-back-and-forth-between-two-branches)
+    - [Store your credentials for a certain period of time](#store-your-credentials-for-a-certain-period-of-time)
+    - [Remove file from existing commit, while keeping the changes](#remove-file-from-existing-commit-while-keeping-the-changes)
+    - [Stage all the tracked files across the entire repo](#stage-all-the-tracked-files-across-the-entire-repo)
+    - [Add only tracked files to index](#add-only-tracked-files-to-index)
+    - [Remove untracked files](#remove-untracked-files)
+    - [Search commits by string](#search-commits-by-string)
+    - [Search commits by file contents](#search-commits-by-file-contents)
+    - [Push something locally named X to remote name Y](#push-something-locally-named-x-to-remote-name-y)
+    - [Create a separate commit that includes changes of a file](#create-a-separate-commit-that-includes-changes-of-a-file)
+    - [View a deleted and not commited yet file](#view-a-deleted-and-not-commited-yet-file)
+    - [Rebase with autostash](#rebase-with-autostash)
+    - [Undo merge while keeping unstaged files](#undo-merge-while-keeping-unstaged-files)
+    - [Follow file history(including renames)](#follow-file-historyincluding-renames)
+  - [Branches](#branches)
+    - [See where all my the branches are being tracked from](#see-where-all-my-the-branches-are-being-tracked-from)
+    - [Fetch remote branch](#fetch-remote-branch)
+    - [Change remote branch name](#change-remote-branch-name)
+    - [Compare the checked out branch to another branch](#compare-the-checked-out-branch-to-another-branch)
+    - [Get current branch name](#get-current-branch-name)
+    - [Clone a single branch](#clone-a-single-branch)
+    - [Use git add -p on untracked files](#use-git-add--p-on-untracked-files)
+  - [Commands](#commands)
+    - [git diff](#git-diff)
+      - [git diff .. vs git diff ...](#git-diff--vs-git-diff)
+    - [git stash](#git-stash)
+      - [Add untracked files in current directory](#add-untracked-files-in-current-directory)
+    - [git reset](#git-reset)
+      - [Options](#options)
+    - [git revert](#git-revert)
+    - [git checkout](#git-checkout)
+    - [git pull](#git-pull)
+    - [git cherry-pick](#git-cherry-pick)
+    - [git bisect](#git-bisect)
+      - [undo step](#undo-step)
+      - [fint he first commit in which a function name appears](#fint-he-first-commit-in-which-a-function-name-appears)
+      - [resuming work](#resuming-work)
+    - [git grep](#git-grep)
+      - [Options](#options-1)
+    - [git rebase](#git-rebase)
+    - [git fetch](#git-fetch)
+    - [git push](#git-push)
+      - [Options](#options-2)
 
 ## Concepts
 
@@ -296,6 +313,25 @@ git reset --hard ORIG_HEAD
 
 ```
 </details>
+
+### Follow file history(including renames)
+
+```bash
+
+# Assuming you have a file `bar.ts` which has 2 commits on it: `commitA` and `commitB`
+
+# Change file's name into `bat.ts` & commit with `commitC`
+
+
+# Will log only the information concerning the last commit
+git lo --stat -- bat.ts
+
+# Will show all the commits, including those the file had
+# before renaming. It also show the `rename action`
+# baz.ts => bat.ts
+git lo --stat -M --follow --follow -- bat.ts
+
+```
 
 ---
 
