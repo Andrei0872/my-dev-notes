@@ -23,6 +23,8 @@
     - [ngIf with async pipe](#ngif-with-async-pipe)
   - [</details>](#details)
   - [Dependency Injection](#dependency-injection)
+    - [provider](#provider)
+    - [injector](#injector)
     - [Dynamically configure an injector for dynamic views](#dynamically-configure-an-injector-for-dynamic-views)
   - [Forms](#forms)
     - [Two-way data binding](#two-way-data-binding)
@@ -326,68 +328,79 @@ Will yield:
 * if an element/component uses a directive `X`(which comes with providers) and directive `Y`, `Y` will be able to inject `X`'s providers;  
 in this case, the providers will be singletons: **one singleton per element/component**
 
-<details>
-<summary>Example</summary>
-<br>
+
+  <details>
+  <summary>Example</summary>
+  <br>
 
 
-```typescript
-class FooDep {
-  constructor () { console.log('this is foo!') }
-}
-
-@Directive({
-  selector: '[s1]',
-  providers: [FooDep],
-})
-export class Dir1 {
-  constructor (private fooDep: FooDep) {
-    console.log('[DIR 1]: foo deep');
+  ```typescript
+  class FooDep {
+    constructor () { console.log('this is foo!') }
   }
-}
 
-@Directive({
-  selector: '[s2]',
-})
-export class Dir2 {
-  constructor (private fooDep: FooDep) {
-    console.log('[DIR 2]: foo deep');
+  @Directive({
+    selector: '[s1]',
+    providers: [FooDep],
+  })
+  export class Dir1 {
+    constructor (private fooDep: FooDep) {
+      console.log('[DIR 1]: foo deep');
+    }
   }
-}
 
-@Directive({
-  selector: '[s3]',
-})
-export class Dir3 {
-  constructor (private fooDep: FooDep) {
-    console.log('[DIR 3]: foo deep');
+  @Directive({
+    selector: '[s2]',
+  })
+  export class Dir2 {
+    constructor (private fooDep: FooDep) {
+      console.log('[DIR 2]: foo deep');
+    }
   }
-}
 
-@Component({
-  selector: 'app-bar',
-  template: `
-    bar!
-  `,
-})
-export class BarComponent { }
+  @Directive({
+    selector: '[s3]',
+  })
+  export class Dir3 {
+    constructor (private fooDep: FooDep) {
+      console.log('[DIR 3]: foo deep');
+    }
+  }
 
-@Component({
-  selector: 'my-app',
-  template: `
-    <app-bar s1 s2 s3></app-bar>
-  `,
-})
-export class AppComponent { }
-/* 
---->
-this is foo!
-[DIR 1]: foo deep
-[DIR 2]: foo deep
-[DIR 3]: foo deep
-*/
-```
-</details>
+  @Component({
+    selector: 'app-bar',
+    template: `
+      bar!
+    `,
+  })
+  export class BarComponent { }
+
+  @Component({
+    selector: 'my-app',
+    template: `
+      <app-bar s1 s2 s3></app-bar>
+    `,
+  })
+  export class AppComponent { }
+  /* 
+  --->
+  this is foo!
+  [DIR 1]: foo deep
+  [DIR 2]: foo deep
+  [DIR 3]: foo deep
+  */
+  ```
+  </details>
+
+### provider
+
+- object that can be **injected** in the **constructor** of a component/service/directive/pipe
+- used by the **injector** to **create** a **new instance** of a **dependency** for a class the requires it
+- **tells** the **injector** how to **obtain** an **injectable dependency** associated with a DI token
+
+### injector
+
+- responsible for **creating dependency instances** and **injecting** them into the classes
 
 ### Dynamically configure an injector for dynamic views
 
