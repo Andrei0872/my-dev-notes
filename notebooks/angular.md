@@ -1,21 +1,35 @@
 # Angular Notebook
 
-* [Concepts](#concepts)
-  * [View](#view)
-  * [View Encapsulation](#view-encapsulation)
-  * [Shadow DOM vs Light DOM](#shadow-dom-vs-light-dom)
-* [Interceptors](#interceptors)
-* [Change Detection](#change-detection)
-* [Directives](#directives)
-    * [Structural directives](#structural-directives)
-    * [`ngIf` with async pipe](#ngIf-with-async-pipe)
-* [Dependency Injection](#dependency-injection)
-  * [Dynamically configure an injector for dynamic views](#dynamically-configure-an-injector-for-dynamic-views)
-* [Forms](#forms)
-* [Cool Stuff](#cool-stuff)
-    * [`ngProjectAs`](#ngProjectAs)
-    * [Load module as a child route](#load-module-as-a-child-route)
-    * [Dynamically load components within `ngIf`](#dynamically-load-components-within-ngif)
+- [Angular Notebook](#angular-notebook)
+  - [Concepts](#concepts)
+    - [AOT](#aot)
+    - [JIT](#jit)
+    - [{ static: true | false }](#static-true--false)
+    - [Pure pipes](#pure-pipes)
+    - [View](#view)
+      - [view container](#view-container)
+    - [View Encapsulation](#view-encapsulation)
+    - [Shadow DOM vs Light DOM](#shadow-dom-vs-light-dom)
+    - [Components](#components)
+  - [Interceptors](#interceptors)
+    - [The HttpRequest &amp; HttpResponse flow](#the-httprequest-amp-httpresponse-flow)
+      - [HttpRequest](#httprequest)
+      - [HttpResponse](#httpresponse)
+  - [Change Detection](#change-detection)
+    - [OnPush](#onpush)
+  - [Directives](#directives)
+    - [Structural directives](#structural-directives)
+      - [*ngFor](#ngfor)
+    - [ngIf with async pipe](#ngif-with-async-pipe)
+  - [</details>](#details)
+  - [Dependency Injection](#dependency-injection)
+    - [Dynamically configure an injector for dynamic views](#dynamically-configure-an-injector-for-dynamic-views)
+  - [Forms](#forms)
+    - [Two-way data binding](#two-way-data-binding)
+  - [Cool Stuff](#cool-stuff)
+    - [ngProjectAs](#ngprojectas)
+    - [Load module as a child route](#load-module-as-a-child-route)
+    - [Dynamically load components within ngIf](#dynamically-load-components-within-ngif)
 
 
 ## Concepts
@@ -143,7 +157,19 @@
     </foo>
     ```
   </details>
-  
+
+---
+
+### Components
+
+- **declarative**
+  - **referenced** in the **template**
+
+- **imperative**
+  - `entryComponents`
+  - **not referenced** in the **template**
+  - examples: the bootstrapped root component, route components
+
 ---
 
 ## Interceptors
