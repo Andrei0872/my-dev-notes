@@ -31,6 +31,7 @@
 - describes one piece of information
 - might contain selection set (deeply nested requests)
 - functions that return values
+- each field is **backed by** a **resolver**
 
 <details>
 <summary>Example</summary>
@@ -223,6 +224,6 @@ Like a blog post then receive the new number of likes
         mutation: MyMutationRootType
     }
     ```
-
+- a contract between the client and the server; defines how a client can access the data
 
 ---
