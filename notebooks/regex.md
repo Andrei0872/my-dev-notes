@@ -1,10 +1,15 @@
 # Regex Notebook
 
-- [Knowledge](#knowledge)
-- [Named Capture Groups](#named-capture-group)
-- [Lookbehind](#lookbehind)
-- [Lookahead](#lookahead)
-- [Quantifiers](#quantifiers)
+- [Regex Notebook](#regex-notebook)
+  - [Knowledge](#knowledge)
+    - [Shorthands](#shorthands)
+      - [+](#)
+      - [*](#)
+      - [?](#)
+  - [Named Capture Groups](#named-capture-groups)
+  - [Lookbehind](#lookbehind)
+  - [Lookahead](#lookahead)
+  - [Quantifiers](#quantifiers)
 
 ## Knowledge
 

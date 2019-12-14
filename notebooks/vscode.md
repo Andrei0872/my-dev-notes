@@ -2,16 +2,17 @@
 
 [_Terminal Themes_](https://glitchbone.github.io/vscode-base16-term/#/)
 
-* [Shortcuts](#shortcuts)
-    * [Go to previous mouse cursor](#go-to-previous-mouse-cursor)
-    * [Trim whitespace from selection](#trim-whitespace-from-selection)
-* [Keybindings](#keybindings)
-* [Debugging](#debugging)
-    * [Debugging TS](#debugging-ts)
-    * [Debugging TS with Tests](#debugging-ts-with-tests)
-* [Snippets](#snippets)
-* [Tricks](#tricks)
-    * [Compare Files](#compare-files)
+- [VS Code Notebook](#vs-code-notebook)
+  - [Shortcuts](#shortcuts)
+    - [Go to previous mouse cursor](#go-to-previous-mouse-cursor)
+    - [Trim whitespace from selection](#trim-whitespace-from-selection)
+  - [Keybindings](#keybindings)
+  - [Debugging](#debugging)
+    - [Debugging TS](#debugging-ts)
+    - [Debugging TS with tests](#debugging-ts-with-tests)
+  - [Snippets](#snippets)
+  - [Tricks](#tricks)
+    - [Compare Files](#compare-files)
 
 ## Shortcuts
 

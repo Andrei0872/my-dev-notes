@@ -1,13 +1,14 @@
 
 # Mongoose Notebook
 
-- [About Mongoose](#about-mongoose)
-- [Mongoose Schema](#mongoose-schema)
-- [Models](#models)
-- [Virtual properties](#virtual-properties)
-- [Instance Methods](#instance-methods)
-- [Static Methods](#static-methods)
-- [Middlewares](#middlewares)
+- [Mongoose Notebook](#mongoose-notebook)
+  - [About Mongoose](#about-mongoose)
+  - [Mongoose Schema](#mongoose-schema)
+  - [Models](#models)
+  - [Virtual properties](#virtual-properties)
+  - [Instance Methods](#instance-methods)
+  - [Static Methods](#static-methods)
+  - [Middlewares](#middlewares)
 
 ## About Mongoose
 

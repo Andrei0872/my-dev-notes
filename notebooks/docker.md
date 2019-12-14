@@ -1,9 +1,13 @@
 # Docker Notebook
 
-* [Concepts](#concepts)
-    * [Container](#container)
-    * [VM](#vm)
-* [Useful Commands](#useful-commands)
+- [Docker Notebook](#docker-notebook)
+  - [Concepts](#concepts)
+    - [Container](#container)
+    - [VM](#vm)
+    - [Image](#image)
+    - [OS kernel](#os-kernel)
+    - [Useful Commands](#useful-commands)
+      - [List names of all containers](#list-names-of-all-containers)
 
 ## Concepts
 

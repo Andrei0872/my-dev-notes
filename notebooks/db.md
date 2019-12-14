@@ -1,6 +1,5 @@
 # Database Notebook
 
-
 * [Concepts](#concepts)
   * [foreign key](#foreign-key)
 * [Indexing](#indexing)

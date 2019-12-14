@@ -1,16 +1,15 @@
 # Bash Scripting Notebook
 
-* [Concepts](#concepts)
-    * [2>&1](#2>&1)
-
-* [Useful Commands](#useful-commands)
-
-    * [Move multiple files to another location](#move-multiple-files-to-another-location)  
-    * [Delete everything that is not a directory](#delete-everything-that-is-not-a-directory)  
-    * [Move content from subdirectory x to subdirectory y](#move-content-from-subdirectory-x-to-subdirectory-y)
-    * [Create a directory and cd into id immediately](#create-a-directory-and-cd-into-id-immediately)
-    * [Update multiple npm packages](#update-multiple-npm-packages)
-    * [List only files in a directory](#list-only-files-in-a-directory)
+- [Bash Scripting Notebook](#bash-scripting-notebook)
+  - [Concepts](#concepts)
+    - [2&gt;&amp;1](#2gtamp1)
+  - [Useful Commands](#useful-commands)
+    - [Move multiple files to another location](#move-multiple-files-to-another-location)
+    - [Delete everything that is not a directory](#delete-everything-that-is-not-a-directory)
+    - [Move content from subdirectory x to subdirectory y](#move-content-from-subdirectory-x-to-subdirectory-y)
+    - [Create a directory and cd into id immediately](#create-a-directory-and-cd-into-id-immediately)
+    - [Update multiple npm packages](#update-multiple-npm-packages)
+    - [List only files in a directory](#list-only-files-in-a-directory)
 
 ## Concepts
 
