@@ -17,7 +17,10 @@
 ## Knowledge
 
 - the query is shaped just like the data it returns; it returns exactly what a client asks for
+- declarative data fetching
 - provides a **separation of structure**(schema - abstract descr of server's capabilities) **and behavior**(actual implementation - resolvers)
+- solves the **over-fetching** problem: the client downloads more information than needed
+- solves the **under-fetching** problem: a specific endpoint does not provide enough of the required information which results in making additional requests
 
 ### GraphQL Document
 
