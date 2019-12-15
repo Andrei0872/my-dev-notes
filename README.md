@@ -2,9 +2,9 @@
 
 ## Notebooks
 
-* [My Thoughts](https://github.com/Andrei0872/my-dev-notes/blob/master/notebooks/my-thoughts.md)
 * [Angular](https://github.com/Andrei0872/my-dev-notes/blob/master/notebooks/angular.md)
 * [Bash Scripting](https://github.com/Andrei0872/my-dev-notes/blob/master/notebooks/bash-scripting.md)
+* [Concepts](https://github.com/Andrei0872/my-dev-notes/blob/master/notebooks/concepts.md)
 * [CSS](https://github.com/Andrei0872/my-dev-notes/blob/master/notebooks/css.md)
 * [Database](https://github.com/Andrei0872/my-dev-notes/blob/master/notebooks/db.md)
 * [Docker](https://github.com/Andrei0872/my-dev-notes/blob/master/notebooks/docker.md)

@@ -329,7 +329,7 @@ git lo --stat -- bat.ts
 # Will show all the commits, including those the file had
 # before renaming. It also show the `rename action`
 # baz.ts => bat.ts
-git lo --stat -M --follow --follow -- bat.ts
+git lo --stat -M --follow -- bat.ts
 
 ```
 
