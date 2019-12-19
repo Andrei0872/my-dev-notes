@@ -301,7 +301,7 @@ y = x;
 
 ### infer
 
-* allows to `infer` the type from a **conditional**
+* allows to `infer` the type from a **conditional**; it's like saying: 'Hey TS, give whatever type you infer to be at this position and assign it to `R`(if using `infer R`)'
 
 * it can also **accumulate** the **inferred types** by **inferring** the **same variable multiple times** in a condition
 
@@ -343,6 +343,26 @@ type ObjType = {
 };
 
 type AccType = GetAccumulatedTypes<ObjType>; // boolean | string
+
+// ====================================
+
+interface Person {
+    name: string;
+    age: number;
+}
+
+function foo(): Person {
+    return {
+        name: 'andrei',
+        age: 18,
+    };
+}
+
+type RetType<F> = F extends (...args: any[]) => infer R ? R : never;
+
+type R = ReturnType<typeof foo> // Person
+
+type R2 = RetType<typeof foo> // // Person
 ```
 </details>
 
