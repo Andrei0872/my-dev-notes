@@ -14,6 +14,37 @@ export const REACTIVE_DRIVEN_DIRECTIVES: Type<any>[] =
 
 ---
 
+## TODO
+
+* explain the flow (setting up, how entities communicate with each other)
+  * come up with an illustration eventually
+
+* show how can one use `NgControl` provider token in order to get the current `FormControl`-based directive
+
+* explain how validators are set up for a **FormControl**(`FormControl.updateValueAndValidity`)
+
+* `PENDING` status
+
+### NgModel
+
+
+TODO: create GIF
+`standalone` - won't be registered as a child **form control**, will be **completely independent**. This means that its validity, value and user interaction reflect into any of its **form container ancestors**
+
+```html
+<form #f="ngForm">
+  <input [ngModelOptions]="{ standalone: true }" #myNgModel="ngModel" name="name" ngModel type="text">
+</form>
+
+{{ myNgModel.value }}
+
+<br>
+
+{{ f.value | json }}
+```
+
+---
+
 ## Questions
 
 * control must be defined as `standalone` in ngModelOptions.
@@ -23,6 +54,8 @@ export const REACTIVE_DRIVEN_DIRECTIVES: Type<any>[] =
 * what is `NgModelGroup` ?
 
 * how are classes being added depending on status?  `/home/anduser/Documents/WORKSPACE/tiy/04_angular/angular/packages/forms/src/directives/ng_control_status.ts`
+  * with the help of `NgControlStatus`, a directive that is automatically bound to a form control element when using `ngModel`, `formControl`, `formControlName`
+  * at the same time, `NgControlStatusGroup` is added to the form group(`<form>`, `formGroupName`, `formGroup`, `ngModelGroup`, `formArrayName`)
 
 ---
 
@@ -69,6 +102,9 @@ export const REACTIVE_DRIVEN_DIRECTIVES: Type<any>[] =
 
 * using `<input ngModel name="foo">` - won't trigger change detection `NgModel.ngOnChanges()` as there is **no property binding**
 
+* `FormControl.status` = DISABLED | INVALID | VALID | PENDING
+
+* a **model** is an object that stores data related to a specific entity
 
 ### AbstractControlDirective(abstract class)
 
@@ -88,6 +124,13 @@ export const REACTIVE_DRIVEN_DIRECTIVES: Type<any>[] =
 * keeps the **view synced** with the **model**
 
 ### AbstractControl
+
+* base class for `FormControl`, `FormGroup`, `FormArray`
+* provides functionality such as **running validators**, **resetting state** and calculating **validity status**
+
+### ControlContainer
+
+* contains multiple `NgControl` instances
 
 ### How does a control-based directive binds a `FormControl` instance to a DOM element with the help of a value accessor ?
 
