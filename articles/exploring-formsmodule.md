@@ -18,12 +18,21 @@ export const REACTIVE_DRIVEN_DIRECTIVES: Type<any>[] =
 
 * explain the flow (setting up, how entities communicate with each other)
   * come up with an illustration eventually
+  * 3 main entities(`ControlValueAccessor`, `FormDirective`, `AbstractControl`)
 
 * show how can one use `NgControl` provider token in order to get the current `FormControl`-based directive
 
 * explain how validators are set up for a **FormControl**(`FormControl.updateValueAndValidity`)
 
 * `PENDING` status
+
+* how do a **FormControl container**'s status, value get updated ? (explain the flow: `child` -> `parent` : `this._parent.updateValueAndValidity`)
+
+* explain `/home/anduser/Documents/WORKSPACE/tiy/04_angular/angular/packages/examples/forms/ts/ngModelGroup/ng_model_group_example.ts`
+
+* why a validator must return null when there haven't been found any errors?
+
+* explain validators' composition
 
 ### NgModel
 
@@ -91,6 +100,7 @@ TODO: create GIF
 * nested form groups
 * `control.validator = Validators.compose([control.validator !, dir.validator]);`(`shared.ts`) - because of `FormControl`(`RF`)
 * how do `AsyncValidators` fit in?
+* nested form groups + **validators**
 
 ## Takeaways
 
@@ -131,6 +141,109 @@ TODO: create GIF
 ### ControlContainer
 
 * contains multiple `NgControl` instances
+
+### AbstractFormGroupDirective
+
+* `formDirective` will always return the top-level `FormGroup` instance
+
+---
+
+### NgModelGroup
+
+TODO: try this!
+
+* **binds** a `FormGroup` instance to a **DOM element**; the bound `FormGroup` instance must be a child of `NgModelGroup` or `NgForm`
+
+```html
+<form> <!-- `NgForm` - automatically bound to `<form>` -->
+  <input type="text" ngModel name="companyName"/>
+
+  <div ngModelGroup="personal">
+    <input type="text" ngModel name="name"/>
+
+    <div ngModelGroup="address">
+      <input type="text" ngModel name="city"/>
+      <input type="text" ngModel name="street" />
+    </div>
+  </div>
+</form>
+```
+
+* the first occurrence of `NgModelGroup` must be a child of `NgForm`
+
+```html
+<!-- Valid -->
+<form>
+  <ng-container #myGrp="ngModelGroup" ngModelGroup="address">
+    <input type="text"ngModel name="city" />
+    <input type="text" ngModel name="street">
+  </ng-container>
+</form>
+```
+
+```html
+<!-- Invalid: `No provider for ControlContainer ...` -->
+<div #myGrp="ngModelGroup" ngModelGroup="address">
+  <input type="text"ngModel name="city" />
+  <input type="text" ngModel name="street">
+</div>
+```
+
+* particularly useful when you want to validate a sub-group of controls
+  For example, you have a **filter form** and you need to make sure that the **min filter** is always smaller than **max filter**:
+  ```html
+  <form #f="ngForm">
+    <ng-container min-max-validator ngModelGroup="price" #priceGrp="ngModelGroup">
+      <input type="text" ngModel name="min" pattern="^\d+$" required />
+      <input type="text" ngModel name="max" pattern="^\d+$" required >
+    </ng-container>
+  </form>
+  ```
+
+  ```ts
+  // min-max-validator.directive.ts
+  @Directive({
+    selector: '[min-max-validator]',
+    providers: [
+      {
+        provide: NG_VALIDATORS,
+        useExisting: forwardRef(() => MinMaxValidator),
+        multi: true,
+      }
+    ]
+  })
+  export class MinMaxValidator implements Validator {
+
+    constructor() { }
+
+    validate (f: FormGroup): ValidationErrors | null {
+      if (f.pristine) {
+        return null;
+      }
+
+      const { min, max } = f.controls;
+
+      // `min` or `max` is not a number or is empty
+      if (min.invalid || max.invalid) {
+        return null;
+      }
+
+      if (+min.value >= +max.value) {
+        return { minGreaterMax: 'min cannot be greater than max!' };
+      }
+
+      return null;
+    }
+  }
+  ```
+
+---
+
+### Diff between `ngModelGroup` and `NgForm`
+
+TODO: :D
+
+---
 
 ### How does a control-based directive binds a `FormControl` instance to a DOM element with the help of a value accessor ?
 
