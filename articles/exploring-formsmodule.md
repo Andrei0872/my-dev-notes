@@ -16,6 +16,10 @@ export const REACTIVE_DRIVEN_DIRECTIVES: Type<any>[] =
 
 ## TODO
 
+* When is it recommended to use one over the other?
+  * add `generalization`
+  * `RF` - when dealing with checkboxes
+
 * explain the flow (setting up, how entities communicate with each other)
   * come up with an illustration eventually
   * 3 main entities(`ControlValueAccessor`, `FormDirective`, `AbstractControl`)
@@ -93,7 +97,13 @@ TODO: create GIF
 
 ### ReactiveFormsModule
 
+* the `AbstractControl`'s tree is already built
+
 * imports/exports `REACTIVE_DRIVEN_DIRECTIVES`
+
+### Template Driven Forms
+
+* the `AbstractControl`'s tree is built in parallel with the view
 
 ## Try
 
@@ -156,7 +166,11 @@ TODO: create GIF
 
 ### AbstractFormGroupDirective
 
-* `formDirective` will always return the top-level `FormGroup` instance
+* `AbstractFormGroupDirective.formDirective` will always return the top-level `FormGroup` instance
+
+### FormControlDirective
+
+* `[formControl]="formControlInstance"`: the `formControlInstance` is already placed in an existing `AbstractControl`'s tree; therefore, the important thing to do here is just bind the `formControlInstance` to the current **DOM element** by using the value accessor.
 
 ---
 
