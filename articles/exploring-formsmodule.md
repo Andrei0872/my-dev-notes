@@ -34,6 +34,14 @@ export const REACTIVE_DRIVEN_DIRECTIVES: Type<any>[] =
 
 * explain validators' composition
 
+* custom `control.registerOnDisabledChange` (`shared.ts`)
+
+* make illustrations! :)
+
+* title: `Observing an AbstractControl`
+
+* raise GitHub issue about `required if control is dirty` :D
+
 ### NgModel
 
 
@@ -59,8 +67,6 @@ TODO: create GIF
 * control must be defined as `standalone` in ngModelOptions.
 
 * how does angular track radio buttons ?
-
-* what is `NgModelGroup` ?
 
 * how are classes being added depending on status?  `/home/anduser/Documents/WORKSPACE/tiy/04_angular/angular/packages/forms/src/directives/ng_control_status.ts`
   * with the help of `NgControlStatus`, a directive that is automatically bound to a form control element when using `ngModel`, `formControl`, `formControlName`
@@ -104,6 +110,8 @@ TODO: create GIF
 
 ## Takeaways
 
+* `FormGroup.setValue` vs `FormGroup.patchValue`: the former will **require** you to **provide** a **value** for **all** the **existing controls**, whereas the latter will allow you to provide **values** for **any** of the **existing controls**
+
 * implement a **custom validator** by using a **directive** that implements `Validator`; this way, you can use the validator with both `Template Driven Forms` and `Reactive Forms`
 
 * you can get the current **form group instance** by using `ngForm`
@@ -115,6 +123,10 @@ TODO: create GIF
 * `FormControl.status` = DISABLED | INVALID | VALID | PENDING
 
 * a **model** is an object that stores data related to a specific entity
+
+* when **disabling** an `AbstractControl` instance
+  * its children are also going to be disabled
+  * if **parent** has been marked **artificially dirty**(dirtiness **not determined** by its children: manually doing `control.markAsDirty`) -> there is **no need** to **recalculate** the **parent's dirtiness** based on the children
 
 ### AbstractControlDirective(abstract class)
 
@@ -237,11 +249,30 @@ TODO: try this!
   }
   ```
 
+```html
+
+```
+
 ---
 
-### Diff between `ngModelGroup` and `NgForm`
+FIXME: ... and `FormGroupName` and `FormGroup`
 
-TODO: :D
+### `NgModelGroup` vs `NgForm`
+
+* an `NgForm`'s `FormGroup` instance is always the top-level one, because `NgForm` **does not** have a `_parent` property, whereas `NgModelGroup` **does**
+
+* `NgForm` has the `submit` and `reset` event listeners **bound** to it
+  
+```ts
+@Directive({
+  selector: 'form:not([ngNoForm]):not([formGroup]),ngForm,ng-form,[ngForm]',
+  providers: [formDirectiveProvider],
+  host: {'(submit)': 'onSubmit($event)', '(reset)': 'onReset()'},
+  outputs: ['ngSubmit'],
+  exportAs: 'ngForm'
+})
+export class NgForm extends ControlContainer implements Form, AfterViewInit {}
+```
 
 ---
 
