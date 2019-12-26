@@ -172,6 +172,23 @@ TODO: create GIF
 
 * `[formControl]="formControlInstance"`: the `formControlInstance` is already placed in an existing `AbstractControl`'s tree; therefore, the important thing to do here is just bind the `formControlInstance` to the current **DOM element** by using the value accessor.
 
+### FormControlName
+
+* binds an existing `FormControl` instance to a **DOM element**
+* `[formControlName]="existingControlName"`: `existingControlName` must be the name of an existing `FormControl` instance
+
+```typescript
+this.form = this.formBuilder.group({ name: this.formBuilder.control('') })
+```
+
+```html
+<form>
+  <input type="text" formControlName="name" placeholder="Enter Name..">
+</form>
+```
+
+This condition must be met because it relies on the **form container**(a parent `FormGroup` instance) to correctly add this `FormControl` to the `AbstractControl` tree.
+
 ---
 
 ### NgModelGroup
