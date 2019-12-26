@@ -14,11 +14,34 @@ export const REACTIVE_DRIVEN_DIRECTIVES: Type<any>[] =
 
 ---
 
+## Article Plan
+
+* start with exposing
+  * the base classes: `AbstractControl`, `AbstractFromGroupDirective`, `AbstractControlDirective`
+    * `AbstractControl` contains logic shared across `FormControl`, `FormGroup` and `FormArray`; ex: `markAsDirty()`
+  * the base classes which are also **DI tokens**: `NgControl`, `ControlContainer`
+* define `AbstractControl` tree
+* what is `ControlValueAccessor` and why is it essential for the **Forms API**?
+
+---
+
 ## TODO
+
+* component registered as a `FormArray`
+
+* how are errors set ?
+
+* `_syncPendingControls`
+
+* `Validator.registerOnValidatorChange`
+
+* using components as form controls inside forms(`TDF`, `RF`)
 
 * When is it recommended to use one over the other?
   * add `generalization`
   * `RF` - when dealing with checkboxes
+  * `RF` - the form is **already created** **when** the **view** is **being built**
+  * `TDF` - the form **is** being **created** **while** the **view** is **being built**
 
 * explain the flow (setting up, how entities communicate with each other)
   * come up with an illustration eventually
@@ -68,6 +91,8 @@ TODO: create GIF
 
 ## Questions
 
+* why does `FormGroupDirective` keep track of `directives` when `FormControl`s are registered with `formControlName` ?
+
 * control must be defined as `standalone` in ngModelOptions.
 
 * how does angular track radio buttons ?
@@ -75,6 +100,21 @@ TODO: create GIF
 * how are classes being added depending on status?  `/home/anduser/Documents/WORKSPACE/tiy/04_angular/angular/packages/forms/src/directives/ng_control_status.ts`
   * with the help of `NgControlStatus`, a directive that is automatically bound to a form control element when using `ngModel`, `formControl`, `formControlName`
   * at the same time, `NgControlStatusGroup` is added to the form group(`<form>`, `formGroupName`, `formGroup`, `ngModelGroup`, `formArrayName`)
+
+* what happens with the `AbstractControl` tree on
+  * **submit** ?
+    ```typescript
+    onSubmit($event) {
+      (this as{submitted: boolean}).submitted = true;
+      syncPendingControls(this.form, this.directives);
+      this.ngSubmit.emit($event);
+      return false;
+    }
+    ```
+    * the `submitted` property becomes true, so you can **access** it now the **view** or in the **class**
+    * `syncPendingControls()`: some `AbstractControl` instances might have set the option `updateOn` differently. Therefore, if one `FormControl` has the `updateOn` option set to `submit`, it means that its **value** and **UI status**(`dirty`, `untouched`) will only be updated when the `submit` event occurs. It is important to mention that the above statement holds true unless the `FormControl` is manually altered(`control.markAsDirty`).
+    TODO: show example! :)
+  * **reset** ?
 
 ---
 
@@ -134,9 +174,30 @@ TODO: create GIF
 
 * a **model** is an object that stores data related to a specific entity
 
+TODO: Question: What happens when an `AbstractControl` is disabled ?
 * when **disabling** an `AbstractControl` instance
   * its children are also going to be disabled
-  * if **parent** has been marked **artificially dirty**(dirtiness **not determined** by its children: manually doing `control.markAsDirty`) -> there is **no need** to **recalculate** the **parent's dirtiness** based on the children
+  * only the `touch` and `dirtiness` statuses are affecting the control's ancestors
+  * if **parent** has been marked **artificially dirty**(dirtiness **not determined** by its children: manually doing `control.markAsDirty`) -> there is **no need** to **recalculate** the **parent's dirtiness** based on the children because they don't have any influence the parent;
+  for example
+  ```typescript
+  this.form = this.fb.group({
+    name: this.fb.control({ value: 'andrei', disabled: false }),
+    age: this.fb.control(''),
+  });
+
+  const nameCtrl = this.form.controls['name'];
+
+  // Simulating user input...
+  // Now, its ancestors will be marked as dirty as well
+  // In this case, there is only one `FormGroup`(=form)
+  nameCtrl.markAsDirty();
+
+  nameCtrl.disable();
+
+  // Now, form will be marked as `pristine`, because the child that influenced the parent's dirtiness
+  // is disabled
+  ```
 
 ### AbstractControlDirective(abstract class)
 
@@ -286,9 +347,11 @@ TODO: try this!
 
 ---
 
-FIXME: ... and `FormGroupName` and `FormGroup`
+### `NgModelGroup` vs `NgForm` and `FormGroupName` vs `FormGroup`
 
-### `NgModelGroup` vs `NgForm`
+_`NgForm` in the context of `Template Driven Forms` === `FormGroup` in the context of `Reactive Forms`_.
+
+_`NgModelGroup` in the context of `Template Driven Forms` === `FormGroupName` in the context of `Reactive Forms`_.
 
 * an `NgForm`'s `FormGroup` instance is always the top-level one, because `NgForm` **does not** have a `_parent` property, whereas `NgModelGroup` **does**
 
