@@ -27,6 +27,13 @@ export const REACTIVE_DRIVEN_DIRECTIVES: Type<any>[] =
 
 ## TODO
 
+* Connecting `ControlValueAccessor` and `AbstractControl`
+  * `registerOnDisabledChange`
+
+* `AbstractControl.updateValueAndValidity()` - explain visually :D
+
+* how are value/status changes emitted ? :`updateValueAndValidity`
+
 * component registered as a `FormArray`
 
 * how are errors set ?
@@ -90,6 +97,8 @@ TODO: create GIF
 ---
 
 ## Questions
+
+* how to get the form value, including the disabled controls ? : `FormGroup.getRawValue()`
 
 * why does `FormGroupDirective` keep track of `directives` when `FormControl`s are registered with `formControlName` ?
 
@@ -175,6 +184,7 @@ TODO: create GIF
 * a **model** is an object that stores data related to a specific entity
 
 TODO: Question: What happens when an `AbstractControl` is disabled ?
+TODO: add case when the children do not influence parent's dirtiness
 * when **disabling** an `AbstractControl` instance
   * its children are also going to be disabled
   * only the `touch` and `dirtiness` statuses are affecting the control's ancestors
@@ -214,12 +224,17 @@ TODO: Question: What happens when an `AbstractControl` is disabled ?
 ### FormControl(implements AbstractControl)
 
 * tracks value, use interaction(`touched`, `pristine` statuses) and validation status(`VALID`, `INVALID`, `PENDING`)
-* keeps the **view synced** with the **model**
+* keeps the **view synced** with the **model**<p></p>
+
+### FormGroup(implements AbstractControl)
+
+* aggregates the value from its child `FormControl`s
+* calculates its status depending on its children(if one `FormControl` child is invalid(has `errors !== null`), the entire `FormGroup` will be invalid)`
 
 ### AbstractControl
 
 * base class for `FormControl`, `FormGroup`, `FormArray`
-* provides functionality such as **running validators**, **resetting state** and calculating **validity status**
+* provides functionality such as **running validators**, **resetting state** and calculating/accessing **validity status**
 
 ### ControlContainer
 
