@@ -6,19 +6,25 @@ _Note: This article is based on **Angular 8.2.x**_.
 
 ## Content
 
-* [Setting up](#setting-up)
-* [What is HttpClientModule?](#what-is-httpClientModule)
-* [Let's start exploring](#start-exploring)
-  * [Let's explore HttpXhrBackend](#explore-backend)
-* [How can a request be canceled?](#how-can-a-request-be-canceled)
-* [How can interceptors retry requests?](#how-can-interceptors-retry-requests)
-* [Why is it sometimes necessary to clone the request object inside an interceptor?](#why-is-it-sometimes-necessary-to-clone-the-request-object-inside-an-interceptor)
-* [Why is it recommended to load the HttpClientModule only once in AppModule or CoreModule?](#why-is-it-recommended-to-load-the-HttpClientModule-only-once-in-AppModule-or-coreModule)
-* [How can interceptors be completely bypassed?](#how=can=interceptors=be=completely=bypassed)
-* [What is the difference between `setHeaders` and `headers`?](#what-is-the-difference-between-setHeaders-and-headers)
-* [What's the magic behind `HttpHeaders`?](#headers-magic)
-* [What about `HttpClientJsonpModule`?](#what-about-HttpClientJsonpModule)
-* [Conclusion](#conclusion)
+- [Setting up](#setting-up)
+  - [Installing Angular on your machine](#installing-angular-on-your-machine)
+  - [StackBlitz](#stackblitz)
+- [What is HttpClientModule?](#what-is-httpclientmodule)
+- [Let's start exploring 🚧](#lets-start-exploring-%f0%9f%9a%a7)
+  - [Let's explore HttpXhrBackend](#lets-explore-httpxhrbackend)
+- [How can a request be canceled?](#how-can-a-request-be-canceled)
+- [How can interceptors retry requests?](#how-can-interceptors-retry-requests)
+- [Why is it sometimes necessary to clone the request object inside an interceptor?](#why-is-it-sometimes-necessary-to-clone-the-request-object-inside-an-interceptor)
+- [Why is it recommended to load the HttpClientModule only once in AppModule or CoreModule?](#why-is-it-recommended-to-load-the-httpclientmodule-only-once-in-appmodule-or-coremodule)
+- [How can interceptors be completely bypassed?](#how-can-interceptors-be-completely-bypassed)
+  - [TLDR;](#tldr)
+  - [Detailed Explanation](#detailed-explanation)
+- [What is the difference between setHeaders and headers?](#what-is-the-difference-between-setheaders-and-headers)
+  - [setHeaders](#setheaders)
+  - [headers](#headers)
+- [What's the magic behind HttpHeaders?](#whats-the-magic-behind-httpheaders)
+- [What about HttpClientJsonpModule?](#what-about-httpclientjsonpmodule)
+- [Conclusion](#conclusion)
 
 ---
 
@@ -58,19 +64,50 @@ Once in the StackBlitz project:
 
 * open the dev tools
 
-* head over to `token.interceptor.ts`(CTRL + P) and put a breakpoint on `line 9`
+* head over to `token.interceptor.ts`(CTRL + P) and put a breakpoint next to the `console.warn()`
 
 * refresh the _StackBlitz browser_
 
 Now, you should see something like this:
 
-<img src="../screenshots/articles/exploring-httpclientmodule/img1.png" style="text-align: center;">
+<!-- <img src="../screenshots/arz
 
 By clicking on the _anonymous function_ from `client.ts`, you are now in the `HttpClient` class, which is the one you usually inject in your services.
 
 As you might have expected, this class comprises the methods for the well-known HTTP verbs.
+<!-- 
+<img src="../screenshots/articles/exploring-httpclientmodule/httpclient.png" style="text-align: center;"> -->
 
-<img src="../screenshots/articles/exploring-httpclientmodule/httpclient.png" style="text-align: center;">
+```typescript
+export class HttpClient {
+    constructor (private handler: HttpHandler) { }
+
+    /* ... Method overloads ... */
+    request(first: string | HttpRequest<any>, url?: string, options: {/* ... */}): Observable<any> {
+        /* ... */
+    }
+
+    /* ... Method overloads ... */
+    delete(url: string, options: {/* ... */}): Observable<any> {
+        return this.request<any>('DELETE', url, options as any);
+    }
+
+    /* ... Method overloads ... */
+    get(url: string, options: {/* ... */}): Observable<any> {
+        return this.request<any>('GET', url, options as any);
+    }
+
+    /* ... Method overloads ... */
+    post(url: string, body: any | null, options: {/* ... */}): Observable<any> {
+        return this.request<any>('POST', url, addBody(options, body));
+    }
+
+    /* ... Method overloads ... */
+    put(url: string, body: any | null, options: {/* ... */}): Observable<any> {
+        return this.request<any>('PUT', url, addBody(options, body));
+    }
+}
+```
 
 I'd kindly recommend switching over to your text editor and start exploring this `HttpClient.request` method a little.
 
@@ -88,7 +125,23 @@ The `HttpHandler` is a **DI token** that maps to `HttpInterceptingHandler`.
 
 <span id="providers">Here's a list of all providers</span>: 
 
-<img src="../screenshots/articles/exploring-httpclientmodule/img2.png" style="text-align: center;">
+<!-- <img src="../screenshots/articles/exploring-httpclientmodule/img2.png" style="text-align: center;"> -->
+```typescript
+@NgModule({
+    /* ... */
+    
+    providers: [
+        HttpClient,
+        { provide: HttpHandler, useClass: HttpInterceptingHandler },
+        HttpXhrBackend,
+        { provide: HttpBackend, useExisting: HttpXhrBackend },
+        BrowserXhr,
+        { provide: XhrFactory, useExisting: BrowserXhr },
+    ],
+})
+export class HttpClientModule {
+}
+```
 
 What's left to do is to go into `HttpInterceptingHandler` class and set a breakpoint inside the `handle` method.
 
@@ -103,7 +156,16 @@ Here we are able to grab all the interceptors by injecting the  `HTTP_INTERCEPTO
 The next step consists of creating the **injectors chain**.  
 But first, let's have a quick look at `HttpInterceptorHandler`:
 
-<img src="../screenshots/articles/exploring-httpclientmodule/httpinterceptor.png" style="text-align: center;">
+<!-- <img src="../screenshots/articles/exploring-httpclientmodule/httpinterceptor.png" style="text-align: center;"> -->
+```typescript
+export class HttpInterceptorHandler implements HttpHandler {
+    constructor(private next: HttpHandler, private interceptor: HttpInterceptor) { }
+
+    handle(req: HttpRequest<any>): Observable<HttpEvent<any>> {
+        return this.interceptor.intercept(req, this.next);
+    }
+}
+```
 
 I like to think of this **chain** as a **linked list** that is built starting off from the **tail node**.
 
@@ -134,9 +196,49 @@ _Setting some breakpoints here and there will definitely lead to a better unders
 
 <div id="httphandle"></div>
 
-<div style="text-align: center;">
+<!-- <div style="text-align: center;">
     <img src="../screenshots/articles/exploring-httpclientmodule/httpbackend.png">
-</div>
+</div> -->
+
+```typescript
+export class HttpXhrBackend implements HttpBackend {
+  constructor(private xhrFactory: XhrFactory) {}
+
+  handle(req: HttpRequest<any>): Observable<HttpEvent<any>> {
+    // Everything happens on Observable subscription.
+    return new Observable((observer: Observer<HttpEvent<any>>) => {
+      const xhr = this.xhrFactory.build();
+      
+        /* ... Setting up the headers ... */
+        /* ... Setting up the response type & serializing the body ... */
+
+      // partialFromXhr extracts the HttpHeaderResponse from the current XMLHttpRequest
+      // state, and memoizes it into headerResponse.
+      const partialFromXhr = (): HttpHeaderResponse => { /* ... */ };
+
+      // First up is the load event, which represents a response being fully available.
+      const onLoad = () => { /* ... */ };
+
+      const onError = (error: ProgressEvent) => { /* ... */ };
+
+      xhr.addEventListener('load', onLoad);
+      xhr.addEventListener('error', onError);
+
+      // Fire the request, and notify the event stream that it was fired.
+      xhr.send(reqBody !);
+      observer.next({type: HttpEventType.Sent});
+
+      // This is the return from the Observable function, which is the
+      // request cancellation handler.
+      return () => {
+        xhr.removeEventListener('error', onError);
+        xhr.removeEventListener('load', onLoad);
+        xhr.abort();
+      };
+    });
+  }
+}
+```
 
 The first thing that leaps to the eye is the `handle()` method, which is also the last method called in the **interceptor chain** because it sits in the **tail** node. It is also responsible for **dispatching** the request to the backend.
 
@@ -144,11 +246,62 @@ The first thing that leaps to the eye is the `handle()` method, which is also th
 
 * `onLoad` -  the callback function **triggered** when the **response** is **fully available**; it also **parses** and **validates** the **body** of the response
 
-<div style="text-align: center;">
+<!-- <div style="text-align: center;">
     <img src="../screenshots/articles/exploring-httpclientmodule/canLoad.png">
-</div>
+</div> -->
+
+```ts
+const onLoad = () => {
+  // Read response state from the memoized partial data.
+  let { headers, status, statusText, url } = partialFromXhr();
+
+  // The body will be read out if present.
+  let body: any | null = null;
+
+  let ok = status >= 200 && status < 300;
+
+  /* ... Parse body and check its validity ... */
+
+  if (ok) {
+      // A successful response is delivered on the event stream.
+      observer.next(new HttpResponse({
+          body,
+          headers,
+          status,
+          statusText,
+          url: url || undefined,
+      }));
+      // The full body has been received and delivered, no further events
+      // are possible. This request is complete.
+      observer.complete();
+  } else {
+      // An unsuccessful request is delivered on the error channel.
+      observer.error(new HttpErrorResponse({
+          // The error in this case is the response body (error from the server).
+          error: body,
+          headers,
+          status,
+          statusText,
+          url: url || undefined,
+      }));
+  }
+}
+```
 
 * `onError` - the callback function called when a **network error** occurred during the request
+
+```ts
+const onError = (error: ProgressEvent) => {
+  const {url} = partialFromXhr();
+  const res = new HttpErrorResponse({
+    error,
+    status: xhr.status || 0,
+    statusText: xhr.statusText || 'Unknown Error',
+    url: url || undefined,
+  });
+  observer.error(res);
+};
+```
 
 Lastly, it is important to mention that the returned observable from `HttpXhrBackend.handle()` will dispatch the request when we subscribe to one of the `HttpClient`'s methods(`get`, `post` etc). This means that `HttpXhrBackend.handle()` returns a **cold observable** which can be subscribed to by using `concatMap`:
 
@@ -270,7 +423,7 @@ called on unsubscription ---> unsubscribed from because the next value(`2`) kick
 src 1
 src 2
 src 3
-called on unsubscription
+called on unsubscription ---> completion
 */
 ```
 
@@ -376,7 +529,7 @@ const obsI2$ = obsI1$
     catchError((err, caught) => {
       return getRefreshToken()
         .pipe(
-          flatMap(() => /* obsI2$ */caught),
+          switchMap(() => /* obsI2$ */caught),
         )
     })
   );
@@ -570,10 +723,26 @@ export class HttpClient {
 
 If we take a look at `HttpClientModule`'s providers,
 
-<div style="text-align: center;">
+<!-- <div style="text-align: center;">
   <img src="../screenshots/articles/exploring-httpclientmodule/img2.png" style="text-align: center;">
-</div>
+</div> -->
 
+```typescript
+@NgModule({
+    /* ... */
+    
+    providers: [
+        HttpClient,
+        { provide: HttpHandler, useClass: HttpInterceptingHandler },
+        HttpXhrBackend,
+        { provide: HttpBackend, useExisting: HttpXhrBackend },
+        BrowserXhr,
+        { provide: XhrFactory, useExisting: BrowserXhr },
+    ],
+})
+export class HttpClientModule {
+}
+```
 we can tell that `HttpHandler` maps to `HttpInterceptingHandler`:
 
 ```typescript
