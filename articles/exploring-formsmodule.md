@@ -27,6 +27,12 @@ export const REACTIVE_DRIVEN_DIRECTIVES: Type<any>[] =
 
 ## TODO
 
+* how to handle multiple checkbox buttons using `TDR`: `ngModelGroup`
+
+* Ways to set the default value on multiple radio buttons
+  *  `{{ true && first.valueAccessor.writeValue('foo1') }}`
+  *  `<input ngModel="foo3" name="option" value="foo4" type="radio"> - explain why you use the last radio btn`
+
 * Connecting `ControlValueAccessor` and `AbstractControl`
   * `registerOnDisabledChange`
 
@@ -168,6 +174,29 @@ TODO: create GIF
 * nested form groups + **validators**
 
 ## Takeaways
+
+* using radio buttons with same names, but different parents:
+
+```html
+<form #f="ngForm"> 
+  <input ngModel name="name" type="text">
+
+  <input #first="ngModel" ngModel name="option" value="foo1" type="radio">
+  <input ngModel name="option" value="foo2" type="radio">
+  <input ngModel name="option" value="foo3" type="radio">
+  <input ngModel name="option" value="foo4" type="radio">
+
+  <br>
+  
+  <!-- Same name, but different parents -->
+  <ng-container ngModelGroup="foo">
+    <input ngModel name="option" value="foo2" type="radio">
+    <input ngModel name="option" value="foo3" type="radio">
+  </ng-container>
+</form>
+
+{{ f.value | json }}
+```
 
 * `FormGroup.setValue` vs `FormGroup.patchValue`: the former will **require** you to **provide** a **value** for **all** the **existing controls**, whereas the latter will allow you to provide **values** for **any** of the **existing controls**
 
