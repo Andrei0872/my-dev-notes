@@ -89,6 +89,8 @@ export const REACTIVE_DRIVEN_DIRECTIVES: Type<any>[] =
 
 * raise GitHub issue about `required if control is dirty` :D
 
+* make sure you check the paper! :)
+
 ### NgModel
 
 
@@ -360,6 +362,7 @@ TODO: add case when the children do not influence parent's dirtiness
 
 ### ControlContainer
 
+* used as a provider token for form control **containers**(`FormGroupName`, `FormArrayName`, `NgForm`, `NgModelGroup`, `FormGroup`)
 * contains multiple `NgControl` instances
 
 ### AbstractFormGroupDirective
@@ -368,10 +371,21 @@ TODO: add case when the children do not influence parent's dirtiness
 
 ### FormControlDirective
 
+* **binds** an **existing** `FormControl` instance to a **DOM element**
+
+* the `FormControl` instance can be **standalone**
+
+```html
+<input #f="ngForm" [formControl]="form.controls['name']" type="text">
+
+{{ f.value }}
+```
+
 * `[formControl]="formControlInstance"`: the `formControlInstance` is already placed in an existing `AbstractControl`'s tree; therefore, the important thing to do here is just bind the `formControlInstance` to the current **DOM element** by using the value accessor.
 
 ### FormControlName
 
+* the `FormControl` must **not be standalone**: must have a parent `FromGroupDirective`(`[formGroup]`) or `FormGroupName` or `FormArrayName`
 * binds an existing `FormControl` instance to a **DOM element**
 * `[formControlName]="existingControlName"`: `existingControlName` must be the name of an existing `FormControl` instance
 
