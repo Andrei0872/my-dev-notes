@@ -29,8 +29,6 @@ export const REACTIVE_DRIVEN_DIRECTIVES: Type<any>[] =
 
 ## TODO
 
-* `ControlValueAccessor` example: a custom component that could be used as a form control
-
 * Diff between `ngModelGroup` and `NgForm`/`FormGroup`
   * `NgForm` directive or `FormGroup` directive should be top-level `FormGroup` instance, because they have no `_parent` property
 
@@ -44,6 +42,8 @@ export const REACTIVE_DRIVEN_DIRECTIVES: Type<any>[] =
 
 * Connecting `ControlValueAccessor` and `AbstractControl`
   * `registerOnDisabledChange`
+  * `registerOnChange`
+  * example: a custom component that could be used as a form control
 
 * `AbstractControl.updateValueAndValidity()` - explain visually :D
 
@@ -184,6 +184,36 @@ TODO: create GIF
 * nested form groups + **validators**
 
 ## Takeaways
+
+* `FormArrayName`
+  * similar to `FormGroupName`, but the **controls** are **stored** in an **array**, **instead** of an **object**
+  * cannot be used as a top-level form control container, it must be registered within an exiting form directive
+  * can have one of these parents: `FormGroupName`, `FormGroupDirective` or `FormArrayName`
+  * use-case: an app where the user can choose a number of favorite movies
+
+```ts
+this.fooForm = this.fb.group({
+  movies: this.fb.array([
+    this.fb.control('action'),
+    this.fb.control('horror'),
+    this.fb.control('mistery'),
+  ]),
+});
+```
+
+```html
+<form #f="ngForm" [formGroup]="fooForm">
+  <ng-container formArrayName="movies">
+    <input
+      *ngFor="let _ of fooForm.controls['movies'].controls; let idx = index;"
+      [formControlName]="idx"
+      type="text"
+    >
+  </ng-container>
+</form>
+
+{{ f.value | json }}
+```
 
 * diff between `FormControlName` and `FormControl`
 
