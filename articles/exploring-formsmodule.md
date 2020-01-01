@@ -24,10 +24,16 @@ export const REACTIVE_DRIVEN_DIRECTIVES: Type<any>[] =
 * what is `ControlValueAccessor` and why is it essential for the **Forms API**?
 
 * expose validators and how they can be used, depending on the context(add examples! :D)
+  * explain validators' composition
 
 ---
 
 ## TODO
+
+* Diff between `ngModelGroup` and `NgForm`/`FormGroup`
+  * `NgForm` directive or `FormGroup` directive should be top-level `FormGroup` instance, because they have no `_parent` property
+
+* ways to retrieve form controls: `this.form.get(path)` -> `shared.ts: find()`
 
 * how to handle multiple checkbox buttons using `TDR`: `ngModelGroup`
 
@@ -73,8 +79,6 @@ export const REACTIVE_DRIVEN_DIRECTIVES: Type<any>[] =
 * explain `/home/anduser/Documents/WORKSPACE/tiy/04_angular/angular/packages/examples/forms/ts/ngModelGroup/ng_model_group_example.ts`
 
 * why a validator must return null when there haven't been found any errors?
-
-* explain validators' composition
 
 * custom `control.registerOnDisabledChange` (`shared.ts`)
 
@@ -177,6 +181,56 @@ TODO: create GIF
 * nested form groups + **validators**
 
 ## Takeaways
+
+* use case for `FormGroupName`
+
+Suppose you have a form like this
+
+```ts
+// TODO: simply it! :)
+const address = this.fb.group({
+  city: this.fb.control('default value', { 
+    validators: [],
+    asyncValidators: [],
+    updateOn: 'blur' /* 'blur' | 'change'(default) | 'submit' */
+  }),
+  street: this.fb.control('', [/* validators */], [/* async validators */]),
+  streetNumber: ['', [/* validators */] /* | validatorFn */, [/* async validators */] /* | asyncValidatorFn */],
+  zip: '',
+  country: { value: '', disabled: true },
+});
+
+console.log(address)
+
+this.form = this.fb.group({
+  name: this.fb.control(''),
+  address,
+});
+```
+
+Writing this in the view will result in an error(`Cannot find control with name: 'street'`):
+
+```html
+<form #f="ngForm" [formGroup]="form">
+  <input formControlName="name" type="text">
+
+  <input formControlName="street" type="text">
+</form>
+```
+
+The way to solve this is to use the `FormGroupName` directive in order to create a **sub-group** that will reflect the **top-level** `FormGroup` instance
+
+```html
+<form #f="ngForm" [formGroup]="form">
+  <input formControlName="name" type="text">
+
+  <ng-container formGroupName="address">
+    <input formControlName="street" type="text">
+  </ng-container>
+</form>
+
+{{ f.value | json }}
+```
 
 * (using `FormBuilder`) when creating a `FormGroup` instance, its `FormControl` instances can be declared as follows
 
