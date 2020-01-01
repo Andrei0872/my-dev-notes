@@ -23,6 +23,8 @@ export const REACTIVE_DRIVEN_DIRECTIVES: Type<any>[] =
 * define `AbstractControl` tree
 * what is `ControlValueAccessor` and why is it essential for the **Forms API**?
 
+* expose validators and how they can be used, depending on the context(add examples! :D)
+
 ---
 
 ## TODO
@@ -115,6 +117,7 @@ TODO: create GIF
 * how are classes being added depending on status?  `/home/anduser/Documents/WORKSPACE/tiy/04_angular/angular/packages/forms/src/directives/ng_control_status.ts`
   * with the help of `NgControlStatus`, a directive that is automatically bound to a form control element when using `ngModel`, `formControl`, `formControlName`
   * at the same time, `NgControlStatusGroup` is added to the form group(`<form>`, `formGroupName`, `formGroup`, `ngModelGroup`, `formArrayName`)
+  * both `NgControlStatus` and `NgControlStatusGroup` will be updated when change detection occurs
 
 * what happens with the `AbstractControl` tree on
   * **submit** ?
@@ -336,6 +339,9 @@ TODO: try this!
   <input type="text" ngModel name="street">
 </div>
 ```
+
+* TODO: show an example of how to properly create a validator so that it can be used with both forms
+  * must implement `Validator/AsyncValidator`
 
 * particularly useful when you want to validate a sub-group of controls
   For example, you have a **filter form** and you need to make sure that the **min filter** is always smaller than **max filter**:
