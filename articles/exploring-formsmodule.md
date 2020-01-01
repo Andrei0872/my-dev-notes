@@ -8,7 +8,6 @@ export const TEMPLATE_DRIVEN_DIRECTIVES: Type<any>[] =
 
 export const REACTIVE_DRIVEN_DIRECTIVES: Type<any>[] =
     [FormControlDirective, FormGroupDirective, FormControlName, FormGroupName, FormArrayName];
-```
 
 * `SHARED_FORM_DIRECTIVES`
 
@@ -29,6 +28,8 @@ export const REACTIVE_DRIVEN_DIRECTIVES: Type<any>[] =
 ---
 
 ## TODO
+
+* `ControlValueAccessor` example: a custom component that could be used as a form control
 
 * Diff between `ngModelGroup` and `NgForm`/`FormGroup`
   * `NgForm` directive or `FormGroup` directive should be top-level `FormGroup` instance, because they have no `_parent` property
@@ -136,7 +137,7 @@ TODO: create GIF
     * the `submitted` property becomes true, so you can **access** it now the **view** or in the **class**
     * `syncPendingControls()`: some `AbstractControl` instances might have set the option `updateOn` differently. Therefore, if one `FormControl` has the `updateOn` option set to `submit`, it means that its **value** and **UI status**(`dirty`, `untouched`) will only be updated when the `submit` event occurs. It is important to mention that the above statement holds true unless the `FormControl` is manually altered(`control.markAsDirty`).
     TODO: show example! :)
-  * **reset** ?
+  * **reset**: parent ----> children(**depth first**)
 
 ---
 
@@ -182,7 +183,27 @@ TODO: create GIF
 
 ## Takeaways
 
+* diff between `FormControlName` and `FormControl`
+
+* the `FormControl` is **already synced** within a `FormGroup` instance
+
+```ts
+// `form_control_name`
+private _setUpControl() {
+  this._checkParentType();
+  (this as{control: FormControl}).control = this.formDirective.addControl(this);
+  if (this.control.disabled && this.valueAccessor !.setDisabledState) {
+    this.valueAccessor !.setDisabledState !(true);
+  }
+  this._added = true;
+}
+```
+
+`this.formDirective` points to a parent `ControlContainer`(`FormGroupDirective`, `FormGroupName`, `FormArrayName`)
+
 * use case for `FormGroupName`
+
+_Note: when using `FormControlDirective`(`[formControl]="formControlInstance"`) - this is not needed_
 
 Suppose you have a form like this
 
