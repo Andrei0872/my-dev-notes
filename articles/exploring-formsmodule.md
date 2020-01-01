@@ -178,6 +178,21 @@ TODO: create GIF
 
 ## Takeaways
 
+* (using `FormBuilder`) when creating a `FormGroup` instance, its `FormControl` instances can be declared as follows
+
+```ts
+const address = this.fb.group({
+  city: this.fb.control('default value', {
+    validators: [],
+    asyncValidators: [],
+    updateOn: 'blur' /* 'blur' | 'change'(default) | 'submit' */
+  }),
+  street: this.fb.control('', [/* validators */], [/* async validators */]),
+  streetNumber: ['', [/* validators */] /* | validatorFn */, [/* async validators */] /* | asyncValidatorFn */],
+  zip: '',
+});
+```
+
 * using radio buttons with same names, but different parents:
 
 ```html
