@@ -8,6 +8,7 @@ export const TEMPLATE_DRIVEN_DIRECTIVES: Type<any>[] =
 
 export const REACTIVE_DRIVEN_DIRECTIVES: Type<any>[] =
     [FormControlDirective, FormGroupDirective, FormControlName, FormGroupName, FormArrayName];
+```
 
 * `SHARED_FORM_DIRECTIVES`
 
@@ -15,15 +16,32 @@ export const REACTIVE_DRIVEN_DIRECTIVES: Type<any>[] =
 
 ## Article Plan
 
-* start with exposing
-  * the base classes: `AbstractControl`, `AbstractFromGroupDirective`, `AbstractControlDirective`
-    * `AbstractControl` contains logic shared across `FormControl`, `FormGroup` and `FormArray`; ex: `markAsDirty()`
-  * the base classes which are also **DI tokens**: `NgControl`, `ControlContainer`
-* define `AbstractControl` tree
+### Base entities
+
+* define `AbstractControl`
+  * `AbstractControl` contains logic shared across `FormControl`, `FormGroup` and `FormArray`; ex: `markAsDirty()`
+* define `AbstractControlDirective` tree
+  * an `AbstractControlDirective` contains an `AbstractControl` instance
+  * **form-control-based** directive
+  * binds an `AbstractControl` instance to a **DOM element**
+* define `AbstractFromGroupDirective`
+
 * what is `ControlValueAccessor` and why is it essential for the **Forms API**?
+
+* show diagram(the simple one / first one)
+* explain how a `FormControl` is set up + diagram ❗️
+
+* explain the **ViewToModel** and **ModelToView** pipelines
+
+### Validators
 
 * expose validators and how they can be used, depending on the context(add examples! :D)
   * explain validators' composition
+
+### Use-cases
+
+* the base classes which are also **DI tokens**: `NgControl`, `ControlContainer`
+  * an example: a directive that injects one of these providers
 
 ---
 
