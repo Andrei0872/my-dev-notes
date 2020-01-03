@@ -29,8 +29,9 @@ export const REACTIVE_DRIVEN_DIRECTIVES: Type<any>[] =
 
 ## TODO
 
-* Diff between `ngModelGroup` and `NgForm`/`FormGroup`
-  * `NgForm` directive or `FormGroup` directive should be top-level `FormGroup` instance, because they have no `_parent` property
+* Diff between `NgModelGroup`/`FormGroupName` and `NgForm`/`FormGroup`
+  * `NgForm`/`FormGroup` directive should be top-level `FormGroup` instance, because they have no `_parent` property
+  * `NgForm`/`FormGroup` has **form events**(`reset`, `submit`) bound to it
 
 * ways to retrieve form controls: `this.form.get(path)` -> `shared.ts: find()`
 
@@ -169,6 +170,7 @@ TODO: create GIF
 ### Template Driven Forms
 
 * the `AbstractControl`'s tree is built in parallel with the view
+* because the form is built in parallel with the view, the top level form directive(`NgForm`) tracks the existing directives. Because the form controls can be updated on `submit` event, after the form is submitted, the `NgForm` directive will go through each registered `NgModel` directive and will update its interval state and the view(if the view depends on that `NgModel` directive - `(ngModelChange)="doSmth()"`)
 
 ## Try
 
@@ -323,6 +325,115 @@ const address = this.fb.group({
 {{ f.value | json }}
 ```
 
+This is possible because, under the hood, Angular keeps track of the radio buttons from the current view with the help of `RadioControlRegistry`.
+
+`RadioControlRegistry` holds an array of `[NgControl, RadioValueAccessor]` pairs, where `NgControl` is a provider token that maps to one of the form-control-based directives: `NgModel`, `FormControl`, `FormControlName`
+
+```ts
+@Injectable()
+export class RadioControlRegistry {
+  private _accessors: any[] = [];
+
+  add(control: NgControl, accessor: RadioControlValueAccessor) {
+    this._accessors.push([control, accessor]);
+  }
+
+  remove(accessor: RadioControlValueAccessor) {
+    for (let i = this._accessors.length - 1; i >= 0; --i) {
+      if (this._accessors[i][1] === accessor) {
+        this._accessors.splice(i, 1);
+        return;
+      }
+    }
+  }
+
+  select(accessor: RadioControlValueAccessor) {
+    this._accessors.forEach((c) => {
+      if (this._isSameGroup(c, accessor) && c[1] !== accessor) {
+        c[1].fireUncheck(accessor.value);
+      }
+    });
+  }
+
+  private _isSameGroup(
+      controlPair: [NgControl, RadioControlValueAccessor],
+      accessor: RadioControlValueAccessor): boolean {
+    if (!controlPair[0].control) return false;
+    return controlPair[0]._parent === accessor._control._parent &&
+        controlPair[1].name === accessor.name;
+  }
+}
+```
+
+Keep your eyes on the `RadioControlRegistry._isSameGroup` method.
+
+Let's narrow it down with a simpler example:
+
+```html
+<form>
+  <input ngModel name="option" value="value1" type="radio"> <!-- #1 NgControl._parent = the top-level `FormGroup` which results from `<form>` -->
+
+  <ng-container ngModelGroup="foo">
+    <input ngModel name="option" value="value1" type="radio"> <!-- #2 NgControl._parent = the sub-group `FormGroup` which results from `ngModelGroup` -->
+  </ng-container>
+</form>
+```
+
+_Note that both radio buttons have the same value!_
+
+The `RadioControlRegistry._accessors` array would look like this:
+
+```ts
+[
+  NgControl /* #1 */, RadioControlValueAccessor,
+  NgControl /* #2 */, RadioControlValueAccessor,
+]
+```
+
+When the user clicks on the first radio button, this method from `RadioControlRegistry` will be executed:
+
+```ts
+select(accessor: RadioControlValueAccessor) {
+  this._accessors.forEach((c) => {
+    if (this._isSameGroup(c, accessor) && c[1] !== accessor) {
+      c[1].fireUncheck(accessor.value);
+    }
+  });
+}
+```
+
+where `accessor` will be the `RadioControlValueAccessor` that belongs to the first radio button.
+
+Here is once again the `_isSameGroup` method:
+
+```ts
+private _isSameGroup(
+    controlPair: [NgControl, RadioControlValueAccessor],
+    accessor: RadioControlValueAccessor): boolean {
+  if (!controlPair[0].control) return false;
+  return controlPair[0]._parent === accessor._control._parent &&
+      controlPair[1].name === accessor.name;
+}
+```
+
+`controlPair[0]._parent === accessor._control._parent` is what prevents the first radio button from affecting the second one.
+
+With the following example, if we click on the **second button**, the first one will be marked as checked.
+
+```html
+<form>
+  <input ngModel name="option" value="value1" type="radio">
+
+  <input ngModel name="option" value="value1" type="radio">
+</form>
+```
+
+That's because out of `N` radio buttons with the same `name` and `value` attributes, only one can be marked as checked. In this case, it is the last one that fulfills these conditions:
+
+`this._isSameGroup(c, accessor) && c[1] !== accessor`
+
+where `accessor` is the `RadioControlValueAccessor` of the selected radio button.
+
 * `FormGroup.setValue` vs `FormGroup.patchValue`: the former will **require** you to **provide** a **value** for **all** the **existing controls**, whereas the latter will allow you to provide **values** for **any** of the **existing controls**
 
 * implement a **custom validator** by using a **directive** that implements `Validator`; this way, you can use the validator with both `Template Driven Forms` and `Reactive Forms`
@@ -371,7 +482,7 @@ TODO: add case when the children do not influence parent's dirtiness
 
 ### NgControl(abstract class)
 
-* a token for `FormControl`-based directives(`NgModel`, `FormControlName`, `FormGroupName` etc...)
+* a token for `FormControl`-based directives(`NgModel`, `FormControlName`, `FormControl` etc...)
 * **binds** the `FormControl` to a **DOM element**(**form control element**) through the **directives** that **extend** this class(`NgModel`, `FormControl` etc..)
 * contains information about the **validators**, the **value accessor** and the parent of the current directive
 
