@@ -29,7 +29,7 @@ export const REACTIVE_DRIVEN_DIRECTIVES: Type<any>[] =
 * what is `ControlValueAccessor` and why is it essential for the **Forms API**?
 
 * show diagram(the simple one / first one)
-* explain how a `FormControl` is set up + diagram ❗️
+* explain how a `FormControl` is set up + code snippets ❗️
 
 * explain the **ViewToModel** and **ModelToView** pipelines
 
@@ -37,6 +37,22 @@ export const REACTIVE_DRIVEN_DIRECTIVES: Type<any>[] =
 
 * expose validators and how they can be used, depending on the context(add examples! :D)
   * explain validators' composition
+
+### Built-in Control Value Accessors
+
+* talk about the relevant ones(`RadioValueAccessor`, `SelectControlValueAccessor`)
+  * `SelectControlValueAccessor` - 2 ways of using its API
+
+```ts
+const BUILTIN_ACCESSORS = [
+  CheckboxControlValueAccessor,
+  RangeValueAccessor,
+  NumberValueAccessor,
+  SelectControlValueAccessor,
+  SelectMultipleControlValueAccessor,
+  RadioControlValueAccessor,
+];
+```
 
 ### Use-cases
 
@@ -132,6 +148,9 @@ TODO: create GIF
 
 ## Questions
 
+* what happens to the form-control tree after `AbstractControl.setErrors(null)`?
+  * only the status of this node and of each ancestor will be updated(and also `statusChanges` will emit if `emitEvent !== false`): `_updateControlsErrors`
+
 * how to get the form value, including the disabled controls ? : `FormGroup.getRawValue()`
 
 * why does `FormGroupDirective` keep track of `directives` when `FormControl`s are registered with `formControlName` ?
@@ -204,6 +223,8 @@ TODO: create GIF
 * nested form groups + **validators**
 
 ## Takeaways
+
+* after `AbstractFormControl.setValidators` you'll have to manually run `AbstractFormControl.updateValueAndValidity` in order to **run** the new validators
 
 * `FormArrayName`
   * similar to `FormGroupName`, but the **controls** are **stored** in an **array**, **instead** of an **object**
@@ -496,7 +517,7 @@ TODO: add case when the children do not influence parent's dirtiness
 
 * base class for **FormControl-based directives**(`NgModel`, `FormControlName`, which are classes that extend `NgControl`)
 * contains **boolean properties**(getters) that reflect the current status(`valid`, `touched`, `dirty`)
-* contains `getError` && `hasError() -> !!getError()`
+* contains `getError` && `hasError() -> !!getError()` - these methods are **facades** for `AbstractControl.{getError, hasError}`
 
 ### NgControl(abstract class)
 
