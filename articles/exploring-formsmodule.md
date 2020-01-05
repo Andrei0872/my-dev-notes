@@ -247,6 +247,24 @@ If you want to only mark this `AbstractControl` as touched you can use `Abstract
 
 ## Takeaways
 
+* when setting the value to an `AbstractControl`, unless `{ onlySelf: true }` is specified, its ancestors are also going to be updated:
+
+```ts
+c = new FormControl('');
+c2 = new FormControl('');
+a = new FormArray([c, c2]);
+
+it('should emit one valueChange event per control', () => {
+  form.valueChanges.subscribe(() => logger.push('form'));
+  a.valueChanges.subscribe(() => logger.push('array'));
+  c.valueChanges.subscribe(() => logger.push('control1'));
+  c2.valueChanges.subscribe(() => logger.push('control2'));
+
+  a.setValue(['one', 'two']);
+  expect(logger).toEqual(['control1', 'control2', 'array', 'form']);
+});
+```
+
 * after `AbstractFormControl.setValidators` you'll have to manually run `AbstractFormControl.updateValueAndValidity` in order to **run** the new validators
 
 * `FormArrayName`
@@ -499,7 +517,21 @@ where `accessor` is the `RadioControlValueAccessor` of the selected radio button
 * `FormGroup.setValue` vs `FormGroup.patchValue`
   * the former will **require** you to **provide** a **value** for **all** the **existing controls**, whereas the latter will allow you to provide **values** for **any** of the **existing controls**
 
-TODO: add examples: `a.setValue(['one', 'two']);` - show the possibilities for `FormArray` & `FormGroup
+_`patchValue` example_ TODO: refactor with clearer examples :D
+
+```ts
+c = new FormControl('');
+c2 = new FormControl('');
+a = new FormArray([c, c2]);
+
+a.patchValue([null]);
+expect(a.value).toEqual([null, '']);
+
+a.patchValue([, , 'three']);
+expect(a.value).toEqual(['', '']);
+```
+
+_`setValue` example_
 
 ```ts
 const c1 = new FormControl('c1');
