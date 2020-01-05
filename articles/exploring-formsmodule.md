@@ -63,6 +63,10 @@ const BUILTIN_ACCESSORS = [
 
 ## TODO
 
+* `_updateDOMValue`
+
+* `_onCollectionChange`
+
 * Diff between `NgModelGroup`/`FormGroupName` and `NgForm`/`FormGroup`
   * `NgForm`/`FormGroup` directive should be top-level `FormGroup` instance, because they have no `_parent` property
   * `NgForm`/`FormGroup` has **form events**(`reset`, `submit`) bound to it
@@ -539,6 +543,26 @@ TODO: add case when the children do not influence parent's dirtiness
 
 * base class for `FormControl`, `FormGroup`, `FormArray`
 * provides functionality such as **running validators**, **resetting state** and calculating/accessing **validity status**
+* the **async validators** will **not** run if the **sync validators** returned **errors**
+
+```ts
+updateValueAndValidity(opts: {onlySelf?: boolean, emitEvent?: boolean} = {}): void {
+  this._setInitialStatus(); // DISABLED | VALID
+  this._updateValue();
+
+  if (this.enabled) {
+    this._cancelExistingSubscription();
+    (this as{errors: ValidationErrors | null}).errors = this._runValidator(); // Sync validators
+    (this as{status: string}).status = this._calculateStatus(); // VALID | INVALID | PENDING | DISABLED
+
+    if (this.status === VALID || this.status === PENDING) {
+      this._runAsyncValidator(opts.emitEvent);
+    }
+  }
+
+  /* Skipped for brevity */
+}
+```
 
 ### ControlContainer
 
