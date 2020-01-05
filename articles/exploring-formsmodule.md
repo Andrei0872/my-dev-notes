@@ -496,7 +496,24 @@ That's because out of `N` radio buttons with the same `name` and `value` attribu
 
 where `accessor` is the `RadioControlValueAccessor` of the selected radio button.
 
-* `FormGroup.setValue` vs `FormGroup.patchValue`: the former will **require** you to **provide** a **value** for **all** the **existing controls**, whereas the latter will allow you to provide **values** for **any** of the **existing controls**
+* `FormGroup.setValue` vs `FormGroup.patchValue`
+  * the former will **require** you to **provide** a **value** for **all** the **existing controls**, whereas the latter will allow you to provide **values** for **any** of the **existing controls**
+
+TODO: add examples: `a.setValue(['one', 'two']);` - show the possibilities for `FormArray` & `FormGroup
+
+```ts
+const c1 = new FormControl('c1');
+const c2 = new FormControl('c2');
+
+const a = new FormArray([c1, c2]);
+
+a.setValue(['c1-updated', 'c2-updated', 'c3']); // Error: Cannot find form control at index 2
+a.setValue(['c1-updated']); // Error: Must supply a value for form control at index: 1
+
+a.setValue(['c1-updated', 'c2-updated']);
+
+console.log(a.value); // ["c1-updated", "c2-updated"]
+```
 
 * implement a **custom validator** by using a **directive** that implements `Validator`; this way, you can use the validator with both `Template Driven Forms` and `Reactive Forms`
 
@@ -510,13 +527,12 @@ where `accessor` is the `RadioControlValueAccessor` of the selected radio button
 
 * a **model** is an object that stores data related to a specific entity
 
-TODO: Question: What happens when an `AbstractControl` is disabled ?
-TODO: add case when the children do not influence parent's dirtiness
 * when **disabling** an `AbstractControl` instance
   * its children are also going to be disabled
   * only the `touch` and `dirtiness` statuses are affecting the control's ancestors
   * if **parent** has been marked **artificially dirty**(dirtiness **not determined** by its children: manually doing `control.markAsDirty`) -> there is **no need** to **recalculate** the **parent's dirtiness** based on the children because they don't have any influence the parent;
   for example
+  
   ```typescript
   this.form = this.fb.group({
     name: this.fb.control({ value: 'andrei', disabled: false }),
@@ -535,6 +551,53 @@ TODO: add case when the children do not influence parent's dirtiness
   // Now, form will be marked as `pristine`, because the child that influenced the parent's dirtiness
   // is disabled
   ```
+
+If a `FormControl` container(`FormGroup` or `FormArray`) is disabled, its `value` will the value collected from all its descendants, regardless of their `disabled` value.
+
+```typescript
+const g = new FormGroup({
+  name: new FormControl('name'),
+  address: new FormGroup({
+    city: new FormControl('city'),
+    street: new FormControl('street'),
+  }),
+});
+
+g.get('address.city').disable();
+g.controls['name'].disable();
+
+console.log(g.value);
+/* 
+{
+  "address": {
+    "street": "street"
+  }
+}
+*/
+
+g.disable();
+console.log(g.value)
+/* 
+{
+  "name": "name",
+  "address": {
+    "city": "city",
+    "address": "address"
+  }
+}
+```
+
+The reason behind this is the way `AbstractControl.disable()` works. Starting from the current `AbstractControl` it will **first disable all its ancestors**, then collect their value. For example, here is how a `FormArray` would accumulate the values from its descendants:
+
+```ts
+_updateValue(): void {
+  (this as{value: any}).value =
+      this.controls.filter((control) => control.enabled || this.disabled)
+          .map((control) => control.value);
+}
+```
+
+The `control.enabled || this.disabled` expression allows us to get the value, even though the child control might be disabled.
 
 ### AbstractControlDirective(abstract class)
 
