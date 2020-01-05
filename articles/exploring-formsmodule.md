@@ -152,6 +152,25 @@ TODO: create GIF
 
 ## Questions
 
+* how to mark all descendants of a control and the control itself as touched ? : `markAllAsTouched`
+
+```ts
+// Put numbers beside child nodes so you can show the order in which they are marked as touched
+// TODO: show ASCII graph! :)
+const formArray: FormArray = new FormArray([
+  new FormControl('v1'), new FormControl('v2'),
+  new FormGroup({'c1': new FormControl('v1')}),
+  new FormArray([new FormGroup({'c2': new FormControl('v2')})])
+]);
+markAllAsTouched(): void {
+  this.markAsTouched({onlySelf: true});
+
+  this._forEachChild((control: AbstractControl) => control.markAllAsTouched());
+}
+```
+
+If you want to only mark this `AbstractControl` as touched you can use `AbstractControl.markAsTouched({ onlySelf: true })`, whereas if you want to mark its ancestors as well, you can simply omit the `{ onlySelf: true }` argument.
+
 * what happens to the form-control tree after `AbstractControl.setErrors(null)`?
   * only the status of this node and of each ancestor will be updated(and also `statusChanges` will emit if `emitEvent !== false`): `_updateControlsErrors`
 
