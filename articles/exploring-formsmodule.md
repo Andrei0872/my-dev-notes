@@ -714,7 +714,27 @@ _`NgModelGroup` in the context of `Template Driven Forms` === `FormGroupName` in
 * an `NgForm`'s `FormGroup` instance is always the top-level one, because `NgForm` **does not** have a `_parent` property, whereas `NgModelGroup` **does**
 
 * `NgForm` has the `submit` and `reset` event listeners **bound** to it
-  
+
+#### `NgModelGroup` & `FormGroupName` & `FormArrayName`
+
+* both will have direct(sort of - through getters) access to the **top-level** `FormGroupDirective`
+
+```ts
+// TODO: use TS :D
+testing_internal_1.beforeEach(function () {
+                formModel = new forms_1.FormGroup({ 'login': new forms_1.FormControl(null) });
+                var parent = new forms_1.FormGroupDirective([], []);
+                parent.form = new forms_1.FormGroup({ 'group': formModel });
+                p = parent;
+                controlGroupDir = new forms_1.FormGroupName(parent, [], []);
+                controlGroupDir.name = 'group';
+            });
+            testing_internal_1.it('should reexport control properties', function () {
+
+              console.log(controlGroupDir.formDirective.form === p.form) // true
+              console.log(controlGroupDir.formDirective === p) // true
+```
+
 ```ts
 @Directive({
   selector: 'form:not([ngNoForm]):not([formGroup]),ngForm,ng-form,[ngForm]',
