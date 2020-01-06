@@ -247,6 +247,15 @@ If you want to only mark this `AbstractControl` as touched you can use `Abstract
 
 ## Takeaways
 
+* you can add your custom class depending on form control's(or form control-container's) validity or user interaction status
+  * in a **custom directive**, inject `NgControlStatus` or `NgControlStatusGroup` and based on their getters, add the corresp. classes
+    ```ts
+    constructor (private ngControlStatus: NgControlStatus) { }
+
+    @HostBinding('[class.card__price--incorrect]') this.ngControlStatus.ngClassInvalid();
+    ```
+    _Note: in order for this to work, your element(or component), besides the above directive, must include one of these **FromControl**-based directives: `[formControlName],[ngModel],[formControl]`_
+
 * when setting the value to an `AbstractControl`, unless `{ onlySelf: true }` is specified, its ancestors are also going to be updated:
 
 ```ts
