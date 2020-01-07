@@ -16,6 +16,30 @@ export const REACTIVE_DRIVEN_DIRECTIVES: Type<any>[] =
 
 ## Article Plan
 
+### Ideas
+
+* before showing any feature(ex: `What happens when you disable an AbstractControl?`), start by showing a tree-like representation of a `AbstractControl` instances so that the feature can be easily understood
+  ex:
+  `What happens when you disable an AbstractControl`
+  
+  ```ts
+  const f = new FormGroup({ /* ... */ });
+
+  f.disable();
+  ```
+
+  ```
+      (3)FG (FG.disable())
+      /   \
+  (1)FC   (2)FC
+  ```
+
+  The disabling order: `(1), (2), (3)`..
+  * notes
+  * further explanations
+  * :)
+
+
 ### Base entities
 
 * define `AbstractControl`
