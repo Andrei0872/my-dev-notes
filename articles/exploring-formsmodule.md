@@ -63,6 +63,8 @@ const BUILTIN_ACCESSORS = [
 
 ## TODO
 
+* check for **FROM** instead of **FORM** misspellings 😟
+
 * `_updateDOMValue`
 
 * `_onCollectionChange`
@@ -579,6 +581,22 @@ console.log(a.value); // ["c1-updated", "c2-updated"]
 * a **model** is an object that stores data related to a specific entity
 
 * when **disabling** an `AbstractControl` instance
+  * you can choose not to update its ancestors by using `this.control.disable({ onlySelf: true })` (TODO: example); i.e: a `FormControl` might be part of the a `FormGroup` and because of this **control** being **invalid**, the entire `FormGroup` is marked as invalid; disabling this `FormControl` can influence the parent `FormGroup` or not(`this.control.disable({ onlySelf: true })`)
+    ```ts
+    const fg = this.fb.group({
+      name: this.fb.control('', Validators.required),
+      age: '',
+      city: this.fb.control('', Validators.required)
+    });
+
+
+    fg.controls['name'].disable();
+    fg.controls['city'].disable({ onlySelf: true });
+    
+    console.log(fg.valid) // false
+    ```
+  * you can be notified when an `AbstractControl` is **disabled** with the help of `valueChanges` and `statusChanges` event emitters; you can also choose not to be notified at all: `this.control.disable({ emitEvent: false })`(TODO: example)
+  * when an `AbstractControl` is **disabled**, its validators won't run and its errors will be marked as `null`;
   * its children are also going to be disabled
   * only the `touch` and `dirtiness` statuses are affecting the control's ancestors
   * if **parent** has been marked **artificially dirty**(dirtiness **not determined** by its children: manually doing `control.markAsDirty`) -> there is **no need** to **recalculate** the **parent's dirtiness** based on the children because they don't have any influence the parent;
