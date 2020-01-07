@@ -26,7 +26,7 @@ export const REACTIVE_DRIVEN_DIRECTIVES: Type<any>[] =
   * binds an `AbstractControl` instance to a **DOM element**
 * define `AbstractFromGroupDirective`
 
-* what is `ControlValueAccessor` and why is it essential for the **Forms API**?
+* what is `ControlValueAccessor` and why is it essential for the **Forms API**?(only a `FormControl` instance can directly interact with a `ControlValueAccessor`)
 
 * show diagram(the simple one / first one)
 * explain how a `FormControl` is set up + code snippets ❗️
@@ -305,6 +305,16 @@ this.fooForm = this.fb.group({
 
 {{ f.value | json }}
 ```
+
+* `AbstractControl.updateOn` - unless explicitly set(i.e `new FormControl('', { updateOn: 'change' /* 'change' | 'blur' | 'submit' */ })`), it will be determined when this property will be accessed.
+
+  ```ts
+  get updateOn(): FormHooks {
+    return this._updateOn ? this._updateOn : (this.parent ? this.parent.updateOn : 'change');
+  }
+  ```
+
+  For instance, `AbstractControl.updateOn` is needed whenever the form is **submitted** 
 
 * diff between `FormControlName` and `FormControl`
 
