@@ -273,6 +273,10 @@ If you want to only mark this `AbstractControl` as touched you can use `Abstract
 
 ## Takeaways
 
+* TODO: add to first section of the article(how things are connected with each other)
+  * `View` -> `Model`: `ControlValueAccessor.onChange()`
+  * `Model` -> `View`: `AbstractControl._onChange.forEach(fn => fn(v))`
+
 * you can add your custom class depending on form control's(or form control-container's) validity or user interaction status
   * in a **custom directive**, inject `NgControlStatus` or `NgControlStatusGroup` and based on their getters, add the corresp. classes
     ```ts
