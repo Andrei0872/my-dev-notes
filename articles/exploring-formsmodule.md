@@ -273,6 +273,10 @@ If you want to only mark this `AbstractControl` as touched you can use `Abstract
 
 ## Takeaways
 
+* `FormGroup.reset()`: 2 phases:
+  * 1) its children are reset (top -> bottom)
+  * 2) the ancestors are being updated(setting `pristine`, `touched` state and value) depending on their (fresh) children
+
 * TODO: add to first section of the article(how things are connected with each other)
   * `View` -> `Model`: `ControlValueAccessor.onChange()`
   * `Model` -> `View`: `AbstractControl._onChange.forEach(fn => fn(v))`
@@ -563,8 +567,11 @@ That's because out of `N` radio buttons with the same `name` and `value` attribu
 
 where `accessor` is the `RadioControlValueAccessor` of the selected radio button.
 
-* `FormGroup.setValue` vs `FormGroup.patchValue`
+* `{FormGroup|FormArray}.setValue` vs `{FormGroup|FormArray}.patchValue`
   * the former will **require** you to **provide** a **value** for **all** the **existing controls**, whereas the latter will allow you to provide **values** for **any** of the **existing controls**
+  * `{FormGroup|FormArray}.setValue`
+    * will first check if you _provided_ an object which consists of all the existing controls
+    * then it will check if you provided any **redundant** controls(controls that are **not** among the existing ones)
 
 _`patchValue` example_ TODO: refactor with clearer examples :D
 
