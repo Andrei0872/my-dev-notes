@@ -92,6 +92,24 @@ const BUILTIN_ACCESSORS = [
 * `_updateDOMValue`
 
 * `_onCollectionChange`
+  * when the **root of the tree** is **altered** **after the view** has been **built**; it's like **refreshing** the **tree**;
+    https://ng-run.com/edit/rrYWgA7tmNKCSsFbpmfX
+    If, for instance, a `FormArray`(let's call it `fa`) or a `FormGroup`(let's call it `fg`) is added to the root, every addition/removal of `fa` or `fg` will cause the entire tree to refresh itself
+
+    ```html
+     <form [formGroup]="form">
+      <div formGroupName="signin" login-is-empty-validator>
+        <input formControlName="login">
+        <input formControlName="password">
+      </div>
+      <input *ngIf="form.contains('email')" formControlName="email">
+    </form>`
+    ```
+
+    ```ts
+    form.addControl('email', new FormControl('', Validators.email))
+    fixture.detectChanges();
+    ```
 
 * Diff between `NgModelGroup`/`FormGroupName` and `NgForm`/`FormGroup`
   * `NgForm`/`FormGroup` directive should be top-level `FormGroup` instance, because they have no `_parent` property
@@ -273,6 +291,27 @@ If you want to only mark this `AbstractControl` as touched you can use `Abstract
 
 ## Takeaways
 
+* add to _Disabling section_; mention that when a **control** is **disabled**, its `dirty` and `touched` statuses won't affect the status determination for its ancestors
+  * a few things you can do while an `AbstractControl` is disabled
+    * `setValue` - the validators won't be run
+  
+  ```ts
+  it('should ignore disabled controls when determining touched state', () => {
+      const c = new FormControl('one');
+      const c2 = new FormControl('two');
+      const g = new FormGroup({one: c, two: c2});
+      c.markAsTouched();
+      expect(g.touched).toBe(true);
+
+      c.disable();
+      expect(c.touched).toBe(true);
+      expect(g.touched).toBe(false);
+
+      c.enable();
+      expect(g.touched).toBe(true);
+    });
+  ```
+
 * `FormGroup.reset()`: 2 phases:
   * 1) its children are reset (top -> bottom)
   * 2) the ancestors are being updated(setting `pristine`, `touched` state and value) depending on their (fresh) children
@@ -351,6 +390,9 @@ this.fooForm = this.fb.group({
   For instance, `AbstractControl.updateOn` is needed whenever the form is **submitted** 
 
 * diff between `FormControlName` and `FormControl`
+
+* `FormControlName`' values cannot be changed: https://ng-run.com/edit/o2piqt1V5jzCxhSj2HJB
+  * `[formControlName]="dynamicValue"` - no matter how many times you change it, the `FormControl` instance will be bound to the first value of `dynamicValue`
 
 * the `FormControl` is **already synced** within a `FormGroup` instance
 
