@@ -398,6 +398,84 @@ this.fooForm = this.fb.group({
 
   For instance, `AbstractControl.updateOn` is needed whenever the form is **submitted** 
 
+  However, you can still set the value of any status of the control(`dirty`, `touched`, `pending`) **programmatically**, through: `FormControl.setValue`, `FormControl.markAsDirty()` etc...
+
+  Consider this test case:
+
+  ```ts
+  @Component({selector: 'form-control-comp', template: `<input type="text" [formControl]="control">`})
+  class FormControlComp {
+    control !: FormControl;
+  }
+
+  it('should not use stale pending value if value set programmatically', () => {
+    const fixture = initTest(FormControlComp);
+    const control = new FormControl('', {validators: Validators.required, updateOn: 'blur'});
+    fixture.componentInstance.control = control;
+    fixture.detectChanges();
+
+    const input = fixture.debugElement.query(By.css('input')).nativeElement;
+    input.value = 'aa';
+    dispatchEvent(input, 'input'); // (1)
+    fixture.detectChanges();
+
+    control.setValue('Nancy'); // (2)
+    fixture.detectChanges();
+
+    dispatchEvent(input, 'blur');
+    fixture.detectChanges();
+
+    expect(input.value).toEqual('Nancy', 'Expected programmatic value to stick after blur.');
+  });
+  ```
+  **(1)**: `FormControl._pendingValue = 'aa'`
+  **(2)**: `FormControl.value = FormControl._pendingValue = 'Nancy'`
+
+  `FormControl._pendingValue` - an internal property, whose value changes on every `input` event;
+
+  When a `FormControl` has the **update strategy** set on `blur`, this callback function will be invoked
+
+  ```ts
+    function updateControl(control: FormControl, dir: NgControl): void {
+    if (control._pendingDirty) control.markAsDirty();
+    control.setValue(control._pendingValue, {emitModelToViewChange: false});
+    dir.viewToModelUpdate(control._pendingValue);
+    control._pendingChange = false;
+  }
+  ```
+
+  `FormControl.setValue` is defined like this
+
+  ```ts
+  setValue(value: any, options: /* ... */) {
+    (this as{value: any}).value = this._pendingValue = value;
+
+    /* ... Skipped for brevity ... */
+  }
+  ```
+
+  _`(this as{value: any}).value` is used as opposed to `this.value` because the `value` property is declared like this `public readonly value: any;`_
+
+  Consequently, after `control.setValue('Nancy')`(step **(2)**), the `control._pendingValue` will be `Nancy`, because after the **blur event** finally occurs, the previous `control._pendingValue='aa'` will have already been replaced with `Nancy`.
+
+  The same goes for the `submit` strategy, except that the updates are executed inside `AbstractControl._syncPendingControls`, which for `FormControl` looks like this:
+
+  ```ts
+  _syncPendingControls(): boolean {
+    if (this.updateOn === 'submit') {
+      if (this._pendingDirty) this.markAsDirty();
+      if (this._pendingTouched) this.markAsTouched();
+      if (this._pendingChange) {
+        this.setValue(this._pendingValue, {onlySelf: true, emitModelToViewChange: false});
+        return true;
+      }
+    }
+    return false;
+  }
+  ```
+
+  You can find more about `_syncPendingControls` in [What happens when a form is submitted](#link); TODO:
+
 * diff between `FormControlName` and `FormControl`
 
 * `FormControlName`' values cannot be changed: https://ng-run.com/edit/o2piqt1V5jzCxhSj2HJB
