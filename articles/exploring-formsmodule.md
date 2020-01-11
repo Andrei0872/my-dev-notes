@@ -85,6 +85,15 @@ const BUILTIN_ACCESSORS = [
 
 ---
 
+### What happens when you perform
+  
+#### `FormGroup.reset()`
+
+* exemplify tree
+* starting from the `FormGroup` in question, it will reset its descendants, if any descendants have other descendants on their own, it will reset them first and so on. Then, the ancestors will determine their **value**, **status**(`valid`, `invalid`), **UI status**(`dirty`, `touched`) based on those provided by the ancestors
+
+---
+
 ## TODO
 
 * check for **FROM** instead of **FORM** misspellings 😟
@@ -392,7 +401,8 @@ this.fooForm = this.fb.group({
 * diff between `FormControlName` and `FormControl`
 
 * `FormControlName`' values cannot be changed: https://ng-run.com/edit/o2piqt1V5jzCxhSj2HJB
-  * `[formControlName]="dynamicValue"` - no matter how many times you change it, the `FormControl` instance will be bound to the first value of `dynamicValue`
+  * `[formControlName]="dynamicValue"` - no matter how many times you change it, the `FormControl` instance will be bound to the first value of `dynamicValue`; 
+    however, if you still want to change that form control, you can use `{FormArray|FormGroup}.setControl(ctrlName, AbstractControlInstance)`
 
 * the `FormControl` is **already synced** within a `FormGroup` instance
 
