@@ -85,6 +85,13 @@ const BUILTIN_ACCESSORS = [
 
 ---
 
+### `_pendingDirty`, `_pendingValue`, `_pendingChange` and `_pendingTouched`
+
+* link to [Connecting the dots](#add-link) - where you explain how `ControlValueAccessor` can communicate with a `FormControl`
+* explain what they do and why they are useful - prevent from traversing the tree redundantly; TODO:(ex): `updateOn: 'blur'` - `input`, `blur`, `blur` - `pendingChange!`
+
+---
+
 ### What happens when you perform
   
 #### `FormGroup.reset()`
@@ -474,7 +481,8 @@ this.fooForm = this.fb.group({
   }
   ```
 
-  You can find more about `_syncPendingControls` in [What happens when a form is submitted](#link); TODO:
+  _You can find more about `_syncPendingControls` in [What happens when a form is submitted](#add-link); TODO:_
+  _You can read more about `_pendingDirty`, `_pendingValue`, `_pendingChange` [here](#add-link)_ TODO:
 
 * diff between `FormControlName` and `FormControl`
 
