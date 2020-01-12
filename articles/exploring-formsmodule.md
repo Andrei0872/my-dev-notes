@@ -360,6 +360,10 @@ If you want to only mark this `AbstractControl` as touched you can use `Abstract
 
 ## Takeaways
 
+* for any validator except `RequiredValidator`, if the control value is an empty(`null` or **empty string**), the validator logic will pe skipped
+
+* the input for `Validator.pattern` can either be a string or a `Regex` object
+
 * `Validator.registerOnValidatorChange()` to be executed when a validator inputs change its value
   ex: from `<input [required]="true">` --> `<input [required]="false">`
   
