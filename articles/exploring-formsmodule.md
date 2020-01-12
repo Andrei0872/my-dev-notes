@@ -62,6 +62,11 @@ export const REACTIVE_DRIVEN_DIRECTIVES: Type<any>[] =
 * expose validators and how they can be used, depending on the context(add examples! :D)
   * explain validators' composition
 
+#### Providing validators
+
+* you can define validators in the component class or in the view
+* view: as attributes(`<input required>`), as property binding(`<input [required]="shouldBeRequired">`)
+  
 ### Built-in Control Value Accessors
 
 * talk about the relevant ones(`RadioValueAccessor`, `SelectControlValueAccessor`)
@@ -260,6 +265,54 @@ If you want to only mark this `AbstractControl` as touched you can use `Abstract
     * the `submitted` property becomes true, so you can **access** it now the **view** or in the **class**
     * `syncPendingControls()`: some `AbstractControl` instances might have set the option `updateOn` differently. Therefore, if one `FormControl` has the `updateOn` option set to `submit`, it means that its **value** and **UI status**(`dirty`, `untouched`) will only be updated when the `submit` event occurs. It is important to mention that the above statement holds true unless the `FormControl` is manually altered(`control.markAsDirty`).
     TODO: show example! :)
+
+    Consider this example:
+
+    ```ts
+    this.form = this.fb.group({ name: this.fb.control('', { updateOn: 'submit' }) });
+
+    this.form.valueChanges.subscribe(console.warn);
+    ```
+
+    When having a view like this
+
+    ```html
+    <form [formGroup]="form" (ngSubmit)="onSubmit()">
+      <input [formControl]="form.get('name')" type="text">
+
+      <br><br>
+      <button type="submit">Submit</button>
+    </form>
+    ```
+    you get the **same values** **every time** the **submit** event occurs, whereas with this view
+
+    ```html
+    <form [formGroup]="form" (ngSubmit)="onSubmit()">
+      <input formControlName="name" type="text">
+
+      <br><br>
+      <button type="submit">Submit</button>
+    </form>
+    ```
+  
+   you get the **values** **only once**, when the **submit** event occurs
+
+   That's because of the way `FormControlName` directives work inside a `FormGroupDirective`. A `FormGroupDirective` will keep track of `FormControlName` directives with the help of `directives` property. When the **submit** event occurs, each `FormControlName` will set the `_pendingChange` property of their bound `FormControl` to `false`.
+
+   ```ts
+  directives.forEach(dir => {
+    const control = dir.control as FormControl;
+    if (control.updateOn === 'submit' && control._pendingChange) {
+      dir.viewToModelUpdate(control._pendingValue);
+      control._pendingChange = false;
+    }
+  });
+   ```
+
+  `FormControl._pendingChange` is set to `true` every time the `change` event occurs.
+
+  You can find more about `_pendingChange` [here](#add-link). TODO:
+
   * **reset**: parent ----> children(**depth first**)
 
 ---
