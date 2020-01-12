@@ -360,6 +360,10 @@ If you want to only mark this `AbstractControl` as touched you can use `Abstract
 
 ## Takeaways
 
+* `FormControl.updateOn` can me inherited from parent control(which will inherit from its parent and so on; defaults to `change`), unless manually specified(`this.fb.control('', { updateOn })`, or `<input [ngModelOptions]="{ updateOn }">`). If the `FormControl` is standalone, unless manually specified, `FormControl.updateOn` will default to `change` - TODO: examples
+
+* `[ngFormOptions]="{ updateOn: 'change' | 'blur' | 'submit' }"` - applicable to `NgForm`
+
 * add to _Disabling section_; mention that when a **control** is **disabled**, its `dirty` and `touched` statuses won't affect the status determination for its ancestors
   * a few things you can do while an `AbstractControl` is disabled
     * `setValue` - the validators won't be run
