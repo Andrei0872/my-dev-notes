@@ -360,6 +360,26 @@ If you want to only mark this `AbstractControl` as touched you can use `Abstract
 
 ## Takeaways
 
+* `Validator.registerOnValidatorChange()` to be executed when a validator inputs change its value
+  ex: from `<input [required]="true">` --> `<input [required]="false">`
+  
+  ```ts
+  @Directive({
+  selector:
+      ':not([type=checkbox])[required][formControlName],:not([type=checkbox])[required][formControl],:not([type=checkbox])[required][ngModel]',
+  providers: [REQUIRED_VALIDATOR],
+  host: {'[attr.required]': 'required ? "" : null'}
+  })
+  export class RequiredValidator implements Validator {
+    set required(value: boolean|string) {
+      this._required = value != null && value !== false && `${value}` !== 'false';
+      if (this._onChange) this._onChange();
+    }
+  
+    registerOnValidatorChange(fn: () => void): void { this._onChange = fn; }
+  }
+  ```
+
 * `FormControl.updateOn` can me inherited from parent control(which will inherit from its parent and so on; defaults to `change`), unless manually specified(`this.fb.control('', { updateOn })`, or `<input [ngModelOptions]="{ updateOn }">`). If the `FormControl` is standalone, unless manually specified, `FormControl.updateOn` will default to `change` - TODO: examples
 
 * `[ngFormOptions]="{ updateOn: 'change' | 'blur' | 'submit' }"` - applicable to `NgForm`
