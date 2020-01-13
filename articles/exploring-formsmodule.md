@@ -108,6 +108,8 @@ const BUILTIN_ACCESSORS = [
 
 ## TODO
 
+* explain `SelectValueAccessor` & `SelectMultipleValueAccessor` 😃
+
 * check for **FROM** instead of **FORM** misspellings 😟
 
 * `_updateDOMValue`
@@ -359,6 +361,8 @@ If you want to only mark this `AbstractControl` as touched you can use `Abstract
 * nested form groups + **validators**
 
 ## Takeaways
+
+* The `DefaultValueAccessor` can act on either `<input>`(excluding `<input type='checkbox'>`) or `<textarea>`; for `<input type='checkbox'>`, there is `CheckboxValueAccessor`
 
 * for any validator except `RequiredValidator`, if the control value is an empty(`null` or **empty string**), the validator logic will pe skipped
 
