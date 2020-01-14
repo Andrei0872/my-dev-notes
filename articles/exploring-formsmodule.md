@@ -1227,3 +1227,77 @@ function setUpModelChangePipeline(control: FormControl, dir: NgControl): void {
   });
 }
 ```
+
+
+## `SelectValueAccessor`
+
+### Using `[value]="primitiveValue"`
+
+* `primitiveValue`, as its name implies, cannot be something else than a **primitive value**; if you'd like to bind an object, `[ngValue]` is your choice
+
+* each `<option>` will select its **value** to `primitiveValue`
+
+* when programmatically modifying `<select>`'s value, this line will be reached:
+
+```ts
+this._renderer.setProperty(this._elementRef.nativeElement, 'value', valueString);
+```
+
+where `valueString` is the argument(i.e: the `id`) passed to `FormControl.setValue()`
+
+### Using `[ngValue]="primitiveOrNonPrimitiveValue"`
+
+* unlike `[value]`, `[ngValue]` can take both **primitive** and **non-primitive** as values
+
+* will store the value of the `<option>` tag depending on the value provided to `[ngValue]`
+
+```ts
+@Input('ngValue')
+  set ngValue(value: any) {
+    if (this._select == null) return;
+    this._select._optionMap.set(this.id, value);
+    this._setElementValue(_buildValueString(this.id, value));
+    this._select.writeValue(this._select.value);
+}
+
+/* ... */
+
+function _buildValueString(id: string | null, value: any): string {
+  if (id == null) return `${value}`;
+  if (value && typeof value === 'object') value = 'Object';
+  return `${id}: ${value}`.slice(0, 50);
+}
+```
+
+we can deduce that if we pass an object, the value could be `'1: Object'`.
+
+It is important to notice that when you change the value of the `<select>`(by using `FormControl.setValue(arg)`), if arg is an object, you must make sure it is the same object that you've passed to `<option [ngValue]="arg"></option>`. That's because, by default, `SelectControlValueAccessor.writeValue(obj)`, it will use the `===` to identify the selected `option`.
+
+```ts
+writeValue(value: any): void {
+    this.value = value;
+    const id: string|null = this._getOptionId(value); // <---- Here!
+    if (id == null) {
+      this._renderer.setProperty(this._elementRef.nativeElement, 'selectedIndex', -1);
+    }
+    const valueString = _buildValueString(id, value);
+    this._renderer.setProperty(this._elementRef.nativeElement, 'value', valueString);
+}
+
+_getOptionId(value: any): string|null {
+    for (const id of Array.from(this._optionMap.keys())) {
+      if (this._compareWith(this._optionMap.get(id), value)) return id;
+    }
+    return null;
+}
+```
+
+Where `_compareWith` looks like this(by default):
+
+```ts
+return a === b || typeof a === 'number' && typeof b === 'number' && isNaN(a) && isNaN(b);
+```
+
+Here's an example with a custom `_compareWith` function: https://stackblitz.com/edit/select-uf9kyu?file=src/app/app.component.html
+
+Here is the test case for such behavior: https://github.com/angular/angular/blob/master/packages/forms/test/value_accessor_integration_spec.ts#L216-L240
