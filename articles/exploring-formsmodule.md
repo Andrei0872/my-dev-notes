@@ -71,6 +71,16 @@ export const REACTIVE_DRIVEN_DIRECTIVES: Type<any>[] =
 
 * talk about the relevant ones(`RadioValueAccessor`, `SelectControlValueAccessor`)
   * `SelectControlValueAccessor` - 2 ways of using its API
+  * `RadioValueAccessor` - the radio buttons can be grouped by `formControlName` in the absence of the `name` attribute
+    ```ts
+    // RadioValueAccessor._checkName
+    private _checkName(): void {
+      if (this.name && this.formControlName && this.name !== this.formControlName) {
+        this._throwNameError();
+      }
+      if (!this.name && this.formControlName) this.name = this.formControlName;
+    }
+    ```
 
 ```ts
 const BUILTIN_ACCESSORS = [
@@ -103,6 +113,20 @@ const BUILTIN_ACCESSORS = [
 
 * exemplify tree
 * starting from the `FormGroup` in question, it will reset its descendants, if any descendants have other descendants on their own, it will reset them first and so on. Then, the ancestors will determine their **value**, **status**(`valid`, `invalid`), **UI status**(`dirty`, `touched`) based on those provided by the ancestors
+* you can reset with initial values
+
+```html
+<form #f="ngForm">
+    <input type="radio" ngModel name="food" value="chicken">
+    <input type="radio" ngModel name="food" value="fish">
+    <input type="radio" ngModel name="drink" value="cola">
+    <input type="radio" ngModel name="drink" value="sprite">
+</form>
+
+<button (click)="f.resetForm({ food: 'fish' })">reset with val</button>
+
+<button (click)="f.resetForm()">reset(empty)</button>
+```
 
 ---
 
