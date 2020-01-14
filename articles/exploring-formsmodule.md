@@ -362,6 +362,88 @@ If you want to only mark this `AbstractControl` as touched you can use `Abstract
 
 ## Takeaways
 
+* multiple **form-control-based directives** can share the same the same `FormControl` instance; that's why the `FormControl` class has the `_onChange` property:
+
+```ts
+registerOnChange(fn: Function): void { this._onChange.push(fn); }
+```
+
+With the help of this method, **callbacks functions** can be registered on the `FormControl` instance and will be invoked then the its value is changed programmatically: `FormControl.setValue()`
+
+```ts
+setValue(value: any, options: {
+    onlySelf?: boolean,
+    emitEvent?: boolean,
+    emitModelToViewChange?: boolean,
+    emitViewToModelChange?: boolean
+  } = {}): void {
+  (this as{value: any}).value = this._pendingValue = value;
+  if (this._onChange.length && options.emitModelToViewChange !== false) {
+    this._onChange.forEach(
+        (changeFn) => changeFn(this.value, options.emitViewToModelChange !== false));
+  }
+  this.updateValueAndValidity(options);
+}
+```
+
+Here's how such callback function can be registered on a `FormControl` instance 
+
+```ts
+function setUpModelChangePipeline(control: FormControl, dir: NgControl): void {
+  control.registerOnChange((newValue: any, emitModelEvent: boolean) => {
+    // control -> view
+    dir.valueAccessor !.writeValue(newValue);
+
+    // control -> ngModel
+    if (emitModelEvent) dir.viewToModelUpdate(newValue);
+  });
+}
+```
+
+Here's also a visual example, along with its test case:
+
+```html
+<form [formGroup]="form" *ngIf="showRadio.value === 'yes'">
+    <input type="radio" formControlName="food" value="chicken">
+    <input type="radio" formControlName="food" value="fish">
+    <input type="radio" formControlName="drink" value="cola">
+    <input type="radio" formControlName="drink" value="sprite">
+</form>
+<input type="radio" [formControl]="showRadio" value="yes">
+<input type="radio" [formControl]="showRadio" value="no">`
+```
+
+```ts
+it('should support basic functionality', () => {
+  const fixture = initTest(FormControlRadioButtons); // Contains the above template
+  const form =
+      new FormGroup({'food': new FormControl('fish'), 'drink': new FormControl('sprite')});
+  fixture.componentInstance.form = form;
+  fixture.detectChanges();
+
+  // model -> view
+  const inputs = fixture.debugElement.queryAll(By.css('input'));
+  expect(inputs[0].nativeElement.checked).toEqual(false);
+  expect(inputs[1].nativeElement.checked).toEqual(true);
+
+  dispatchEvent(inputs[0].nativeElement, 'change');
+  fixture.detectChanges();
+
+  // view -> model
+  expect(form.get('food') !.value).toEqual('chicken');
+  expect(inputs[1].nativeElement.checked).toEqual(false);
+
+  form.get('food') !.setValue('fish');
+  fixture.detectChanges();
+
+  // programmatic change -> view
+  expect(inputs[0].nativeElement.checked).toEqual(false);
+  expect(inputs[1].nativeElement.checked).toEqual(true);
+})
+```
+
+_`fixture.detectChanges()` - trigger a change detection cycle_
+
 * The `DefaultValueAccessor` can act on either `<input>`(excluding `<input type='checkbox'>`) or `<textarea>`; for `<input type='checkbox'>`, there is `CheckboxValueAccessor`
 
 * for any validator except `RequiredValidator`, if the control value is an empty(`null` or **empty string**), the validator logic will pe skipped
@@ -1269,7 +1351,7 @@ function _buildValueString(id: string | null, value: any): string {
 }
 ```
 
-we can deduce that if we pass an object, the value could be `'1: Object'`.
+we can deduce that if we pass an object, the value will be something like `'1: Object'`. If we pass a primitive value, like the name of a city, the will be: `0: 'NY'`
 
 It is important to notice that when you change the value of the `<select>`(by using `FormControl.setValue(arg)`), if arg is an object, you must make sure it is the same object that you've passed to `<option [ngValue]="arg"></option>`. That's because, by default, `SelectControlValueAccessor.writeValue(obj)`, it will use the `===` to identify the selected `option`.
 
