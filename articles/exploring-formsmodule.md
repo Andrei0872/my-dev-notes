@@ -1407,3 +1407,28 @@ return a === b || typeof a === 'number' && typeof b === 'number' && isNaN(a) && 
 Here's an example with a custom `_compareWith` function: https://stackblitz.com/edit/select-uf9kyu?file=src/app/app.component.html
 
 Here is the test case for such behavior: https://github.com/angular/angular/blob/master/packages/forms/test/value_accessor_integration_spec.ts#L216-L240
+
+---
+
+### `SelectMultipleValueAccessor`
+
+Each option is tracked(added to the internal `_optionMap` property), because
+  
+* when **change event** occurs on the `<select>`, the value accessor needs to provide the right values(the value provided to `[value]` or `[ngValue]` of `<option>`); this can be achieved with iterating over the **registered options** and retrieving their values
+
+* when value of the `FormControl` bound to the `<select>` element is changed programmatically(`FormControl.setValue()`), it needs to somehow determine which of the existing options match with the provided values
+
+```ts
+writeValue(value: any): void {
+  this.value = value;
+  let optionSelectedStateSetter: (opt: ɵNgSelectMultipleOption, o: any) => void;
+  if (Array.isArray(value)) {
+    // convert values to ids
+    const ids = value.map((v) => this._getOptionId(v));
+    optionSelectedStateSetter = (opt, o) => { opt._setSelected(ids.indexOf(o.toString()) > -1); };
+  } else {
+    optionSelectedStateSetter = (opt, o) => { opt._setSelected(false); };
+  }
+  this._optionMap.forEach(optionSelectedStateSetter);
+}
+```
