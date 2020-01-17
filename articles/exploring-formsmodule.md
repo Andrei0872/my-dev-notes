@@ -1,4 +1,4 @@
-# Exploring `FormsModule` in Angular
+# TODO: find a good title about forms! :)
 
 * if you used both `Template Driven Forms` and `Reactive Forms` until now, these should summarize them pretty well!
 
@@ -14,9 +14,7 @@ export const REACTIVE_DRIVEN_DIRECTIVES: Type<any>[] =
 
 ---
 
-## Article Plan
-
-### Ideas
+## Ideas
 
 * before showing any feature(ex: `What happens when you disable an AbstractControl?`), start by showing a tree-like representation of a `AbstractControl` instances so that the feature can be easily understood
   ex:
@@ -40,25 +38,79 @@ export const REACTIVE_DRIVEN_DIRECTIVES: Type<any>[] =
   * :)
 
 
-### Base entities
+## Base entities
 
-* define `AbstractControl`
-  * the **async validators** will **not** run if the **sync validators** returned **errors**
-  * `AbstractControl` contains logic shared across `FormControl`, `FormGroup` and `FormArray`; eg: running validators, changing and calculating UI status(i.e `markAsDirty()`, `markAsTouched()` etc) and resetting status
-  * keeps track of validation status(`invalid`, `valid`), UI status(`dirty`, `touched`, `pristine` etc)
-  * define `FormControl`, `FormArray` & `FormGroup`
-    * idea: multiple `AbstractControl`s form a tree where the leaves are always going to be the `FormControl` instances and the other 2(`FormArray`, `FormGroup`) can be thought of as `FormControl` containers, which entails that they **can't be used as leaves** so they must contain at least on `AbstractControl` instance.
-  * can be referred to as the **model**(TODO: bring definition here)
+In order to get the most out of the **Forms API**, we must ensure that look over some of its essential parts.
 
-* define `AbstractControlDirective`
-  * base class for **FormControl-based directives**(`NgModel`, `FormControlName`, which are classes that extend `NgControl`)
-  * contains **boolean properties**(getters) that reflect the current status(`valid`, `touched`, `dirty`)
-  * contains `getError` && `hasError() -> !!getError()` - these methods are **facades** for `AbstractControl.{getError, hasError}`
-  * an `AbstractControlDirective` contains an `AbstractControl` instance
-  * can be referred to as **form-control-based** directive
-  * binds an `AbstractControl` instance to a **DOM element**
-  * can be thought of as a `middleman` that connects `ControlValueAccessor`(**view layer**) with `AbstractControl`(**model layer**) - more on that in the forthcoming sections - it stores data related to a specific entity
-  * concrete implementations: `ngModel`, `formControlName`, `formControl`
+### AbstractControl
+
+This (**abstract**) class contains logic shared across `FormControl`, `FormGroup` and `FormArray`: 
+
+* running validators
+* changing and calculating UI status - `markAsDirty()`, `markAsTouched()`, `dirty`, `touched`, `pristine` etc...
+* resetting status
+* keeping track of validation status(`invalid`, `valid`)
+
+This class, as well as its subclasses, can referred to as the **model layer** - it stores data related to a specific entity.
+
+Multiple `AbstractControl`s can be seen as tree where the leaves are always going to be `FormControl` instances and the other 2 (`FormArray`, `FormGroup`) can be thought of as `FormControl` containers, which entails that they **can't be used as leaves** because they must contain at least on `AbstractControl` instance.
+
+```ts
+// FG - FormGroup
+// FA - FormArray
+// FC - FormControl
+
+    FG
+  /   \
+FC    FG
+    /    \
+  FC     FA
+        / | \
+      FC FC FC
+```
+
+The above tree can be the result of
+
+```html
+<form>
+  <input type="text" formControlName="companyName">
+
+  <ng-container formGroupName="personal">
+    <input type="text" formControlName="name">
+
+    <ng-container formArrayName="hobbies">
+      <input type="checkbox" formControlName="0">
+      <input type="checkbox" formControlName="1">
+      <input type="checkbox" formControlName="2">
+    </ng-container>
+  </ng-container>
+</form>
+```
+
+You can find more about `formArrayName` and `formGroupName` in the upcoming sections.
+
+#### FormControl
+
+It extends `AbstractControl`, which means it will inherit all the characteristics listed above. What's important to mention here is that `FormControl` is put together with **only one** form control(a **DOM element**: `<input>`, `<textarea>`) or a custom component(with the help of `ControlValueAccessor`- more on that later!).
+
+#### FormArray
+
+It extends `AbstractControl` and its job is to group multiple `AbstractControl`s together.   
+From a tree perspective, it is a node that must contain at least one descendant. Its **validation status**, **dirtiness**, **touched status** and **value** mainly depend on its descendants.
+
+Its defining characteristic is that it stores its children in an **array**.
+
+#### FormGroup
+
+Same as `FormArray`, except that it stores its descendants in an **object**. 
+
+### AbstractControlDirective
+
+It is the base class for **form-control-based directives**(`NgModel`, `FormControlName`, `FormControl`) and contains **boolean getters** that reflect the current status of the control(`valid`, `touched`, `dirty` etc...).  
+The previously mentioned control is bound to a **DOM element** with the help of a concrete implementation of `AbstractControlDirective`(`NgModel`, `FormControlName`) and a `ControlValueAccessor`. 
+
+Thus, this class can be thought of as a `middleman` that connects `ControlValueAccessor`(**view layer**) with `AbstractControl`(**model layer**) - more on that in the forthcoming sections. 
+
 
 * define `AbstractFormGroupDirective`
   * a container for `AbstractFromGroupDirective`s and `AbstractControlDirective`s
@@ -181,6 +233,8 @@ function setUpModelChangePipeline(control: FormControl, dir: NgControl): void {
 * `<form>` is inert. a `FromGroupDirective` instance will only be created if using `[formGroup]`
 
 ### Validators
+
+* the **async validators** will **not** run if the **sync validators** returned **errors**
 
 * implement a **custom validator** by using a **directive** that implements `Validator`; this way, you can use the validator with both `Template Driven Forms` and `Reactive Forms`
 
@@ -1395,3 +1449,4 @@ const address = this.fb.group({
 * create `ng-run` examples ! 😃
 * check for **FROM** instead of **FORM** misspellings 😟
 * diagrams for `disable()/enable()`, `reset()` ❓
+* intro
