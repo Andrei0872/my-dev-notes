@@ -43,23 +43,28 @@ export const REACTIVE_DRIVEN_DIRECTIVES: Type<any>[] =
 ### Base entities
 
 * define `AbstractControl`
+  * the **async validators** will **not** run if the **sync validators** returned **errors**
   * `AbstractControl` contains logic shared across `FormControl`, `FormGroup` and `FormArray`; eg: running validators, changing and calculating UI status(i.e `markAsDirty()`, `markAsTouched()` etc) and resetting status
   * keeps track of validation status(`invalid`, `valid`), UI status(`dirty`, `touched`, `pristine` etc)
   * define `FormControl`, `FormArray` & `FormGroup`
     * idea: multiple `AbstractControl`s form a tree where the leaves are always going to be the `FormControl` instances and the other 2(`FormArray`, `FormGroup`) can be thought of as `FormControl` containers, which entails that they **can't be used as leaves** so they must contain at least on `AbstractControl` instance.
   * can be referred to as the **model**(TODO: bring definition here)
 
-* define `AbstractControlDirective` tree
+* define `AbstractControlDirective`
+  * base class for **FormControl-based directives**(`NgModel`, `FormControlName`, which are classes that extend `NgControl`)
+  * contains **boolean properties**(getters) that reflect the current status(`valid`, `touched`, `dirty`)
+  * contains `getError` && `hasError() -> !!getError()` - these methods are **facades** for `AbstractControl.{getError, hasError}`
   * an `AbstractControlDirective` contains an `AbstractControl` instance
   * can be referred to as **form-control-based** directive
   * binds an `AbstractControl` instance to a **DOM element**
-  * can be thought of as a `middleman` that connects `ControlValueAccessor`(**view layer**) with `AbstractControl`(**model layer**) - more on that in the forthcoming sections
+  * can be thought of as a `middleman` that connects `ControlValueAccessor`(**view layer**) with `AbstractControl`(**model layer**) - more on that in the forthcoming sections - it stores data related to a specific entity
   * concrete implementations: `ngModel`, `formControlName`, `formControl`
 
-* define `AbstractFromGroupDirective`
+* define `AbstractFormGroupDirective`
   * a container for `AbstractFromGroupDirective`s and `AbstractControlDirective`s
   * concrete implementations: `formGroupName`, `formArrayName`, `ngModelGroup`
   * useful when you want to create a sub-group of `AbstractControl`s(eg: `address: { city, street, zip }`) or run validators for some specific `AbstractControls`(TODO: bring example here)
+  * `AbstractFormGroupDirective.formDirective` will always return the top-level `FormGroup` instance
 
 * define `ControlValueAccessor`
   * the `DefaultValueAccessor` can act on either `<input>`(excluding `<input type='checkbox'>`) or `<textarea>`; for `<input type='checkbox'>`, there is `CheckboxValueAccessor`
@@ -72,8 +77,9 @@ export const REACTIVE_DRIVEN_DIRECTIVES: Type<any>[] =
 
 * show diagram(the simple one / first one)
 
+
+### Connecting `FormControl` with `ControlValueAccessor`
 * explain how a `FormControl` is set up + code snippets ❗️
-  * title: 'Connecting `FormControl` with `ControlValueAccessor`'
     * `registerOnDisabledChange`
     * `registerOnChange`
     * example: a custom component that could be used as a form control
@@ -83,18 +89,100 @@ export const REACTIVE_DRIVEN_DIRECTIVES: Type<any>[] =
   * TODO: add to first section of the article(how things are connected with each other)
   * `View` -> `Model`: `ControlValueAccessor.onChange()`
   * `Model` -> `View`: `AbstractControl._onChange.forEach(fn => fn(v))`
+  * explain the **ViewToModel** and **ModelToView** pipelines
 
+
+#### How does a control-based directive binds a `FormControl` instance to a DOM element with the help of a value accessor ?
+
+```typescript
+export function setUpControl(control: FormControl, dir: NgControl): void {
+  if (!control) _throwError(dir, 'Cannot find control with');
+  if (!dir.valueAccessor) _throwError(dir, 'No value accessor for form control with');
+
+  control.validator = Validators.compose([control.validator !, dir.validator]);
+  control.asyncValidator = Validators.composeAsync([control.asyncValidator !, dir.asyncValidator]);
+  dir.valueAccessor !.writeValue(control.value);
+
+  setUpViewChangePipeline(control, dir);
+  setUpModelChangePipeline(control, dir);
+
+  setUpBlurPipeline(control, dir);
+
+  if (dir.valueAccessor !.setDisabledState) {
+    control.registerOnDisabledChange(
+        (isDisabled: boolean) => { dir.valueAccessor !.setDisabledState !(isDisabled); });
+  }
+
+  // re-run validation when validator binding changes, e.g. minlength=3 -> minlength=4
+  dir._rawValidators.forEach((validator: Validator | ValidatorFn) => {
+    if ((<Validator>validator).registerOnValidatorChange)
+      (<Validator>validator).registerOnValidatorChange !(() => control.updateValueAndValidity());
+  });
+
+  dir._rawAsyncValidators.forEach((validator: AsyncValidator | AsyncValidatorFn) => {
+    if ((<Validator>validator).registerOnValidatorChange)
+      (<Validator>validator).registerOnValidatorChange !(() => control.updateValueAndValidity());
+  });
+}
+
+// VIEW -> MODEL (input event)
+function setUpViewChangePipeline(control: FormControl, dir: NgControl): void {
+  dir.valueAccessor !.registerOnChange((newValue: any) => {
+    control._pendingValue = newValue;
+    control._pendingChange = true;
+    control._pendingDirty = true;
+
+    if (control.updateOn === 'change') updateControl(control, dir);
+  });
+}
+
+function setUpBlurPipeline(control: FormControl, dir: NgControl): void {
+  dir.valueAccessor !.registerOnTouched(() => {
+    control._pendingTouched = true;
+
+    if (control.updateOn === 'blur' && control._pendingChange) updateControl(control, dir);
+    if (control.updateOn !== 'submit') control.markAsTouched();
+  });
+}
+
+function updateControl(control: FormControl, dir: NgControl): void {
+  if (control._pendingDirty) control.markAsDirty();
+  control.setValue(control._pendingValue, {emitModelToViewChange: false});
+  dir.viewToModelUpdate(control._pendingValue);
+  control._pendingChange = false;
+}
+
+function setUpModelChangePipeline(control: FormControl, dir: NgControl): void {
+  control.registerOnChange((newValue: any, emitModelEvent: boolean) => {
+    // control -> view
+    dir.valueAccessor !.writeValue(newValue);
+
+    // control -> ngModel
+    if (emitModelEvent) dir.viewToModelUpdate(newValue);
+  });
+}
+```
 
 ### Template Driven Forms and Reactive Forms
 
 * template-driven - most of the form logic is done inside the template
 * `RF` - the form is **already created** **when** the **view** is **being built**
-* `TDF` - the form **is** being **created** **while** the **view** is **being built**
 * using components as form controls inside forms(`TDF`, `RF`)
 * both are very powerful, but `Reactive Forms` come handy when dealing with complex, dynamic logic
 * TODO: bring other notes here
 
+#### Template Driven Forms
+
+* when using `TDF` - `NgForm` is automatically created
+* the form **is** being **created** **while** the **view** is **being built**
+
+#### Reactive Forms
+
+* `<form>` is inert. a `FromGroupDirective` instance will only be created if using `[formGroup]`
+
 ### Validators
+
+* implement a **custom validator** by using a **directive** that implements `Validator`; this way, you can use the validator with both `Template Driven Forms` and `Reactive Forms`
 
 * after `AbstractFormControl.setValidators` you'll have to manually run `AbstractFormControl.updateValueAndValidity` in order to **run** the new validators
 * expose them: as directive(when possible) & `Validators.validatorName`
@@ -158,6 +246,103 @@ const BUILTIN_ACCESSORS = [
   SelectMultipleControlValueAccessor,
   RadioControlValueAccessor,
 ];
+```
+
+#### `SelectValueAccessor`
+
+##### Using `[value]="primitiveValue"`
+
+* `primitiveValue`, as its name implies, cannot be something else than a **primitive value**; if you'd like to bind an object, `[ngValue]` is your choice
+
+* each `<option>` will select its **value** to `primitiveValue`
+
+* when programmatically modifying `<select>`'s value, this line will be reached:
+
+```ts
+this._renderer.setProperty(this._elementRef.nativeElement, 'value', valueString);
+```
+
+where `valueString` is the argument(i.e: the `id`) passed to `FormControl.setValue()`
+
+### Using `[ngValue]="primitiveOrNonPrimitiveValue"`
+
+* unlike `[value]`, `[ngValue]` can take both **primitive** and **non-primitive** as values
+
+* will store the value of the `<option>` tag depending on the value provided to `[ngValue]`
+
+```ts
+@Input('ngValue')
+  set ngValue(value: any) {
+    if (this._select == null) return;
+    this._select._optionMap.set(this.id, value);
+    this._setElementValue(_buildValueString(this.id, value));
+    this._select.writeValue(this._select.value);
+}
+
+/* ... */
+
+function _buildValueString(id: string | null, value: any): string {
+  if (id == null) return `${value}`;
+  if (value && typeof value === 'object') value = 'Object';
+  return `${id}: ${value}`.slice(0, 50);
+}
+```
+
+we can deduce that if we pass an object, the value will be something like `'1: Object'`. If we pass a primitive value, like the name of a city, the will be: `0: 'NY'`
+
+It is important to notice that when you change the value of the `<select>`(by using `FormControl.setValue(arg)`), if arg is an object, you must make sure it is the same object that you've passed to `<option [ngValue]="arg"></option>`. That's because, by default, `SelectControlValueAccessor.writeValue(obj)`, it will use the `===` to identify the selected `option`.
+
+```ts
+writeValue(value: any): void {
+    this.value = value;
+    const id: string|null = this._getOptionId(value); // <---- Here!
+    if (id == null) {
+      this._renderer.setProperty(this._elementRef.nativeElement, 'selectedIndex', -1);
+    }
+    const valueString = _buildValueString(id, value);
+    this._renderer.setProperty(this._elementRef.nativeElement, 'value', valueString);
+}
+
+_getOptionId(value: any): string|null {
+    for (const id of Array.from(this._optionMap.keys())) {
+      if (this._compareWith(this._optionMap.get(id), value)) return id;
+    }
+    return null;
+}
+```
+
+Where `_compareWith` looks like this(by default):
+
+```ts
+return a === b || typeof a === 'number' && typeof b === 'number' && isNaN(a) && isNaN(b);
+```
+
+Here's an example with a custom `_compareWith` function: https://stackblitz.com/edit/select-uf9kyu?file=src/app/app.component.html
+
+Here is the test case for such behavior: https://github.com/angular/angular/blob/master/packages/forms/test/value_accessor_integration_spec.ts#L216-L240
+
+
+#### `SelectMultipleValueAccessor`
+
+Each option is tracked(added to the internal `_optionMap` property), because
+  
+* when **change event** occurs on the `<select>`, the value accessor needs to provide the right values(the value provided to `[value]` or `[ngValue]` of `<option>`); this can be achieved with iterating over the **registered options** and retrieving their values
+
+* when value of the `FormControl` bound to the `<select>` element is changed programmatically(`FormControl.setValue()`), it needs to somehow determine which of the existing options match with the provided values
+
+```ts
+writeValue(value: any): void {
+  this.value = value;
+  let optionSelectedStateSetter: (opt: ɵNgSelectMultipleOption, o: any) => void;
+  if (Array.isArray(value)) {
+    // convert values to ids
+    const ids = value.map((v) => this._getOptionId(v));
+    optionSelectedStateSetter = (opt, o) => { opt._setSelected(ids.indexOf(o.toString()) > -1); };
+  } else {
+    optionSelectedStateSetter = (opt, o) => { opt._setSelected(false); };
+  }
+  this._optionMap.forEach(optionSelectedStateSetter);
+}
 ```
 
 #### `RadioValueAccessor`
@@ -298,70 +483,59 @@ That's because out of `N` radio buttons with the same `name` and `value` attribu
 
 where `accessor` is the `RadioControlValueAccessor` of the selected radio button.
 
-### Use-cases
-
-* you can add your custom **css class** depending on form control's(or form control-container's) validity or user interaction status
-  * in a **custom directive**, inject `NgControlStatus` or `NgControlStatusGroup` and based on their getters, add the corresp. classes
-    ```ts
-    constructor (private ngControlStatus: NgControlStatus) { }
-
-    @HostBinding('[class.card__price--incorrect]') this.ngControlStatus.ngClassInvalid();
-    ```
-    _Note: in order for this to work, your element(or component), besides the above directive, must include one of these **FromControl**-based directives: `[formControlName],[ngModel],[formControl]`_
-* show how can one use `NgControl` provider token in order to get the current `FormControl`-based directive
-* the base classes which are also **DI tokens**: `NgControl`, `ControlContainer`
-  * an example: a directive that injects one of these providers
-* how to handle multiple checkbox buttons using `TDR`: `ngModelGroup`
-
----
-
-### `_pendingDirty`, `_pendingValue`, `_pendingChange` and `_pendingTouched`
-
-* link to [Connecting the dots](#add-link) - where you explain how `ControlValueAccessor` can communicate with a `FormControl`
-* explain what they do and why they are useful - prevent from traversing the tree redundantly; TODO:(ex): `updateOn: 'blur'` - `input`, `blur`, `blur` - `pendingChange!`
-
----
-
-### Uncategorized
-
-* explain the **ViewToModel** and **ModelToView** pipelines
-
----
-
-### What happens when you perform
-  
-TODO: add to 'better understanding...'
-
-#### `FormGroup.reset()`
-
-* `FormGroup.reset()`: 2 phases:
-  * 1) its children are reset (top -> bottom)
-  * 2) the ancestors are being updated(setting `pristine`, `touched` state and value) depending on their (fresh) children
-* `_syncPendingControls`
-* exemplify tree
-* starting from the `FormGroup` in question, it will reset its descendants, if any descendants have other descendants on their own, it will reset them first and so on. Then, the ancestors will determine their **value**, **status**(`valid`, `invalid`), **UI status**(`dirty`, `touched`) based on those provided by the ancestors
-* you can reset with initial values
-
-```html
-<form #f="ngForm">
-    <input type="radio" ngModel name="food" value="chicken">
-    <input type="radio" ngModel name="food" value="fish">
-    <input type="radio" ngModel name="drink" value="cola">
-    <input type="radio" ngModel name="drink" value="sprite">
-</form>
-
-<button (click)="f.resetForm({ food: 'fish' })">reset with val</button>
-
-<button (click)="f.resetForm()">reset(empty)</button>
-```
-
 ---
 
 ### A better understanding of the `AbstractControl` tree
 
-### `AbstractControl.setValue()`
+TODO: search for the `statusChanges` subsection
+* `FormControl.status` = DISABLED | INVALID | VALID | PENDING
+
+
+#### `_pendingDirty`, `_pendingValue`, `_pendingChange` and `_pendingTouched`
+
+* link to [Connecting the dots](#add-link) - where you explain how `ControlValueAccessor` can communicate with a `FormControl`
+* explain what they do and why they are useful - prevent from traversing the tree redundantly; TODO:(ex): `updateOn: 'blur'` - `input`, `blur`, `blur` - `pendingChange!`
+
+
+#### `AbstractControl.setValue()`
 
 TODO: make sure it precedes `updateValueAndValidity` ! 😄
+
+* `{FormGroup|FormArray}.setValue` vs `{FormGroup|FormArray}.patchValue`
+  * the former will **require** you to **provide** a **value** for **all** the **existing controls**, whereas the latter will allow you to provide **values** for **any** of the **existing controls**
+  * `{FormGroup|FormArray}.setValue`
+    * will first check if you _provided_ an object which consists of all the existing controls
+    * then it will check if you provided any **redundant** controls(controls that are **not** among the existing ones)
+
+_`patchValue` example_ TODO: refactor with clearer examples :D
+
+```ts
+c = new FormControl('');
+c2 = new FormControl('');
+a = new FormArray([c, c2]);
+
+a.patchValue([null]);
+expect(a.value).toEqual([null, '']);
+
+a.patchValue([, , 'three']);
+expect(a.value).toEqual(['', '']);
+```
+
+_`setValue` example_
+
+```ts
+const c1 = new FormControl('c1');
+const c2 = new FormControl('c2');
+
+const a = new FormArray([c1, c2]);
+
+a.setValue(['c1-updated', 'c2-updated', 'c3']); // Error: Cannot find form control at index 2
+a.setValue(['c1-updated']); // Error: Must supply a value for form control at index: 1
+
+a.setValue(['c1-updated', 'c2-updated']);
+
+console.log(a.value); // ["c1-updated", "c2-updated"]
+```
 
 * when setting the value to an `AbstractControl`, unless `{ onlySelf: true }` is specified, its ancestors are also going to be updated:
 
@@ -507,6 +681,25 @@ If you want to only mark this `AbstractControl` as touched you can use `Abstract
 * arguments(options)
 * how are value/status changes emitted ? :`updateValueAndValidity`
 
+```ts
+updateValueAndValidity(opts: {onlySelf?: boolean, emitEvent?: boolean} = {}): void {
+  this._setInitialStatus(); // DISABLED | VALID
+  this._updateValue();
+
+  if (this.enabled) {
+    this._cancelExistingSubscription();
+    (this as{errors: ValidationErrors | null}).errors = this._runValidator(); // Sync validators
+    (this as{status: string}).status = this._calculateStatus(); // VALID | INVALID | PENDING | DISABLED
+
+    if (this.status === VALID || this.status === PENDING) {
+      this._runAsyncValidator(opts.emitEvent);
+    }
+  }
+
+  /* Skipped for brevity */
+}
+```
+
 #### Setting Errors
 
 * how are errors set ?
@@ -516,6 +709,95 @@ If you want to only mark this `AbstractControl` as touched you can use `Abstract
     * only the status of this node and of each ancestor will be updated(and also `statusChanges` will emit if `emitEvent !== false`): `_updateControlsErrors`
 
 #### Disabling/enabling `AbstractControls`s
+
+* when **disabling** an `AbstractControl` instance
+  * you can choose not to update its ancestors by using `this.control.disable({ onlySelf: true })` (TODO: example); i.e: a `FormControl` might be part of the a `FormGroup` and because of this **control** being **invalid**, the entire `FormGroup` is marked as invalid; disabling this `FormControl` can influence the parent `FormGroup` or not(`this.control.disable({ onlySelf: true })`)
+    ```ts
+    const fg = this.fb.group({
+      name: this.fb.control('', Validators.required),
+      age: '',
+      city: this.fb.control('', Validators.required)
+    });
+
+
+    fg.controls['name'].disable();
+    fg.controls['city'].disable({ onlySelf: true });
+    
+    console.log(fg.valid) // false
+    ```
+  * you can be notified when an `AbstractControl` is **disabled** with the help of `valueChanges` and `statusChanges` event emitters; you can also choose not to be notified at all: `this.control.disable({ emitEvent: false })`(TODO: example)
+  * when an `AbstractControl` is **disabled**, its validators won't run and its errors will be marked as `null`;
+  * its children are also going to be disabled
+  * only the `touch` and `dirtiness` statuses are affecting the control's ancestors
+  * if **parent** has been marked **artificially dirty**(dirtiness **not determined** by its children: manually doing `control.markAsDirty`) -> there is **no need** to **recalculate** the **parent's dirtiness** based on the children because they don't have any influence the parent;
+  for example
+  
+  ```typescript
+  this.form = this.fb.group({
+    name: this.fb.control({ value: 'andrei', disabled: false }),
+    age: this.fb.control(''),
+  });
+
+  const nameCtrl = this.form.controls['name'];
+
+  // Simulating user input...
+  // Now, its ancestors will be marked as dirty as well
+  // In this case, there is only one `FormGroup`(=form)
+  nameCtrl.markAsDirty();
+
+  nameCtrl.disable();
+
+  // Now, form will be marked as `pristine`, because the child that influenced the parent's dirtiness
+  // is disabled
+  ```
+
+If a `FormControl` container(`FormGroup` or `FormArray`) is disabled, its `value` will the value collected from all its descendants, regardless of their `disabled` value.
+
+```typescript
+const g = new FormGroup({
+  name: new FormControl('name'),
+  address: new FormGroup({
+    city: new FormControl('city'),
+    street: new FormControl('street'),
+  }),
+});
+
+g.get('address.city').disable();
+g.controls['name'].disable();
+
+console.log(g.value);
+/* 
+{
+  "address": {
+    "street": "street"
+  }
+}
+*/
+
+g.disable();
+console.log(g.value)
+/* 
+{
+  "name": "name",
+  "address": {
+    "city": "city",
+    "address": "address"
+  }
+}
+```
+
+The reason behind this is the way `AbstractControl.disable()` works. Starting from the current `AbstractControl` it will **first disable all its ancestors**, then collect their value. For example, here is how a `FormArray` would accumulate the values from its descendants:
+
+```ts
+_updateValue(): void {
+  (this as{value: any}).value =
+      this.controls.filter((control) => control.enabled || this.disabled)
+          .map((control) => control.value);
+}
+```
+
+The `control.enabled || this.disabled` expression allows us to get the value, even though the child control might be disabled.
+
 
 mention that when a **control** is **disabled**, its `dirty` and `touched` statuses won't affect the status determination for its ancestors
   * a few things you can do while an `AbstractControl` is disabled
@@ -538,9 +820,42 @@ mention that when a **control** is **disabled**, its `dirty` and `touched` statu
     });
   ```
 
+#### `FormGroup.reset()`
+
+* `FormGroup.reset()`: 2 phases:
+  * 1) its children are reset (top -> bottom)
+  * 2) the ancestors are being updated(setting `pristine`, `touched` state and value) depending on their (fresh) children
+* `_syncPendingControls`
+* exemplify tree
+* starting from the `FormGroup` in question, it will reset its descendants, if any descendants have other descendants on their own, it will reset them first and so on. Then, the ancestors will determine their **value**, **status**(`valid`, `invalid`), **UI status**(`dirty`, `touched`) based on those provided by the ancestors
+* you can reset with initial values
+
+```html
+<form #f="ngForm">
+    <input type="radio" ngModel name="food" value="chicken">
+    <input type="radio" ngModel name="food" value="fish">
+    <input type="radio" ngModel name="drink" value="cola">
+    <input type="radio" ngModel name="drink" value="sprite">
+</form>
+
+<button (click)="f.resetForm({ food: 'fish' })">reset with val</button>
+
+<button (click)="f.resetForm()">reset(empty)</button>
+```
+
+
 ---
 
 ### Form-control-based directives
+
+* show how can one use `NgControl` provider token in order to get the current `FormControl`-based directive
+* `ControlContainer` - used as a provider token for form control **containers**(`FormGroupName`, `FormArrayName`, `NgForm`, `NgModelGroup`, `FormGroup`)
+
+#### FormGroup(implements AbstractControl)
+
+* aggregates the value from its child `FormControl`s
+* calculates its status depending on its children(if one `FormControl` child is invalid(has `errors !== null`), the entire `FormGroup` will be invalid)`
+
 
 * diff between `FormControlName` and `FormControl`
   * `FormControlName` 
@@ -564,9 +879,169 @@ mention that when a **control** is **disabled**, its `dirty` and `touched` statu
 
     `this.formDirective` points to a parent `ControlContainer`(`FormGroupDirective`, `FormGroupName`, `FormArrayName`)
 
+    * must have a parent `FromGroupDirective`(`[formGroup]`) or `FormGroupName` or `FormArrayName`
+    * binds an existing `FormControl` instance to a **DOM element**
+    * `[formControlName]="existingControlName"`: `existingControlName` must be the name of an existing `FormControl` instance
+    ```typescript
+    this.form = this.formBuilder.group({ name: this.formBuilder.control('') })
+    ```
+
+    ```html
+    <form>
+      <input type="text" formControlName="name" placeholder="Enter Name..">
+    </form>
+    ```
+
+    This condition must be met because it relies on the **form container**(a parent `FormGroup` instance) to correctly add this `FormControl` to the `AbstractControl` tree.
+
   * `FormControl`
-    *receives a `FormControl` instance
+    * receives a `FormControl` instance
     * **already synced** within a `FormControl` instance
+    * the `FormControl` instance can also be **standalone**
+
+    ```html
+    <input #f="ngForm" [formControl]="form.controls['name']" type="text">
+
+    {{ f.value }}
+    ```
+    * `[formControl]="formControlInstance"`: the `formControlInstance` is already placed in an existing `AbstractControl`'s tree; therefore, the important thing to do here is just bind the `formControlInstance` to the current **DOM element** by using the value accessor.
+
+
+### NgModelGroup
+
+* how to handle multiple checkbox buttons using `TDR`: 
+`ngModelGroup`
+
+TODO: try this!
+
+* **binds** a `FormGroup` instance to a **DOM element**; the bound `FormGroup` instance must be a child of `NgModelGroup` or `NgForm`
+
+```html
+<form> <!-- `NgForm` - automatically bound to `<form>` -->
+  <input type="text" ngModel name="companyName"/>
+
+  <div ngModelGroup="personal">
+    <input type="text" ngModel name="name"/>
+
+    <div ngModelGroup="address">
+      <input type="text" ngModel name="city"/>
+      <input type="text" ngModel name="street" />
+    </div>
+  </div>
+</form>
+```
+
+* the first occurrence of `NgModelGroup` must be a child of `NgForm`
+
+```html
+<!-- Valid -->
+<form>
+  <ng-container #myGrp="ngModelGroup" ngModelGroup="address">
+    <input type="text"ngModel name="city" />
+    <input type="text" ngModel name="street">
+  </ng-container>
+</form>
+```
+
+```html
+<!-- Invalid: `No provider for ControlContainer ...` -->
+<div #myGrp="ngModelGroup" ngModelGroup="address">
+  <input type="text"ngModel name="city" />
+  <input type="text" ngModel name="street">
+</div>
+```
+
+* TODO: show an example of how to properly create a validator so that it can be used with both forms
+  * must implement `Validator/AsyncValidator`
+
+* particularly useful when you want to validate a sub-group of controls
+  For example, you have a **filter form** and you need to make sure that the **min filter** is always smaller than **max filter**:
+  ```html
+  <form #f="ngForm">
+    <ng-container min-max-validator ngModelGroup="price" #priceGrp="ngModelGroup">
+      <input type="text" ngModel name="min" pattern="^\d+$" required />
+      <input type="text" ngModel name="max" pattern="^\d+$" required >
+    </ng-container>
+  </form>
+  ```
+
+  ```ts
+  // min-max-validator.directive.ts
+  @Directive({
+    selector: '[min-max-validator]',
+    providers: [
+      {
+        provide: NG_VALIDATORS,
+        useExisting: forwardRef(() => MinMaxValidator),
+        multi: true,
+      }
+    ]
+  })
+  export class MinMaxValidator implements Validator {
+
+    constructor() { }
+
+    validate (f: FormGroup): ValidationErrors | null {
+      if (f.pristine) {
+        return null;
+      }
+
+      const { min, max } = f.controls;
+
+      // `min` or `max` is not a number or is empty
+      if (min.invalid || max.invalid) {
+        return null;
+      }
+
+      if (+min.value >= +max.value) {
+        return { minGreaterMax: 'min cannot be greater than max!' };
+      }
+
+      return null;
+    }
+  }
+  ```
+
+### `NgModelGroup` vs `NgForm` and `FormGroupName` vs `FormGroup`
+
+_`NgForm` in the context of `Template Driven Forms` === `FormGroup` in the context of `Reactive Forms`_.
+
+_`NgModelGroup` in the context of `Template Driven Forms` === `FormGroupName` in the context of `Reactive Forms`_.
+
+* an `NgForm`'s `FormGroup` instance is always the top-level one, because `NgForm` **does not** have a `_parent` property, whereas `NgModelGroup` **does**
+
+* `NgForm` has the `submit` and `reset` event listeners **bound** to it
+
+#### `NgModelGroup` & `FormGroupName` & `FormArrayName`
+
+* both will have direct(sort of - through getters) access to the **top-level** `FormGroupDirective`
+
+```ts
+// TODO: use TS :D
+testing_internal_1.beforeEach(function () {
+                formModel = new forms_1.FormGroup({ 'login': new forms_1.FormControl(null) });
+                var parent = new forms_1.FormGroupDirective([], []);
+                parent.form = new forms_1.FormGroup({ 'group': formModel });
+                p = parent;
+                controlGroupDir = new forms_1.FormGroupName(parent, [], []);
+                controlGroupDir.name = 'group';
+            });
+            testing_internal_1.it('should reexport control properties', function () {
+
+              console.log(controlGroupDir.formDirective.form === p.form) // true
+              console.log(controlGroupDir.formDirective === p) // true
+```
+
+```ts
+@Directive({
+  selector: 'form:not([ngNoForm]):not([formGroup]),ngForm,ng-form,[ngForm]',
+  providers: [formDirectiveProvider],
+  host: {'(submit)': 'onSubmit($event)', '(reset)': 'onReset()'},
+  outputs: ['ngSubmit'],
+  exportAs: 'ngForm'
+})
+export class NgForm extends ControlContainer implements Form, AfterViewInit {}
+```
 
 
 * `FormArrayName`
@@ -603,6 +1078,14 @@ this.fooForm = this.fb.group({
   * with the help of `NgControlStatus`, a directive that is automatically bound to a form control element when using `ngModel`, `formControl`, `formControlName`
   * at the same time, `NgControlStatusGroup` is added to the form group(`<form>`, `formGroupName`, `formGroup`, `ngModelGroup`, `formArrayName`)
   * both `NgControlStatus` and `NgControlStatusGroup` will be updated when change detection occurs
+  * you can add your custom **css class** depending on form control's(or form control-container's) validity or user interaction status
+  * in a **custom directive**, inject `NgControlStatus` or `NgControlStatusGroup` and based on their getters, add the corresp. classes
+    ```ts
+    constructor (private ngControlStatus: NgControlStatus) { }
+
+    @HostBinding('[class.card__price--incorrect]') this.ngControlStatus.ngClassInvalid();
+    ```
+    _Note: in order for this to work, your element(or component), besides the above directive, must include one of these **FromControl**-based directives: `[formControlName],[ngModel],[formControl]`_
 
 * control must be defined as `standalone` in `ngModelOptions`(add as subsection of `NgModel`).
 
@@ -740,7 +1223,7 @@ The way to solve this is to use the `FormGroupName` directive in order to create
 ```
 
 * expose them all
-
+ 
 #### Diff between `NgModelGroup`/`FormGroupName` and `NgForm`/`FormGroup`
 
 * `NgForm`/`FormGroup` directive should be top-level `FormGroup` instance, because they have no `_parent` property
@@ -866,22 +1349,13 @@ TODO:
 * why does `FormGroupDirective` keep track of `directives` when `FormControl`s are registered with `formControlName` ?
 * the top level form directive(`NgForm`) tracks the existing directives. Because the form controls can be updated on `submit` event, after the form is submitted, the `NgForm` directive will go through each registered `NgModel` directive and will update its internal state and the view(if the view depends on that `NgModel` directive - `(ngModelChange)="doSmth()"`)
 
---- 
-
-## TODO
-
-* create `ng-run` examples ! 😃
-* check for **FROM** instead of **FORM** misspellings 😟
-* diagrams for `disable()/enable()`, `reset()` ❓
-
 ---
 
-## Takeaways
+### FormBuilder
 
-TODO: add a new section for it; explain its purpose
-it allows you to create `AbstractControl` trees with less code
+With `FormBuilder`, you can create forms with less boilerplate.
 
-instead of doing this
+Instead of doing this
 
 ```ts
 this.form = new FormGroup({
@@ -899,7 +1373,7 @@ this.form = this.fb.group({
 })
 ```
 
-* (using `FormBuilder`) when creating a `FormGroup` instance, its `FormControl` instances can be declared as follows
+Using `FormBuilder`, `FormControl` instances can be declared as follows:
 
 ```ts
 const address = this.fb.group({
@@ -914,539 +1388,10 @@ const address = this.fb.group({
 });
 ```
 
-* `{FormGroup|FormArray}.setValue` vs `{FormGroup|FormArray}.patchValue`
-  * the former will **require** you to **provide** a **value** for **all** the **existing controls**, whereas the latter will allow you to provide **values** for **any** of the **existing controls**
-  * `{FormGroup|FormArray}.setValue`
-    * will first check if you _provided_ an object which consists of all the existing controls
-    * then it will check if you provided any **redundant** controls(controls that are **not** among the existing ones)
-
-_`patchValue` example_ TODO: refactor with clearer examples :D
-
-```ts
-c = new FormControl('');
-c2 = new FormControl('');
-a = new FormArray([c, c2]);
-
-a.patchValue([null]);
-expect(a.value).toEqual([null, '']);
-
-a.patchValue([, , 'three']);
-expect(a.value).toEqual(['', '']);
-```
-
-_`setValue` example_
-
-```ts
-const c1 = new FormControl('c1');
-const c2 = new FormControl('c2');
-
-const a = new FormArray([c1, c2]);
-
-a.setValue(['c1-updated', 'c2-updated', 'c3']); // Error: Cannot find form control at index 2
-a.setValue(['c1-updated']); // Error: Must supply a value for form control at index: 1
-
-a.setValue(['c1-updated', 'c2-updated']);
-
-console.log(a.value); // ["c1-updated", "c2-updated"]
-```
-
-* implement a **custom validator** by using a **directive** that implements `Validator`; this way, you can use the validator with both `Template Driven Forms` and `Reactive Forms`
-
-* you can get the current **form group instance** inside the template by using `ngForm`
-  * when using `TDF` - `NgForm` is automatically created
-  * when using `RF` - `<form>` is inert. a `FromGroupDirective` instance will only be created if using `[formGroup]`
-
-* using `<input ngModel name="foo">` - won't trigger change detection `NgModel.ngOnChanges()` as there is **no property binding**
-
-* `FormControl.status` = DISABLED | INVALID | VALID | PENDING
-
-* a **model** is an object that stores data related to a specific entity
-
-* when **disabling** an `AbstractControl` instance
-  * you can choose not to update its ancestors by using `this.control.disable({ onlySelf: true })` (TODO: example); i.e: a `FormControl` might be part of the a `FormGroup` and because of this **control** being **invalid**, the entire `FormGroup` is marked as invalid; disabling this `FormControl` can influence the parent `FormGroup` or not(`this.control.disable({ onlySelf: true })`)
-    ```ts
-    const fg = this.fb.group({
-      name: this.fb.control('', Validators.required),
-      age: '',
-      city: this.fb.control('', Validators.required)
-    });
-
-
-    fg.controls['name'].disable();
-    fg.controls['city'].disable({ onlySelf: true });
-    
-    console.log(fg.valid) // false
-    ```
-  * you can be notified when an `AbstractControl` is **disabled** with the help of `valueChanges` and `statusChanges` event emitters; you can also choose not to be notified at all: `this.control.disable({ emitEvent: false })`(TODO: example)
-  * when an `AbstractControl` is **disabled**, its validators won't run and its errors will be marked as `null`;
-  * its children are also going to be disabled
-  * only the `touch` and `dirtiness` statuses are affecting the control's ancestors
-  * if **parent** has been marked **artificially dirty**(dirtiness **not determined** by its children: manually doing `control.markAsDirty`) -> there is **no need** to **recalculate** the **parent's dirtiness** based on the children because they don't have any influence the parent;
-  for example
-  
-  ```typescript
-  this.form = this.fb.group({
-    name: this.fb.control({ value: 'andrei', disabled: false }),
-    age: this.fb.control(''),
-  });
-
-  const nameCtrl = this.form.controls['name'];
-
-  // Simulating user input...
-  // Now, its ancestors will be marked as dirty as well
-  // In this case, there is only one `FormGroup`(=form)
-  nameCtrl.markAsDirty();
-
-  nameCtrl.disable();
-
-  // Now, form will be marked as `pristine`, because the child that influenced the parent's dirtiness
-  // is disabled
-  ```
-
-If a `FormControl` container(`FormGroup` or `FormArray`) is disabled, its `value` will the value collected from all its descendants, regardless of their `disabled` value.
-
-```typescript
-const g = new FormGroup({
-  name: new FormControl('name'),
-  address: new FormGroup({
-    city: new FormControl('city'),
-    street: new FormControl('street'),
-  }),
-});
-
-g.get('address.city').disable();
-g.controls['name'].disable();
-
-console.log(g.value);
-/* 
-{
-  "address": {
-    "street": "street"
-  }
-}
-*/
-
-g.disable();
-console.log(g.value)
-/* 
-{
-  "name": "name",
-  "address": {
-    "city": "city",
-    "address": "address"
-  }
-}
-```
-
-The reason behind this is the way `AbstractControl.disable()` works. Starting from the current `AbstractControl` it will **first disable all its ancestors**, then collect their value. For example, here is how a `FormArray` would accumulate the values from its descendants:
-
-```ts
-_updateValue(): void {
-  (this as{value: any}).value =
-      this.controls.filter((control) => control.enabled || this.disabled)
-          .map((control) => control.value);
-}
-```
-
-The `control.enabled || this.disabled` expression allows us to get the value, even though the child control might be disabled.
-
-### AbstractControlDirective(abstract class)
-
-* base class for **FormControl-based directives**(`NgModel`, `FormControlName`, which are classes that extend `NgControl`)
-* contains **boolean properties**(getters) that reflect the current status(`valid`, `touched`, `dirty`)
-* contains `getError` && `hasError() -> !!getError()` - these methods are **facades** for `AbstractControl.{getError, hasError}`
-
-### NgControl(abstract class)
-
-* a token for `FormControl`-based directives(`NgModel`, `FormControlName`, `FormControl` etc...)
-* **binds** the `FormControl` to a **DOM element**(**form control element**) through the **directives** that **extend** this class(`NgModel`, `FormControl` etc..)
-* contains information about the **validators**, the **value accessor** and the parent of the current directive
-
-### FormControl(implements AbstractControl)
-
-* tracks value, use interaction(`touched`, `pristine` statuses) and validation status(`VALID`, `INVALID`, `PENDING`)
-* keeps the **view synced** with the **model**<p></p>
-
-### FormGroup(implements AbstractControl)
-
-* aggregates the value from its child `FormControl`s
-* calculates its status depending on its children(if one `FormControl` child is invalid(has `errors !== null`), the entire `FormGroup` will be invalid)`
-
-### AbstractControl
-
-* base class for `FormControl`, `FormGroup`, `FormArray`
-* provides functionality such as **running validators**, **resetting state** and calculating/accessing **validity status**
-* the **async validators** will **not** run if the **sync validators** returned **errors**
-
-```ts
-updateValueAndValidity(opts: {onlySelf?: boolean, emitEvent?: boolean} = {}): void {
-  this._setInitialStatus(); // DISABLED | VALID
-  this._updateValue();
-
-  if (this.enabled) {
-    this._cancelExistingSubscription();
-    (this as{errors: ValidationErrors | null}).errors = this._runValidator(); // Sync validators
-    (this as{status: string}).status = this._calculateStatus(); // VALID | INVALID | PENDING | DISABLED
-
-    if (this.status === VALID || this.status === PENDING) {
-      this._runAsyncValidator(opts.emitEvent);
-    }
-  }
-
-  /* Skipped for brevity */
-}
-```
-
-### ControlContainer
-
-* used as a provider token for form control **containers**(`FormGroupName`, `FormArrayName`, `NgForm`, `NgModelGroup`, `FormGroup`)
-* contains multiple `NgControl` instances
-
-### AbstractFormGroupDirective
-
-* `AbstractFormGroupDirective.formDirective` will always return the top-level `FormGroup` instance
-
-### FormControlDirective
-
-* **binds** an **existing** `FormControl` instance to a **DOM element**
-
-* the `FormControl` instance can be **standalone**
-
-```html
-<input #f="ngForm" [formControl]="form.controls['name']" type="text">
-
-{{ f.value }}
-```
-
-* `[formControl]="formControlInstance"`: the `formControlInstance` is already placed in an existing `AbstractControl`'s tree; therefore, the important thing to do here is just bind the `formControlInstance` to the current **DOM element** by using the value accessor.
-
-### FormControlName
-
-* the `FormControl` must **not be standalone**: must have a parent `FromGroupDirective`(`[formGroup]`) or `FormGroupName` or `FormArrayName`
-* binds an existing `FormControl` instance to a **DOM element**
-* `[formControlName]="existingControlName"`: `existingControlName` must be the name of an existing `FormControl` instance
-
-```typescript
-this.form = this.formBuilder.group({ name: this.formBuilder.control('') })
-```
-
-```html
-<form>
-  <input type="text" formControlName="name" placeholder="Enter Name..">
-</form>
-```
-
-This condition must be met because it relies on the **form container**(a parent `FormGroup` instance) to correctly add this `FormControl` to the `AbstractControl` tree.
-
 ---
 
-### NgModelGroup
-
-TODO: try this!
-
-* **binds** a `FormGroup` instance to a **DOM element**; the bound `FormGroup` instance must be a child of `NgModelGroup` or `NgForm`
-
-```html
-<form> <!-- `NgForm` - automatically bound to `<form>` -->
-  <input type="text" ngModel name="companyName"/>
-
-  <div ngModelGroup="personal">
-    <input type="text" ngModel name="name"/>
-
-    <div ngModelGroup="address">
-      <input type="text" ngModel name="city"/>
-      <input type="text" ngModel name="street" />
-    </div>
-  </div>
-</form>
-```
-
-* the first occurrence of `NgModelGroup` must be a child of `NgForm`
-
-```html
-<!-- Valid -->
-<form>
-  <ng-container #myGrp="ngModelGroup" ngModelGroup="address">
-    <input type="text"ngModel name="city" />
-    <input type="text" ngModel name="street">
-  </ng-container>
-</form>
-```
-
-```html
-<!-- Invalid: `No provider for ControlContainer ...` -->
-<div #myGrp="ngModelGroup" ngModelGroup="address">
-  <input type="text"ngModel name="city" />
-  <input type="text" ngModel name="street">
-</div>
-```
-
-* TODO: show an example of how to properly create a validator so that it can be used with both forms
-  * must implement `Validator/AsyncValidator`
-
-* particularly useful when you want to validate a sub-group of controls
-  For example, you have a **filter form** and you need to make sure that the **min filter** is always smaller than **max filter**:
-  ```html
-  <form #f="ngForm">
-    <ng-container min-max-validator ngModelGroup="price" #priceGrp="ngModelGroup">
-      <input type="text" ngModel name="min" pattern="^\d+$" required />
-      <input type="text" ngModel name="max" pattern="^\d+$" required >
-    </ng-container>
-  </form>
-  ```
-
-  ```ts
-  // min-max-validator.directive.ts
-  @Directive({
-    selector: '[min-max-validator]',
-    providers: [
-      {
-        provide: NG_VALIDATORS,
-        useExisting: forwardRef(() => MinMaxValidator),
-        multi: true,
-      }
-    ]
-  })
-  export class MinMaxValidator implements Validator {
-
-    constructor() { }
-
-    validate (f: FormGroup): ValidationErrors | null {
-      if (f.pristine) {
-        return null;
-      }
-
-      const { min, max } = f.controls;
-
-      // `min` or `max` is not a number or is empty
-      if (min.invalid || max.invalid) {
-        return null;
-      }
-
-      if (+min.value >= +max.value) {
-        return { minGreaterMax: 'min cannot be greater than max!' };
-      }
-
-      return null;
-    }
-  }
-  ```
-
-```html
-
-```
-
----
-
-### `NgModelGroup` vs `NgForm` and `FormGroupName` vs `FormGroup`
-
-_`NgForm` in the context of `Template Driven Forms` === `FormGroup` in the context of `Reactive Forms`_.
-
-_`NgModelGroup` in the context of `Template Driven Forms` === `FormGroupName` in the context of `Reactive Forms`_.
-
-* an `NgForm`'s `FormGroup` instance is always the top-level one, because `NgForm` **does not** have a `_parent` property, whereas `NgModelGroup` **does**
-
-* `NgForm` has the `submit` and `reset` event listeners **bound** to it
-
-#### `NgModelGroup` & `FormGroupName` & `FormArrayName`
-
-* both will have direct(sort of - through getters) access to the **top-level** `FormGroupDirective`
-
-```ts
-// TODO: use TS :D
-testing_internal_1.beforeEach(function () {
-                formModel = new forms_1.FormGroup({ 'login': new forms_1.FormControl(null) });
-                var parent = new forms_1.FormGroupDirective([], []);
-                parent.form = new forms_1.FormGroup({ 'group': formModel });
-                p = parent;
-                controlGroupDir = new forms_1.FormGroupName(parent, [], []);
-                controlGroupDir.name = 'group';
-            });
-            testing_internal_1.it('should reexport control properties', function () {
-
-              console.log(controlGroupDir.formDirective.form === p.form) // true
-              console.log(controlGroupDir.formDirective === p) // true
-```
-
-```ts
-@Directive({
-  selector: 'form:not([ngNoForm]):not([formGroup]),ngForm,ng-form,[ngForm]',
-  providers: [formDirectiveProvider],
-  host: {'(submit)': 'onSubmit($event)', '(reset)': 'onReset()'},
-  outputs: ['ngSubmit'],
-  exportAs: 'ngForm'
-})
-export class NgForm extends ControlContainer implements Form, AfterViewInit {}
-```
-
----
-
-### How does a control-based directive binds a `FormControl` instance to a DOM element with the help of a value accessor ?
-
-```typescript
-export function setUpControl(control: FormControl, dir: NgControl): void {
-  if (!control) _throwError(dir, 'Cannot find control with');
-  if (!dir.valueAccessor) _throwError(dir, 'No value accessor for form control with');
-
-  control.validator = Validators.compose([control.validator !, dir.validator]);
-  control.asyncValidator = Validators.composeAsync([control.asyncValidator !, dir.asyncValidator]);
-  dir.valueAccessor !.writeValue(control.value);
-
-  setUpViewChangePipeline(control, dir);
-  setUpModelChangePipeline(control, dir);
-
-  setUpBlurPipeline(control, dir);
-
-  if (dir.valueAccessor !.setDisabledState) {
-    control.registerOnDisabledChange(
-        (isDisabled: boolean) => { dir.valueAccessor !.setDisabledState !(isDisabled); });
-  }
-
-  // re-run validation when validator binding changes, e.g. minlength=3 -> minlength=4
-  dir._rawValidators.forEach((validator: Validator | ValidatorFn) => {
-    if ((<Validator>validator).registerOnValidatorChange)
-      (<Validator>validator).registerOnValidatorChange !(() => control.updateValueAndValidity());
-  });
-
-  dir._rawAsyncValidators.forEach((validator: AsyncValidator | AsyncValidatorFn) => {
-    if ((<Validator>validator).registerOnValidatorChange)
-      (<Validator>validator).registerOnValidatorChange !(() => control.updateValueAndValidity());
-  });
-}
-
-// VIEW -> MODEL (input event)
-function setUpViewChangePipeline(control: FormControl, dir: NgControl): void {
-  dir.valueAccessor !.registerOnChange((newValue: any) => {
-    control._pendingValue = newValue;
-    control._pendingChange = true;
-    control._pendingDirty = true;
-
-    if (control.updateOn === 'change') updateControl(control, dir);
-  });
-}
-
-function setUpBlurPipeline(control: FormControl, dir: NgControl): void {
-  dir.valueAccessor !.registerOnTouched(() => {
-    control._pendingTouched = true;
-
-    if (control.updateOn === 'blur' && control._pendingChange) updateControl(control, dir);
-    if (control.updateOn !== 'submit') control.markAsTouched();
-  });
-}
-
-function updateControl(control: FormControl, dir: NgControl): void {
-  if (control._pendingDirty) control.markAsDirty();
-  control.setValue(control._pendingValue, {emitModelToViewChange: false});
-  dir.viewToModelUpdate(control._pendingValue);
-  control._pendingChange = false;
-}
-
-function setUpModelChangePipeline(control: FormControl, dir: NgControl): void {
-  control.registerOnChange((newValue: any, emitModelEvent: boolean) => {
-    // control -> view
-    dir.valueAccessor !.writeValue(newValue);
-
-    // control -> ngModel
-    if (emitModelEvent) dir.viewToModelUpdate(newValue);
-  });
-}
-```
-
-
-## `SelectValueAccessor`
-
-### Using `[value]="primitiveValue"`
-
-* `primitiveValue`, as its name implies, cannot be something else than a **primitive value**; if you'd like to bind an object, `[ngValue]` is your choice
-
-* each `<option>` will select its **value** to `primitiveValue`
-
-* when programmatically modifying `<select>`'s value, this line will be reached:
-
-```ts
-this._renderer.setProperty(this._elementRef.nativeElement, 'value', valueString);
-```
-
-where `valueString` is the argument(i.e: the `id`) passed to `FormControl.setValue()`
-
-### Using `[ngValue]="primitiveOrNonPrimitiveValue"`
-
-* unlike `[value]`, `[ngValue]` can take both **primitive** and **non-primitive** as values
-
-* will store the value of the `<option>` tag depending on the value provided to `[ngValue]`
-
-```ts
-@Input('ngValue')
-  set ngValue(value: any) {
-    if (this._select == null) return;
-    this._select._optionMap.set(this.id, value);
-    this._setElementValue(_buildValueString(this.id, value));
-    this._select.writeValue(this._select.value);
-}
-
-/* ... */
-
-function _buildValueString(id: string | null, value: any): string {
-  if (id == null) return `${value}`;
-  if (value && typeof value === 'object') value = 'Object';
-  return `${id}: ${value}`.slice(0, 50);
-}
-```
-
-we can deduce that if we pass an object, the value will be something like `'1: Object'`. If we pass a primitive value, like the name of a city, the will be: `0: 'NY'`
-
-It is important to notice that when you change the value of the `<select>`(by using `FormControl.setValue(arg)`), if arg is an object, you must make sure it is the same object that you've passed to `<option [ngValue]="arg"></option>`. That's because, by default, `SelectControlValueAccessor.writeValue(obj)`, it will use the `===` to identify the selected `option`.
-
-```ts
-writeValue(value: any): void {
-    this.value = value;
-    const id: string|null = this._getOptionId(value); // <---- Here!
-    if (id == null) {
-      this._renderer.setProperty(this._elementRef.nativeElement, 'selectedIndex', -1);
-    }
-    const valueString = _buildValueString(id, value);
-    this._renderer.setProperty(this._elementRef.nativeElement, 'value', valueString);
-}
-
-_getOptionId(value: any): string|null {
-    for (const id of Array.from(this._optionMap.keys())) {
-      if (this._compareWith(this._optionMap.get(id), value)) return id;
-    }
-    return null;
-}
-```
-
-Where `_compareWith` looks like this(by default):
-
-```ts
-return a === b || typeof a === 'number' && typeof b === 'number' && isNaN(a) && isNaN(b);
-```
-
-Here's an example with a custom `_compareWith` function: https://stackblitz.com/edit/select-uf9kyu?file=src/app/app.component.html
-
-Here is the test case for such behavior: https://github.com/angular/angular/blob/master/packages/forms/test/value_accessor_integration_spec.ts#L216-L240
-
----
-
-### `SelectMultipleValueAccessor`
-
-Each option is tracked(added to the internal `_optionMap` property), because
-  
-* when **change event** occurs on the `<select>`, the value accessor needs to provide the right values(the value provided to `[value]` or `[ngValue]` of `<option>`); this can be achieved with iterating over the **registered options** and retrieving their values
-
-* when value of the `FormControl` bound to the `<select>` element is changed programmatically(`FormControl.setValue()`), it needs to somehow determine which of the existing options match with the provided values
-
-```ts
-writeValue(value: any): void {
-  this.value = value;
-  let optionSelectedStateSetter: (opt: ɵNgSelectMultipleOption, o: any) => void;
-  if (Array.isArray(value)) {
-    // convert values to ids
-    const ids = value.map((v) => this._getOptionId(v));
-    optionSelectedStateSetter = (opt, o) => { opt._setSelected(ids.indexOf(o.toString()) > -1); };
-  } else {
-    optionSelectedStateSetter = (opt, o) => { opt._setSelected(false); };
-  }
-  this._optionMap.forEach(optionSelectedStateSetter);
-}
-```
+## TODO
+
+* create `ng-run` examples ! 😃
+* check for **FROM** instead of **FORM** misspellings 😟
+* diagrams for `disable()/enable()`, `reset()` ❓
