@@ -170,7 +170,7 @@ For instance:
 * when user is typing into an input: `View` -> `Model`
 * when the value is set programmatically(`FormControl.setValue('newValue')`): `Model` -> `View`
 
-Only `FormControl` instances can directly interact with a `ControlValueAccessor`, because a `FormControl`, in a tree of `AbstractControl`s, can only be the leaf node as it is not supposed to contains other nodes. Along these lines, we can deduce that **updates** that come **from the view** will **start** **from leaf** nodes.
+Only `FormControl` instances can 'directly' interact with a `ControlValueAccessor`, because a `FormControl`, in a tree of `AbstractControl`s, can only be the leaf node as it is not supposed to contains other nodes. Along these lines, we can deduce that **updates** that come **from the view** will **start** **from leaf** nodes.
 
 ```ts
 // FG - FormGroup
@@ -182,6 +182,27 @@ user typing into an input  <- FC    FA
                                    / | \
                                 FC  FC  FC <- user selecting checkbox
 ```
+
+The `ControlValueAccessor` interface looks like this: 
+
+```ts
+export interface ControlValueAccessor {
+  writeValue(obj: any): void;
+
+  registerOnChange(fn: any): void;
+
+  registerOnTouched(fn: any): void;
+
+  setDisabledState?(isDisabled: boolean): void;
+}
+```
+
+* `writeValue()` - writes a new value to an element; the new value comes from the **MODEL**(`FormControl/setValue` -> `ControlValueAccessor.writeValue` -> update element -> change is visible in the UI)
+* `registerOnChange()` - registers a **callback function** that will be called whenever the value **changes** **in** the **UI** and will **propagate** the new value to the model.
+* `registerOnTouched()` - registers a **callback function** that will be called when the **blur** event occurs; the `FormControl` will be notified of this event as it may need to perform some updates when this event occurs.
+* `setDisabledState` - will **disable/enable** the **DOM element** depending on the value provided; this method is usually called as a result of a change in the **MODEL**.
+
+You can see these methods' usefulness in the following section: Connecting...(TODO: add link)
 
 There are 3 types of `ControlValueAccessor`s:
 
@@ -238,23 +259,47 @@ There are 3 types of `ControlValueAccessor`s:
 
 ### Connecting `FormControl` with `ControlValueAccessor`
 
-* show diagram(the simple one / first one)
-* explain how a `FormControl` is set up + code snippets ❗️
-    * `registerOnDisabledChange`
-    * `registerOnChange`
-    * example: a custom component that could be used as a form control
-  * startWith(`<input type="text" ngModel>`)
-  * show `setUpControl` fn
-  * diagram ❓
-  * TODO: add to first section of the article(how things are connected with each other)
-  * `View` -> `Model`: `ControlValueAccessor.onChange()`
-  * `Model` -> `View`: `AbstractControl._onChange.forEach(fn => fn(v))`
-  * explain the **ViewToModel** and **ModelToView** pipelines
+As mentioned in the previous sections, `AbstractControlDirective` is what the **view layer**(`ControlValueAccessor`) needs in order to effectively communicate with the **model layer**(`AbstractControl`, concretely `FormControl`) and vice versa.
 
+This connection can be visualized like as follows:
 
-#### How does a control-based directive binds a `FormControl` instance to a DOM element with the help of a value accessor ?
+```ts
+  -------------------------- 
+  |                        | 
+  |  ControlValueAccessor  |  <--- View Layer
+  |                        | 
+  -------------------------- 
+    |                 ▲
+    |                 |
+    |                 |
+    ▼                 |
+------------------------------ 
+|                            | 
+|  AbstractControlDirective  | 
+|                            | 
+------------------------------ 
+        |           ▲
+        |           |
+        |           |
+        ▼           |
+      ----------------- 
+      |               | 
+      |  FormControl  |  <--- Model Layer
+      |               | 
+      ----------------- 
+```
 
-```typescript
+The `↓` indicates the **ViewToModelPipeline**, whereas `↑` indicates the **ModelToViewPipeline**.
+
+`AbstractControlDirective` plays a critical role here. Let's examine the actual implementation!
+
+The above diagram is the result of this code snippet:
+
+_Note: In reality, `NgControl` extends `AbstractControlDirective` and it mainly acts as a provider for **form-control-based** directives: `NgModel`, `FormControlName` etc..., but doesn't have any default implementation._
+
+The `setUpControl` function is **called** every time a **form-control-based** directive is **initialized**.
+
+```ts
 export function setUpControl(control: FormControl, dir: NgControl): void {
   if (!control) _throwError(dir, 'Cannot find control with');
   if (!dir.valueAccessor) _throwError(dir, 'No value accessor for form control with');
@@ -268,24 +313,10 @@ export function setUpControl(control: FormControl, dir: NgControl): void {
 
   setUpBlurPipeline(control, dir);
 
-  if (dir.valueAccessor !.setDisabledState) {
-    control.registerOnDisabledChange(
-        (isDisabled: boolean) => { dir.valueAccessor !.setDisabledState !(isDisabled); });
-  }
-
-  // re-run validation when validator binding changes, e.g. minlength=3 -> minlength=4
-  dir._rawValidators.forEach((validator: Validator | ValidatorFn) => {
-    if ((<Validator>validator).registerOnValidatorChange)
-      (<Validator>validator).registerOnValidatorChange !(() => control.updateValueAndValidity());
-  });
-
-  dir._rawAsyncValidators.forEach((validator: AsyncValidator | AsyncValidatorFn) => {
-    if ((<Validator>validator).registerOnValidatorChange)
-      (<Validator>validator).registerOnValidatorChange !(() => control.updateValueAndValidity());
-  });
+  /* ... Skipped for brevity ... */
 }
 
-// VIEW -> MODEL (input event)
+// VIEW -> MODEL
 function setUpViewChangePipeline(control: FormControl, dir: NgControl): void {
   dir.valueAccessor !.registerOnChange((newValue: any) => {
     control._pendingValue = newValue;
@@ -296,22 +327,22 @@ function setUpViewChangePipeline(control: FormControl, dir: NgControl): void {
   });
 }
 
-function setUpBlurPipeline(control: FormControl, dir: NgControl): void {
-  dir.valueAccessor !.registerOnTouched(() => {
-    control._pendingTouched = true;
-
-    if (control.updateOn === 'blur' && control._pendingChange) updateControl(control, dir);
-    if (control.updateOn !== 'submit') control.markAsTouched();
-  });
-}
-
+// Update the MODEL based on the VIEW's value
 function updateControl(control: FormControl, dir: NgControl): void {
   if (control._pendingDirty) control.markAsDirty();
+  
+  // `{emitModelToViewChange: false}` will make sure that `ControlValueAccessor.writeValue` won't be called
+  // again since the value is already updated, because this change comes from the view
   control.setValue(control._pendingValue, {emitModelToViewChange: false});
+
+  // If you have something like `<input [(ngModel)]="myValue">`
+  // this will allow `myValue` to be the new value that comes from the view
   dir.viewToModelUpdate(control._pendingValue);
+
   control._pendingChange = false;
 }
 
+// MODEL -> VIEW
 function setUpModelChangePipeline(control: FormControl, dir: NgControl): void {
   control.registerOnChange((newValue: any, emitModelEvent: boolean) => {
     // control -> view
@@ -323,7 +354,93 @@ function setUpModelChangePipeline(control: FormControl, dir: NgControl): void {
 }
 ```
 
-### Template Driven Forms and Reactive Forms
+Here is once again the `ControlValueAccessor` interface:
+
+```ts
+export interface ControlValueAccessor {
+  writeValue(obj: any): void;
+
+  registerOnChange(fn: any): void;
+
+  registerOnTouched(fn: any): void;
+
+  setDisabledState?(isDisabled: boolean): void;
+}
+```
+
+As you can see, the `setUpViewChangePipeline` method is how the `AbstractControlDirective`(the `dir` argument) connects the **view** with the **model**(unidirectional connection), by assigning a **callback function** to `ControlValueAccessor.onChange`. This will allow an action of that happens in the view to be propagated into the model.
+
+Here's a concrete implementation of `ControlValueAccessor.registerOnChange`:
+
+```ts
+@Directive({
+  selector: 'input[custom-value-accessor][type=text][ngModel]',
+  host: {
+    '(input)': 'onChange($event.target.value)',
+  }
+})
+export class CustomValueAccessor {
+  registerOnChange(fn: (_: any) => void): void { this.onChange = fn; }
+}
+```
+
+The `setUpModelChangePipeline` will allow the `AbstractControlDirective` to **connect** the **model** with the **view**. This means that every time `FormControl.setValue()` is invoked, **all the callback functions registered** within that `FormControl` will be invoked as well, in order to update that view based on the new model's value.
+
+Notice that I said **all the callback function**. This is because multiple `AbstractControlDirective` can make use of the same `FormControl` instance.
+
+```ts
+// Inside `FormControl`
+_onChange: Function[] = [];
+registerOnChange(fn: Function): void { this._onChange.push(fn); }
+```
+
+```ts
+// FormControl.setValue
+setValue(value: any, options: {
+  onlySelf?: boolean,
+  emitEvent?: boolean,
+  emitModelToViewChange?: boolean,
+  emitViewToModelChange?: boolean
+} = {}): void {
+  (this as{value: any}).value = this._pendingValue = value;
+  if (this._onChange.length && options.emitModelToViewChange !== false) {
+    this._onChange.forEach(
+        (changeFn) => changeFn(this.value, options.emitViewToModelChange !== false));
+  }
+  this.updateValueAndValidity(options); // Update ancestors
+}
+```
+
+Here's an example:
+
+```html
+<form>
+  <input type="radio" ngModel name="genre" value="horror">
+  <input type="radio" ngModel name="genre" value="comedy">
+</form>
+```
+
+The `setUpControl(control, dir)` will be called twice, once for every `ngModel`. But, on every call, the `control`(a `FormControl` instance) argument will be the same(you can read more on why this happens inside: A better understanding of(TODO: add link)). This means that `control.onChanges` will contain 2 callback function, one for each `ControlValueAccessor`(`<input type="radio">` has the `RadioControlValueAccessor` bound to it).
+
+The `ControlValueAccessor.registerOnTouched` follows the same principle as `ControlValueAccessor.registerOnChange`:
+
+```ts
+// Called inside `setUpControl`
+function setUpBlurPipeline(control: FormControl, dir: NgControl): void {
+  dir.valueAccessor !.registerOnTouched(() => {
+    control._pendingTouched = true;
+
+    if (control.updateOn === 'blur' && control._pendingChange) updateControl(control, dir);
+    if (control.updateOn !== 'submit') control.markAsTouched();
+  });
+}
+```
+
+This will allow the **model** to be **updated** whenever the **blur event occurs** inside the view.
+
+---
+
+## Template Driven Forms and Reactive Forms
 
 * template-driven - most of the form logic is done inside the template
 * `RF` - the form is **already created** **when** the **view** is **being built**
@@ -873,6 +990,8 @@ updateValueAndValidity(opts: {onlySelf?: boolean, emitEvent?: boolean} = {}): vo
     * only the status of this node and of each ancestor will be updated(and also `statusChanges` will emit if `emitEvent !== false`): `_updateControlsErrors`
 
 #### Disabling/enabling `AbstractControls`s
+
+* explain `ControlValueAccessor.setDisabledState`
 
 * when **disabling** an `AbstractControl` instance
   * you can choose not to update its ancestors by using `this.control.disable({ onlySelf: true })` (TODO: example); i.e: a `FormControl` might be part of the a `FormGroup` and because of this **control** being **invalid**, the entire `FormGroup` is marked as invalid; disabling this `FormControl` can influence the parent `FormGroup` or not(`this.control.disable({ onlySelf: true })`)
