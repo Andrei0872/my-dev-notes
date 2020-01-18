@@ -37,7 +37,6 @@ export const REACTIVE_DRIVEN_DIRECTIVES: Type<any>[] =
   * further explanations
   * :)
 
-
 ## Base entities
 
 In order to get the most out of the **Forms API**, we must ensure that look over some of its essential parts.
@@ -95,28 +94,70 @@ It extends `AbstractControl`, which means it will inherit all the characteristic
 
 #### FormArray
 
-It extends `AbstractControl` and its job is to group multiple `AbstractControl`s together.   
-From a tree perspective, it is a node that must contain at least one descendant. Its **validation status**, **dirtiness**, **touched status** and **value** mainly depend on its descendants.
+It extends `AbstractControl` and its job is to group multiple `AbstractControl`s together.
+
+From a tree perspective, it is a node that must contain at least one descendant. Its **validation status**, **dirtiness**, **touched status** and **value** usually depend on its descendants. There could be cases, though, where a container has certain validators so errors might appear at that node's level.
 
 Its defining characteristic is that it stores its children in an **array**.
 
 #### FormGroup
 
-Same as `FormArray`, except that it stores its descendants in an **object**. 
+Same as `FormArray`, except that it stores its descendants in an **object**.
 
 ### AbstractControlDirective
 
-It is the base class for **form-control-based directives**(`NgModel`, `FormControlName`, `FormControl`) and contains **boolean getters** that reflect the current status of the control(`valid`, `touched`, `dirty` etc...).  
-The previously mentioned control is bound to a **DOM element** with the help of a concrete implementation of `AbstractControlDirective`(`NgModel`, `FormControlName`) and a `ControlValueAccessor`. 
+It is the base class for **form-control-based directives**(`NgModel`, `FormControlName`, `FormControlDirective`) and contains **boolean getters** that reflect the current status of the control(`valid`, `touched`, `dirty` etc...).  
+The previously mentioned control is bound to a **DOM element** with the help of a concrete implementation of `AbstractControlDirective`(`NgModel`, `FormControlName`) and a `ControlValueAccessor`.
 
-Thus, this class can be thought of as a `middleman` that connects `ControlValueAccessor`(**view layer**) with `AbstractControl`(**model layer**) - more on that in the forthcoming sections. 
+Thus, this class can be thought of as a `middleman` that connects `ControlValueAccessor`(**view layer**) with `AbstractControl`(**model layer**) - more on that in the forthcoming sections.
 
+It is worth mentioning that multiple `AbstractControlDirective`s can **bind the same** `AbstractControl` to multiple **DOM elements or custom components**, to multiple `ControlValueAccessor`s.(TODO: add link)
 
-* define `AbstractFormGroupDirective`
-  * a container for `AbstractFromGroupDirective`s and `AbstractControlDirective`s
-  * concrete implementations: `formGroupName`, `formArrayName`, `ngModelGroup`
-  * useful when you want to create a sub-group of `AbstractControl`s(eg: `address: { city, street, zip }`) or run validators for some specific `AbstractControls`(TODO: bring example here)
-  * `AbstractFormGroupDirective.formDirective` will always return the top-level `FormGroup` instance
+Consider this example:
+
+```html
+<form>
+  <input type="radio" ngModel name="genre" value="horror">
+  <input type="radio" ngModel name="genre" value="comedy">
+</form>
+```
+
+Under the hood, this will be created:
+
+```ts
+new FormGroup({
+  genre: new FormControl('')
+})
+```
+
+### AbstractFormGroupDirective
+
+It's a container for `AbstractFromGroupDirective` and `AbstractControlDirective` instances and its useful when you want to create a sub-group of `AbstractControl`s(eg: `address: { city, street, zip }`) or run validators for some specific `AbstractControls`(eg: min-max validator that makes sure that `min` control can't have a value that is greater than `max` control's value).
+
+Its concrete implementations are: `formGroupName`, `formArrayName`, `ngModelGroup`.
+
+Now you might be wondering, what's the difference between `FormGroupName` and `FormGroup`?
+We'll dive deeper into this here(TODO: add link), but here's a quick explanation:
+
+```html
+<form [formGroup]="filterForm">
+  <ng-container formGroupName="price">
+    <input formControlName="min" type="text">
+    <input formControlName="max" type="text">
+  </ng-container>
+</form>
+```
+
+`FormGroupName`, being a subclass of `AbstractFromGroupDirective` it has all the attributes listed at the beginning of this section. It acts as a container for `AbstractControl` instances as well.
+But, `FormGroup` can only be the top-level container. This means, you can't use `FormGroupName` as a top-level container as it will result in an error.
+
+`AbstractFormGroupDirective` provides a way to access to top level `FormGroup` instance: 
+
+```ts
+get formDirective(): Form|null { return this._parent ? this._parent.formDirective : null; }
+```
+
+where `this._parent` can be another `AbstractFormGroupDirective` or a `FormGroupDirective` instance. The `FormGroupDirective` does not have a `_parent` property.
 
 * define `ControlValueAccessor`
   * the `DefaultValueAccessor` can act on either `<input>`(excluding `<input type='checkbox'>`) or `<textarea>`; for `<input type='checkbox'>`, there is `CheckboxValueAccessor`
