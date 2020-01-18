@@ -1,17 +1,5 @@
 # TODO: find a good title about forms! :)
 
-* if you used both `Template Driven Forms` and `Reactive Forms` until now, these should summarize them pretty well!
-
-```typescript
-export const TEMPLATE_DRIVEN_DIRECTIVES: Type<any>[] =
-    [NgModel, NgModelGroup, NgForm, NgFormSelectorWarning];
-
-export const REACTIVE_DRIVEN_DIRECTIVES: Type<any>[] =
-    [FormControlDirective, FormGroupDirective, FormControlName, FormGroupName, FormArrayName];
-```
-
-* `SHARED_FORM_DIRECTIVES`
-
 ---
 
 ## Ideas
@@ -91,6 +79,8 @@ You can find more about `formArrayName` and `formGroupName` in the upcoming sect
 #### FormControl
 
 It extends `AbstractControl`, which means it will inherit all the characteristics listed above. What's important to mention here is that `FormControl` is put together with **only one** form control(a **DOM element**: `<input>`, `<textarea>`) or a custom component(with the help of `ControlValueAccessor`- more on that later!).
+
+A `FormControl` can be considered **standalone** if it **does not belong** to an `AbstractControl` tree. As a result, it will be **completely independent**, meaning that its validity, value and user interaction won't be affect any of its **form container ancestors**.
 
 #### FormArray
 
@@ -442,22 +432,346 @@ This will allow the **model** to be **updated** whenever the **blur event occurs
 
 ## Template Driven Forms and Reactive Forms
 
-* template-driven - most of the form logic is done inside the template
-* `RF` - the form is **already created** **when** the **view** is **being built**
-* using components as form controls inside forms(`TDF`, `RF`)
-* both are very powerful, but `Reactive Forms` come handy when dealing with complex, dynamic logic
-* TODO: bring other notes here
+Both strategies are very powerful, but, in my opinion, `Reactive Forms` come handy when dealing with complex, dynamic logic.
 
-#### Template Driven Forms
+### Template Driven Forms
 
-* when using `TDF` - `NgForm` is automatically created
-* the form **is** being **created** **while** the **view** is **being built**
+When using this strategy, most of the logic that concerns the form's construction is performed inside the view. This means that the `AbstractControl` tree **is** being **created** **while** the **view** is **being built**.
 
-#### Reactive Forms
+Here are the tools we can use when following this **template-driven** approach:
 
-* `<form>` is inert. a `FromGroupDirective` instance will only be created if using `[formGroup]`
+```ts
+export const TEMPLATE_DRIVEN_DIRECTIVES: Type<any>[] =
+    [NgModel, NgModelGroup, NgForm];
+```
+
+#### NgModel
+
+It's a **form-control-based** directive, **connects** the **view layer** with the **model layer**(`FormControl`) and vice versa and. It also registers the `FormControl` into the `AbstractControl` tree.
+
+When using this directive, you can also specify some options:
+
+```ts
+@Input('ngModelOptions')
+  options !: {name?: string, standalone?: boolean, updateOn?: 'change' | 'blur' | 'submit'};
+```
+
+The `updateOn` option is discussed in Observing(TODO:(link)).
+
+If you want to use a **standalone** `FormControl` instance, you can follow this approach:
+
+TODO:(ng-run)
+
+```html
+<form #f="ngForm">
+  <input [ngModelOptions]="{ standalone: true }" #myNgModel="ngModel" name="name" ngModel type="text">
+</form>
+
+{{ myNgModel.value }}
+
+<br>
+
+{{ f.value | json }}
+```
+
+#### NgModelGroup
+
+Provides a way to group multiple `NgModel` and `NgModelGroup` directives. In the model layer, this is represented by a **non-top-level** `FormGroup` instance.
+It also registers the `FormGroup` into the `AbstractControl` tree.
+
+```html
+<form> <!-- `NgForm` - automatically bound to `<form>` -->
+  <input type="text" ngModel name="companyName"/>
+
+  <div ngModelGroup="personal">
+    <input type="text" ngModel name="name"/>
+
+    <div ngModelGroup="address">
+      <input type="text" ngModel name="city"/>
+      <input type="text" ngModel name="street" />
+    </div>
+  </div>
+</form>
+```
+
+The first occurrence of `NgModelGroup` must be a child of `NgForm`:
+
+```html
+<!-- Valid -->
+<form>
+  <ng-container #myGrp="ngModelGroup" ngModelGroup="address">
+    <input type="text"ngModel name="city" />
+    <input type="text" ngModel name="street">
+  </ng-container>
+</form>
+```
+
+```html
+<!-- Invalid: `No provider for ControlContainer ...` -->
+<div #myGrp="ngModelGroup" ngModelGroup="address">
+  <input type="text"ngModel name="city" />
+  <input type="text" ngModel name="street">
+</div>
+```
+
+#### NgForm
+
+It groups multiple `NgModel` and `NgModelGroup` directives. In the model layer, it is represented by a **top-level** instance, so it listens to form-specific events, such as `reset` and `submit`. Also, it is automatically bound to `<form>` tags. 
+
+In the model, this is the root `FormGroup` instance of the `AbstractControl` tree.
+
+```html
+<form> <!-- NgForm -->
+  <input ngModel name="companyName" type="text"> <!-- NgModel -->
+
+  <div ngModelGroup="address"> <!-- NgModelGroup -->
+    <input ngModel name="city" type="text"> <!-- NgModel -->
+    <input ngModel name="street" type="text"> <!-- NgModel -->
+  </div>
+</form>
+```
+
+### Reactive Forms
+
+As opposed to `Template Driven Forms`, when using `Reactive Forms` the form is **already created** **when** the **view** is **being built**.
+
+Here are the tools we can use when following this **reactive** approach:
+
+```ts
+export const REACTIVE_DRIVEN_DIRECTIVES: Type<any>[] =
+    [FormControlDirective, FormGroupDirective, FormControlName, FormGroupName, FormArrayName];
+```
+
+#### FormControlDirective
+
+It is a **form-control-based** directive, it is the bridge between the 2 main layers: **view** and **model**.
+
+It receives a `FormControl` instance(`[formControl]="formControlInstance"`) which is already synced with, because `formControlInstance` is already part of an existing `AbstractControl` tree. Therefore, the important thing to do here is just to bind the `formControlInstance` to the current **DOM element** by using the **value accessor**.
+
+If you want to use a **standalone** `FormControl` instance, you can follow this approach:
+
+```html
+<input #f="ngForm" [formControl]="formControlInstance" type="text">
+
+{{ f.value }}
+```
+
+#### FormGroupDirective
+
+In the model layer, it is a top-level `FormGroup` instance(`<form [formGroup]="formGroupInstance">`). This also means that it listens to form-specific events, such as `reset` and `submit`. `formGroupInstance` is the root of an **already built** `AbstractControl` tree.
+
+#### FormControlName
+
+It receives a string as argument(`[formControlName]="nameOfFormControlInstance"`) and its task is to determine the `FormControl` instance depending on the provided control name(`nameOfFormControlInstance`) and the position in the view. If the `FormControl` instance is not found based on the path, an error will be thrown.
+
+Thus, `nameOfFormControlInstance` must be a valid name, because it relies on the **form container** to correctly add this `FormControl` to the `AbstractControl` tree.
+
+As mentioned before, the path is inferred based on the position of the **DOM element**(or custom component) and `nameOfFormControlInstance`:
+
+```ts
+// control - is, in this case, the top level `FormGroup` instance
+function _find(control: AbstractControl, path: Array<string|number>| string, delimiter: string) {
+  if (path == null) return null;
+
+  if (!(path instanceof Array)) {
+    path = (<string>path).split(delimiter);
+  }
+  if (path instanceof Array && (path.length === 0)) return null;
+
+  return (<Array<string|number>>path).reduce((v: AbstractControl | null, name) => {
+    if (v instanceof FormGroup) {
+      return v.controls.hasOwnProperty(name as string) ? v.controls[name] : null;
+    }
+
+    if (v instanceof FormArray) {
+      return v.at(<number>name) || null;
+    }
+
+    return null;
+  }, control);
+}
+```
+
+```html
+<form [formGroup]="myFormGroup">
+  <!-- path: 'name' -->
+  <input formControlName="name" type="text">
+
+  <!-- path: 'address' -->
+  <ng-container formGroupName="address">
+    <!-- path: ['address', 'city'] -->
+    <input formControlName="city" type="text">
+
+    <!-- path: ['address', 'street'] -->
+    <input formControlName="street" type="text">
+  </ng-container>
+</form>
+```
+
+And this is how the path of each directive is determined:
+
+```ts
+export function controlPath(name: string, parent: ControlContainer): string[] {
+  return [...parent.path !, name];
+}
+```
+
+It is worth mentioning that `nameOfFormControlInstance` can't be dynamic. Once the `FormControl` is added, it can't be changed **automatically**.([Example](https://ng-run.com/edit/o2piqt1V5jzCxhSj2HJB))
+
+Here's why:
+
+```ts
+@Directive({selector: '[formControlName]', providers: [controlNameBinding]})
+export class FormControlName extends NgControl implements OnChanges, OnDestroy {
+  /* ... */
+  ngOnChanges(changes: SimpleChanges) {
+    if (!this._added) this._setUpControl();
+  }
+
+  private _setUpControl() {
+    this._checkParentType();
+
+    // formDirective - points to the top-level `FormGroup` instance
+    (this as{control: FormControl}).control = this.formDirective.addControl(this);
+    if (this.control.disabled && this.valueAccessor !.setDisabledState) {
+      this.valueAccessor !.setDisabledState !(true);
+    }
+    this._added = true;
+  }
+  /* ... */
+}
+```
+
+However, if you still want to change the `FormControl` instance when the `nameOfFormControlInstance` changes, you can use this:
+
+```ts
+{FormArray|FormGroup}.setControl(ctrlName, formControlInstance)
+```
+
+#### FormGroupName
+
+It receives a string as an argument(`[formGroupName]="nameOfFormGroupInstance"`) and based on that argument, it has to find the right `FormGroup` instance.
+
+It can't be used as a top-level form control container, it must be registered within an exiting `FormGroupDirective`.
+
+Suppose you have a form like this:
+
+```ts
+const address = this.fb.group({
+  street: this.fb.control(''),
+});
+
+this.form = this.fb.group({
+  name: this.fb.control(''),
+  address,
+});
+```
+
+Writing this in the view will result in an error(`Cannot find control with name: 'street'`):
+
+```html
+<form #f="ngForm" [formGroup]="form">
+  <input formControlName="name" type="text">
+
+  <input formControlName="street" type="text">
+</form>
+```
+
+The way to solve this is to use the `FormGroupName` directive in order to create a **sub-group**, so that the view will correlate with model.
+
+```html
+<form #f="ngForm" [formGroup]="form">
+  <input formControlName="name" type="text">
+
+  <ng-container formGroupName="address">
+    <input formControlName="street" type="text">
+  </ng-container>
+</form>
+
+{{ f.value | json }}
+```
+
+Note: when using `FormControlDirective`(`[formControl]="formControlInstance"`)  this is not needed, because the `FormControlDirective` does not have to find the `FormControl` instance since it already receives one through `formControlInstance`.
+
+#### FormArrayName
+
+Same as `FormGroupName`, except that is has to find an existing `FormArray` instance in the `AbstractControl` tree.
+
+```ts
+this.fooForm = this.fb.group({
+  movies: this.fb.array([
+    this.fb.control('action'),
+    this.fb.control('horror'),
+    this.fb.control('mistery'),
+  ]),
+});
+```
+
+```html
+<form #f="ngForm" [formGroup]="fooForm">
+  <ng-container formArrayName="movies">
+    <input
+      *ngFor="let _ of fooForm.controls['movies'].controls; let idx = index;"
+      [formControlName]="idx"
+      type="text"
+    >
+  </ng-container>
+</form>
+
+{{ f.value | json }}
+```
+
+---
 
 ### Validators
+
+* particularly useful when you want to validate a sub-group of controls
+  For example, you have a **filter form** and you need to make sure that the **min filter** is always smaller than **max filter**:
+  ```html
+  <form #f="ngForm">
+    <ng-container min-max-validator ngModelGroup="price" #priceGrp="ngModelGroup">
+      <input type="text" ngModel name="min" pattern="^\d+$" required />
+      <input type="text" ngModel name="max" pattern="^\d+$" required >
+    </ng-container>
+  </form>
+  ```
+
+  ```ts
+  // min-max-validator.directive.ts
+  @Directive({
+    selector: '[min-max-validator]',
+    providers: [
+      {
+        provide: NG_VALIDATORS,
+        useExisting: forwardRef(() => MinMaxValidator),
+        multi: true,
+      }
+    ]
+  })
+  export class MinMaxValidator implements Validator {
+
+    constructor() { }
+
+    validate (f: FormGroup): ValidationErrors | null {
+      if (f.pristine) {
+        return null;
+      }
+
+      const { min, max } = f.controls;
+
+      // `min` or `max` is not a number or is empty
+      if (min.invalid || max.invalid) {
+        return null;
+      }
+
+      if (+min.value >= +max.value) {
+        return { minGreaterMax: 'min cannot be greater than max!' };
+      }
+
+      return null;
+    }
+  }
+  ```
 
 * the **async validators** will **not** run if the **sync validators** returned **errors**
 
@@ -1131,231 +1445,6 @@ mention that when a **control** is **disabled**, its `dirty` and `touched` statu
 
 ### Form-control-based directives
 
-* show how can one use `NgControl` provider token in order to get the current `FormControl`-based directive
-* `ControlContainer` - used as a provider token for form control **containers**(`FormGroupName`, `FormArrayName`, `NgForm`, `NgModelGroup`, `FormGroup`)
-
-#### FormGroup(implements AbstractControl)
-
-* aggregates the value from its child `FormControl`s
-* calculates its status depending on its children(if one `FormControl` child is invalid(has `errors !== null`), the entire `FormGroup` will be invalid)`
-
-
-* diff between `FormControlName` and `FormControl`
-  * `FormControlName` 
-    * receives a `string` argument
-    * it needs to determine the `FormControl` instance depending on the provided control name and the position in the view; if the `FormControl` instance is not found based on the path, an error will be thrown
-    * values cannot be changed: https://ng-run.com/edit/o2piqt1V5jzCxhSj2HJB
-    * `[formControlName]="dynamicValue"` - no matter how many times you change it, the `FormControl` instance will be bound to the first value of `dynamicValue`; 
-      however, if you still want to change that form control, you can use `{FormArray|FormGroup}.setControl(ctrlName, AbstractControlInstance)`
-    * 
-    ```ts
-    // `form_control_name`
-    private _setUpControl() {
-      this._checkParentType();
-      (this as{control: FormControl}).control = this.formDirective.addControl(this);
-      if (this.control.disabled && this.valueAccessor !.setDisabledState) {
-        this.valueAccessor !.setDisabledState !(true);
-      }
-      this._added = true;
-    }
-    ```
-
-    `this.formDirective` points to a parent `ControlContainer`(`FormGroupDirective`, `FormGroupName`, `FormArrayName`)
-
-    * must have a parent `FromGroupDirective`(`[formGroup]`) or `FormGroupName` or `FormArrayName`
-    * binds an existing `FormControl` instance to a **DOM element**
-    * `[formControlName]="existingControlName"`: `existingControlName` must be the name of an existing `FormControl` instance
-    ```typescript
-    this.form = this.formBuilder.group({ name: this.formBuilder.control('') })
-    ```
-
-    ```html
-    <form>
-      <input type="text" formControlName="name" placeholder="Enter Name..">
-    </form>
-    ```
-
-    This condition must be met because it relies on the **form container**(a parent `FormGroup` instance) to correctly add this `FormControl` to the `AbstractControl` tree.
-
-  * `FormControl`
-    * receives a `FormControl` instance
-    * **already synced** within a `FormControl` instance
-    * the `FormControl` instance can also be **standalone**
-
-    ```html
-    <input #f="ngForm" [formControl]="form.controls['name']" type="text">
-
-    {{ f.value }}
-    ```
-    * `[formControl]="formControlInstance"`: the `formControlInstance` is already placed in an existing `AbstractControl`'s tree; therefore, the important thing to do here is just bind the `formControlInstance` to the current **DOM element** by using the value accessor.
-
-
-### NgModelGroup
-
-* how to handle multiple checkbox buttons using `TDR`: 
-`ngModelGroup`
-
-TODO: try this!
-
-* **binds** a `FormGroup` instance to a **DOM element**; the bound `FormGroup` instance must be a child of `NgModelGroup` or `NgForm`
-
-```html
-<form> <!-- `NgForm` - automatically bound to `<form>` -->
-  <input type="text" ngModel name="companyName"/>
-
-  <div ngModelGroup="personal">
-    <input type="text" ngModel name="name"/>
-
-    <div ngModelGroup="address">
-      <input type="text" ngModel name="city"/>
-      <input type="text" ngModel name="street" />
-    </div>
-  </div>
-</form>
-```
-
-* the first occurrence of `NgModelGroup` must be a child of `NgForm`
-
-```html
-<!-- Valid -->
-<form>
-  <ng-container #myGrp="ngModelGroup" ngModelGroup="address">
-    <input type="text"ngModel name="city" />
-    <input type="text" ngModel name="street">
-  </ng-container>
-</form>
-```
-
-```html
-<!-- Invalid: `No provider for ControlContainer ...` -->
-<div #myGrp="ngModelGroup" ngModelGroup="address">
-  <input type="text"ngModel name="city" />
-  <input type="text" ngModel name="street">
-</div>
-```
-
-* TODO: show an example of how to properly create a validator so that it can be used with both forms
-  * must implement `Validator/AsyncValidator`
-
-* particularly useful when you want to validate a sub-group of controls
-  For example, you have a **filter form** and you need to make sure that the **min filter** is always smaller than **max filter**:
-  ```html
-  <form #f="ngForm">
-    <ng-container min-max-validator ngModelGroup="price" #priceGrp="ngModelGroup">
-      <input type="text" ngModel name="min" pattern="^\d+$" required />
-      <input type="text" ngModel name="max" pattern="^\d+$" required >
-    </ng-container>
-  </form>
-  ```
-
-  ```ts
-  // min-max-validator.directive.ts
-  @Directive({
-    selector: '[min-max-validator]',
-    providers: [
-      {
-        provide: NG_VALIDATORS,
-        useExisting: forwardRef(() => MinMaxValidator),
-        multi: true,
-      }
-    ]
-  })
-  export class MinMaxValidator implements Validator {
-
-    constructor() { }
-
-    validate (f: FormGroup): ValidationErrors | null {
-      if (f.pristine) {
-        return null;
-      }
-
-      const { min, max } = f.controls;
-
-      // `min` or `max` is not a number or is empty
-      if (min.invalid || max.invalid) {
-        return null;
-      }
-
-      if (+min.value >= +max.value) {
-        return { minGreaterMax: 'min cannot be greater than max!' };
-      }
-
-      return null;
-    }
-  }
-  ```
-
-### `NgModelGroup` vs `NgForm` and `FormGroupName` vs `FormGroup`
-
-_`NgForm` in the context of `Template Driven Forms` === `FormGroup` in the context of `Reactive Forms`_.
-
-_`NgModelGroup` in the context of `Template Driven Forms` === `FormGroupName` in the context of `Reactive Forms`_.
-
-* an `NgForm`'s `FormGroup` instance is always the top-level one, because `NgForm` **does not** have a `_parent` property, whereas `NgModelGroup` **does**
-
-* `NgForm` has the `submit` and `reset` event listeners **bound** to it
-
-#### `NgModelGroup` & `FormGroupName` & `FormArrayName`
-
-* both will have direct(sort of - through getters) access to the **top-level** `FormGroupDirective`
-
-```ts
-// TODO: use TS :D
-testing_internal_1.beforeEach(function () {
-                formModel = new forms_1.FormGroup({ 'login': new forms_1.FormControl(null) });
-                var parent = new forms_1.FormGroupDirective([], []);
-                parent.form = new forms_1.FormGroup({ 'group': formModel });
-                p = parent;
-                controlGroupDir = new forms_1.FormGroupName(parent, [], []);
-                controlGroupDir.name = 'group';
-            });
-            testing_internal_1.it('should reexport control properties', function () {
-
-              console.log(controlGroupDir.formDirective.form === p.form) // true
-              console.log(controlGroupDir.formDirective === p) // true
-```
-
-```ts
-@Directive({
-  selector: 'form:not([ngNoForm]):not([formGroup]),ngForm,ng-form,[ngForm]',
-  providers: [formDirectiveProvider],
-  host: {'(submit)': 'onSubmit($event)', '(reset)': 'onReset()'},
-  outputs: ['ngSubmit'],
-  exportAs: 'ngForm'
-})
-export class NgForm extends ControlContainer implements Form, AfterViewInit {}
-```
-
-
-* `FormArrayName`
-  * similar to `FormGroupName`, but the **controls** are **stored** in an **array**, **instead** of an **object**
-  * cannot be used as a top-level form control container, it must be registered within an exiting form directive
-  * can have one of these parents: `FormGroupName`, `FormGroupDirective` or `FormArrayName`
-  * use-case: an app where the user can choose a number of favorite movies
-
-```ts
-this.fooForm = this.fb.group({
-  movies: this.fb.array([
-    this.fb.control('action'),
-    this.fb.control('horror'),
-    this.fb.control('mistery'),
-  ]),
-});
-```
-
-```html
-<form #f="ngForm" [formGroup]="fooForm">
-  <ng-container formArrayName="movies">
-    <input
-      *ngFor="let _ of fooForm.controls['movies'].controls; let idx = index;"
-      [formControlName]="idx"
-      type="text"
-    >
-  </ng-container>
-</form>
-
-{{ f.value | json }}
-```
 
 * how are classes being added depending on status?
   * with the help of `NgControlStatus`, a directive that is automatically bound to a form control element when using `ngModel`, `formControl`, `formControlName`
@@ -1369,170 +1458,6 @@ this.fooForm = this.fb.group({
     @HostBinding('[class.card__price--incorrect]') this.ngControlStatus.ngClassInvalid();
     ```
     _Note: in order for this to work, your element(or component), besides the above directive, must include one of these **FromControl**-based directives: `[formControlName],[ngModel],[formControl]`_
-
-* control must be defined as `standalone` in `ngModelOptions`(add as subsection of `NgModel`).
-
-
-* multiple **form-control-based directives** can share the same the same `FormControl` instance; that's why the `FormControl` class has the `_onChange` property:
-
-```ts
-registerOnChange(fn: Function): void { this._onChange.push(fn); }
-```
-
-With the help of this method, **callbacks functions** can be registered on the `FormControl` instance and will be invoked then the its value is changed programmatically: `FormControl.setValue()`
-
-```ts
-setValue(value: any, options: {
-    onlySelf?: boolean,
-    emitEvent?: boolean,
-    emitModelToViewChange?: boolean,
-    emitViewToModelChange?: boolean
-  } = {}): void {
-  (this as{value: any}).value = this._pendingValue = value;
-  if (this._onChange.length && options.emitModelToViewChange !== false) {
-    this._onChange.forEach(
-        (changeFn) => changeFn(this.value, options.emitViewToModelChange !== false));
-  }
-  this.updateValueAndValidity(options);
-}
-```
-
-Here's how such callback function can be registered on a `FormControl` instance 
-
-```ts
-function setUpModelChangePipeline(control: FormControl, dir: NgControl): void {
-  control.registerOnChange((newValue: any, emitModelEvent: boolean) => {
-    // control -> view
-    dir.valueAccessor !.writeValue(newValue);
-
-    // control -> ngModel
-    if (emitModelEvent) dir.viewToModelUpdate(newValue);
-  });
-}
-```
-
-Here's also a visual example, along with its test case:
-
-```html
-<form [formGroup]="form" *ngIf="showRadio.value === 'yes'">
-    <input type="radio" formControlName="food" value="chicken">
-    <input type="radio" formControlName="food" value="fish">
-    <input type="radio" formControlName="drink" value="cola">
-    <input type="radio" formControlName="drink" value="sprite">
-</form>
-<input type="radio" [formControl]="showRadio" value="yes">
-<input type="radio" [formControl]="showRadio" value="no">`
-```
-
-```ts
-it('should support basic functionality', () => {
-  const fixture = initTest(FormControlRadioButtons); // Contains the above template
-  const form =
-      new FormGroup({'food': new FormControl('fish'), 'drink': new FormControl('sprite')});
-  fixture.componentInstance.form = form;
-  fixture.detectChanges();
-
-  // model -> view
-  const inputs = fixture.debugElement.queryAll(By.css('input'));
-  expect(inputs[0].nativeElement.checked).toEqual(false);
-  expect(inputs[1].nativeElement.checked).toEqual(true);
-
-  dispatchEvent(inputs[0].nativeElement, 'change');
-  fixture.detectChanges();
-
-  // view -> model
-  expect(form.get('food') !.value).toEqual('chicken');
-  expect(inputs[1].nativeElement.checked).toEqual(false);
-
-  form.get('food') !.setValue('fish');
-  fixture.detectChanges();
-
-  // programmatic change -> view
-  expect(inputs[0].nativeElement.checked).toEqual(false);
-  expect(inputs[1].nativeElement.checked).toEqual(true);
-})
-```
-
-* use case for `FormGroupName`
-
-_Note: when using `FormControlDirective`(`[formControl]="formControlInstance"`) - this is not needed_
-
-Suppose you have a form like this
-
-```ts
-// TODO: simply it! :)
-const address = this.fb.group({
-  city: this.fb.control('default value', { 
-    validators: [],
-    asyncValidators: [],
-    updateOn: 'blur' /* 'blur' | 'change'(default) | 'submit' */
-  }),
-  street: this.fb.control('', [/* validators */], [/* async validators */]),
-  streetNumber: ['', [/* validators */] /* | validatorFn */, [/* async validators */] /* | asyncValidatorFn */],
-  zip: '',
-  country: { value: '', disabled: true },
-});
-
-console.log(address)
-
-this.form = this.fb.group({
-  name: this.fb.control(''),
-  address,
-});
-```
-
-Writing this in the view will result in an error(`Cannot find control with name: 'street'`):
-
-```html
-<form #f="ngForm" [formGroup]="form">
-  <input formControlName="name" type="text">
-
-  <input formControlName="street" type="text">
-</form>
-```
-
-The way to solve this is to use the `FormGroupName` directive in order to create a **sub-group** that will reflect the **top-level** `FormGroup` instance
-
-```html
-<form #f="ngForm" [formGroup]="form">
-  <input formControlName="name" type="text">
-
-  <ng-container formGroupName="address">
-    <input formControlName="street" type="text">
-  </ng-container>
-</form>
-
-{{ f.value | json }}
-```
-
-* expose them all
- 
-#### Diff between `NgModelGroup`/`FormGroupName` and `NgForm`/`FormGroup`
-
-* `NgForm`/`FormGroup` directive should be top-level `FormGroup` instance, because they have no `_parent` property
-* `NgForm`/`FormGroup` has **form events**(`reset`, `submit`) bound to it
-
-#### Standalone directives
-
-`standalone` - won't be registered as a child **form control**, will be **completely independent**. This means that its validity, value and user interaction won't reflect into any of its **form container ancestors**
-
-##### NgModel
-
-```html
-<form #f="ngForm">
-  <input [ngModelOptions]="{ standalone: true }" #myNgModel="ngModel" name="name" ngModel type="text">
-</form>
-
-{{ myNgModel.value }}
-
-<br>
-
-{{ f.value | json }}
-```
-
-##### FormControl
-
-TODO:
 
 ---
 
@@ -1635,6 +1560,18 @@ TODO:
 ---
 
 ### FormBuilder
+
+const address = this.fb.group({
+  city: this.fb.control('default value', { 
+    validators: [],
+    asyncValidators: [],
+    updateOn: 'blur' /* 'blur' | 'change'(default) | 'submit' */
+  }),
+  street: this.fb.control('', [/* validators */], [/* async validators */]),
+  streetNumber: ['', [/* validators */] /* | validatorFn */, [/* async validators */] /* | asyncValidatorFn */],
+  zip: '',
+  country: { value: '', disabled: true },
+});
 
 With `FormBuilder`, you can create forms with less boilerplate.
 
