@@ -159,19 +159,86 @@ get formDirective(): Form|null { return this._parent ? this._parent.formDirectiv
 
 where `this._parent` can be another `AbstractFormGroupDirective` or a `FormGroupDirective` instance. The `FormGroupDirective` does not have a `_parent` property.
 
-* define `ControlValueAccessor`
-  * the `DefaultValueAccessor` can act on either `<input>`(excluding `<input type='checkbox'>`) or `<textarea>`; for `<input type='checkbox'>`, there is `CheckboxValueAccessor`
-  * essential for the **Forms API**
-  * represents the **view layer**
-  * connects a **DOM element** or a **custom component** with a **form-control-based** directive(i.e: `ngModel`, `formControlName`); this way the **model layer** and the **view layer** can interact with each other;
-  * only a `FormControl` instance can directly interact with a `ControlValueAccessor`
-  * 3 types of **ControlValueAccessor**s: `custom`, `built-in`, `default`
+### ControlValueAccessor
 
+`ControlValueAccessor` is an essential part for the **Forms API** and can be thought of as the **view layer**.
 
-* show diagram(the simple one / first one)
+Its job is to connect a **DOM element**(eg: `<input>`, `<textarea>`) or a custom component(eg: `<app-custom-input>`) with an `AbstractControlDirective`(eg:`NgModel`, `FormControlName`). `AbstractControlDirective` will eventually become a bridge between `ControlValueAccessor`(**view layer**) and `AbstractControl`(**model layer**). This way, the 2 layers can interact with each other.
 
+For instance:
+
+* when user is typing into an input: `View` -> `Model`
+* when the value is set programmatically(`FormControl.setValue('newValue')`): `Model` -> `View`
+
+Only `FormControl` instances can directly interact with a `ControlValueAccessor`, because a `FormControl`, in a tree of `AbstractControl`s, can only be the leaf node as it is not supposed to contains other nodes. Along these lines, we can deduce that **updates** that come **from the view** will **start** **from leaf** nodes.
+
+```ts
+// FG - FormGroup
+// FA - FormArray
+// FC - FormControl
+                                  FG
+                                /   \
+user typing into an input  <- FC    FA
+                                   / | \
+                                FC  FC  FC <- user selecting checkbox
+```
+
+There are 3 types of `ControlValueAccessor`s:
+
+* default
+  
+  ```ts
+  @Directive({
+  selector:
+      'input:not([type=checkbox])[formControlName],textarea[formControlName],input:not([type=checkbox])[formControl],textarea[formControl],input:not([type=checkbox])[ngModel],textarea[ngModel],[ngDefaultControl]',
+  })
+  export class DefaultValueAccessor implements ControlValueAccessor { }
+  ```
+
+* built-in
+  
+  ```ts
+  const BUILTIN_ACCESSORS = [
+    CheckboxControlValueAccessor,
+    RangeValueAccessor,
+    NumberValueAccessor,
+    SelectControlValueAccessor,
+    SelectMultipleControlValueAccessor,
+    RadioControlValueAccessor,
+  ];
+  ```
+
+  You can read more about **built-in** accessor here(TODO: add link).
+
+* custom - when you want a custom component to be part of the `AbstractControl` tree
+
+  ```ts
+  @Component({
+    selector: 'app-custom-component',
+    providers: [
+      {
+        provide: NG_VALUE_ACCESSOR,
+        useExisting: CustomInputComponent,
+      }
+    ]
+    /* ... */
+  })
+  export class CustomInputComponent implements ControlValueAccessor { }
+  ```
+  
+  ```html
+  <form>
+    <app-custom-component ngModel name="name"></app-custom-component>
+  </form>
+  ```
+
+  Remember that `ngModel` is a **form-control-based** directive, so it will become a bridge between a `ControlValueAccessor`(**view**) and `FormControl`(**model**).
+  
+  You can read more about **custom** accessor here(TODO: add link).
 
 ### Connecting `FormControl` with `ControlValueAccessor`
+
+* show diagram(the simple one / first one)
 * explain how a `FormControl` is set up + code snippets ❗️
     * `registerOnDisabledChange`
     * `registerOnChange`
@@ -316,7 +383,9 @@ function setUpModelChangePipeline(control: FormControl, dir: NgControl): void {
 
 * you can define validators in the component class or in the view
 * view: as attributes(`<input required>`), as property binding(`<input [required]="shouldBeRequired">`)
-  
+
+### Exploring custom `ControlValueAccessor`s
+
 ### Exploring built-in Control Value Accessors
 
 * talk about the relevant ones(`RadioValueAccessor`, `SelectControlValueAccessor`)
