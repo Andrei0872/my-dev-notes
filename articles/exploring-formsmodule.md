@@ -101,24 +101,39 @@ The previously mentioned control is bound to a **DOM element** with the help of 
 
 Thus, this class can be thought of as a `middleman` that connects `ControlValueAccessor`(**view layer**) with `AbstractControl`(**model layer**) - more on that in the forthcoming sections.
 
-It is worth mentioning that multiple `AbstractControlDirective`s can **bind the same** `AbstractControl` to multiple **DOM elements or custom components**, to multiple `ControlValueAccessor`s.(TODO: add link)
+It is worth mentioning that multiple `AbstractControlDirective`s can **bind the same** `AbstractControl` to multiple **DOM elements or custom components**, to multiple `ControlValueAccessor`s
 
 Consider this example:
 
 ```html
 <form>
-  <input type="radio" ngModel name="genre" value="horror">
-  <input type="radio" ngModel name="genre" value="comedy">
+  <input ngModel name="option" value="value1" type="radio">
+
+  <input ngModel="value3" name="option" value="value2" type="radio">
+
+  <input ngModel="value1" name="option" value="value3" type="radio">
 </form>
 ```
 
-Under the hood, this will be created:
+As a side node, providing a default value right from the template can be achieved by setting the `ngModel` directive's value to the value of the radio button you want to be checked by default. In the above snippet, the first button will be checked.
+
+This happens because the last directive will be the one which will have the _final_ call
+of `setUpControl()` function.
 
 ```ts
-new FormGroup({
-  genre: new FormControl('')
-})
+export function setUpControl(control: FormControl, dir: NgControl): void {
+  if (!control) _throwError(dir, 'Cannot find control with');
+  if (!dir.valueAccessor) _throwError(dir, 'No value accessor for form control with');
+
+  /* ... */
+
+  dir.valueAccessor !.writeValue(control.value); // <-- Here!
+  
+  /* ... */
+}
 ```
+
+[ng-run Example](https://ng-run.com/edit/Xx0irFLVo4FdueEBtSAF?open=app%2Fradio-example.component.ts).
 
 ### AbstractFormGroupDirective
 
@@ -998,24 +1013,9 @@ export function setUpControl(control: FormControl, dir: NgControl): void {
 
 ---
 
-## Exploring custom `ControlValueAccessor`s
+## Exploring built-in `ControlValueAccessor`s
 
-* custom component
-
-## Exploring built-in Control Value Accessors
-
-* talk about the relevant ones(`RadioValueAccessor`, `SelectControlValueAccessor`)
-  * `SelectControlValueAccessor` - 2 ways of using its API
-  * `RadioValueAccessor` - the radio buttons can be grouped by `formControlName` in the absence of the `name` attribute
-    ```ts
-    // RadioValueAccessor._checkName
-    private _checkName(): void {
-      if (this.name && this.formControlName && this.name !== this.formControlName) {
-        this._throwNameError();
-      }
-      if (!this.name && this.formControlName) this.name = this.formControlName;
-    }
-    ```
+These are the built-in value accessors that Angular provides us with:
 
 ```ts
 const BUILTIN_ACCESSORS = [
@@ -1028,27 +1028,36 @@ const BUILTIN_ACCESSORS = [
 ];
 ```
 
+In the upcoming sections we are going to explore the internals of some of the built-in value accessors.
+
 ### `SelectValueAccessor`
 
-#### Using `[value]="primitiveValue"`
+We can use this value accessor in 2 ways: by using either `[value]` or `[ngValue]`.
 
-* `primitiveValue`, as its name implies, cannot be something else than a **primitive value**; if you'd like to bind an object, `[ngValue]` is your choice
+#### Using `<option [value]="primitiveValue">`
 
-* each `<option>` will select its **value** to `primitiveValue`
+The `primitiveValue` argument, as its name implies, can't be something else than a **primitive value**. If you'd like to bind an object, `[ngValue]` should be your choice.
 
-* when programmatically modifying `<select>`'s value, this line will be reached:
+Each `<option>` will set its **value** to `primitiveValue`.
 
 ```ts
-this._renderer.setProperty(this._elementRef.nativeElement, 'value', valueString);
+@Input('value')
+set value(value: any) {
+  this._setElementValue(value);
+}
+
+_setElementValue(value: string): void {
+  this._renderer.setProperty(this._element.nativeElement, 'value', value);
+}
 ```
 
-where `valueString` is the argument(i.e: the `id`) passed to `FormControl.setValue()`
+[ng-run Example](https://ng-run.com/edit/Xx0irFLVo4FdueEBtSAF?open=app%2Fselect-example.component.ts).
 
-#### Using `[ngValue]="primitiveOrNonPrimitiveValue"`
+#### Using `<option [ngValue]="primitiveOrNonPrimitiveValue">`
 
-* unlike `[value]`, `[ngValue]` can take both **primitive** and **non-primitive** as values
+Unlike `[value]`, `[ngValue]` can take both **primitive** and **non-primitive** as arguments.
 
-* will store the value of the `<option>` tag depending on the value provided to `[ngValue]`
+It will set the value of the `<option>` tag depending on the value provided to `[ngValue]`.
 
 ```ts
 @Input('ngValue')
@@ -1068,9 +1077,9 @@ function _buildValueString(id: string | null, value: any): string {
 }
 ```
 
-we can deduce that if we pass an object, the value will be something like `'1: Object'`. If we pass a primitive value, like the name of a city, the will be: `0: 'NY'`
+We can see that if we pass an object, the value will be something like `'1: Object'`. If we pass a primitive value, like the name of a city, the will be: `0: 'NY'`
 
-It is important to notice that when you change the value of the `<select>`(by using `FormControl.setValue(arg)`), if arg is an object, you must make sure it is the same object that you've passed to `<option [ngValue]="arg"></option>`. That's because, by default, `SelectControlValueAccessor.writeValue(obj)`, it will use the `===` to identify the selected `option`.
+It is important to notice that when you change the value of the `<select>`(by using `FormControl.setValue(arg)`), if `arg` is an object, you must make sure it is the same object that you've passed to `<option [ngValue]="arg"></option>`. That's because, by default, `SelectControlValueAccessor.writeValue(obj)`, it will use the `===` to identify the selected `option`.
 
 ```ts
 writeValue(value: any): void {
@@ -1084,10 +1093,11 @@ writeValue(value: any): void {
 }
 
 _getOptionId(value: any): string|null {
-    for (const id of Array.from(this._optionMap.keys())) {
-      if (this._compareWith(this._optionMap.get(id), value)) return id;
-    }
-    return null;
+  for (const id of Array.from(this._optionMap.keys())) {
+    if (this._compareWith(this._optionMap.get(id), value)) return id;
+  }
+
+  return null;
 }
 ```
 
@@ -1097,66 +1107,92 @@ Where `_compareWith` looks like this(by default):
 return a === b || typeof a === 'number' && typeof b === 'number' && isNaN(a) && isNaN(b);
 ```
 
-Here's an example with a custom `_compareWith` function: https://stackblitz.com/edit/select-uf9kyu?file=src/app/app.component.html
+[Here's a StackBlitz example](https://stackblitz.com/edit/select-ng-value?file=src%2Fapp%2Fapp.component.html) with a custom `_compareWith` function:
 
-Here is the test case for such behavior: https://github.com/angular/angular/blob/master/packages/forms/test/value_accessor_integration_spec.ts#L216-L240
+```ts
+compareWith(existing, toCheckAgainst) {
+  if (!toCheckAgainst) {
+    return false;
+  }
+  return existing.id === toCheckAgainst.id;
+}
+```
 
+```html
+<!-- 
+  1) Try without '[compareWith]="compareWith"'
+  2) select another option(`B`, or `C`)
+  3) click `change`
+
+  You should not see the value updated inside the `<select>`
+  and that is because the default impl. of `compareWith` will compare the values with `===`
+-->
+<select
+  #s="ngModel"
+  [ngModel]="selectedItem"
+  [compareWith]="compareWith"
+>
+  <option
+    *ngFor="let item of items"
+    [ngValue]="item"
+  >
+    {{item.name}}
+  </option>
+</select>
+
+<br><br>
+
+<button (click)="s.control.setValue({ id: '1', name: 'A' })">change</button>
+```
+
+[Here](https://github.com/angular/angular/blob/master/packages/forms/test/value_accessor_integration_spec.ts#L216-L240) is the test case for such behavior.
 
 ### `SelectMultipleValueAccessor`
 
 Each option is tracked(added to the internal `_optionMap` property), because
   
-* when **change event** occurs on the `<select>`, the value accessor needs to provide the right values(the value provided to `[value]` or `[ngValue]` of `<option>`); this can be achieved with iterating over the **registered options** and retrieving their values
+* when **change event** occurs on the `<select>`, the value accessor needs to provide the right values(the value provided to `[value]` or `[ngValue]` in `<option>`) to the model; this can be achieved with iterating over the selected options(`event.target.selectedOptions`) and retrieve their values from `_optionMap`.
 
-* when value of the `FormControl` bound to the `<select>` element is changed programmatically(`FormControl.setValue()`), it needs to somehow determine which of the existing options match with the provided values
+  ```ts
+  // _ - the select element
+  this.onChange = (_: any) => {
+    const selected: Array<any> = [];
+    if (_.hasOwnProperty('selectedOptions')) {
+      const options: HTMLCollection = _.selectedOptions;
+      for (let i = 0; i < options.length; i++) {
+        const opt: any = options.item(i);
+        const val: any = this._getOptionValue(opt.value);
+        selected.push(val);
+      }
+    }
 
-```ts
-writeValue(value: any): void {
-  this.value = value;
-  let optionSelectedStateSetter: (opt: ɵNgSelectMultipleOption, o: any) => void;
-  if (Array.isArray(value)) {
-    // convert values to ids
-    const ids = value.map((v) => this._getOptionId(v));
-    optionSelectedStateSetter = (opt, o) => { opt._setSelected(ids.indexOf(o.toString()) > -1); };
-  } else {
-    optionSelectedStateSetter = (opt, o) => { opt._setSelected(false); };
+    this.value = selected;
+    fn(selected);
+  };
+  ```
+
+* when value of the `FormControl` bound to the `<select>` element is changed programmatically(`FormControl.setValue()`), it needs to somehow determine which of the existing options match with the new provided values
+
+  ```ts
+  writeValue(value: any): void {
+    this.value = value;
+    let optionSelectedStateSetter: (opt: ɵNgSelectMultipleOption, o: any) => void;
+    if (Array.isArray(value)) {
+      // convert values to ids
+      const ids = value.map((v) => this._getOptionId(v));
+      optionSelectedStateSetter = (opt, o) => { opt._setSelected(ids.indexOf(o.toString()) > -1); };
+    } else {
+      optionSelectedStateSetter = (opt, o) => { opt._setSelected(false); };
+    }
+    this._optionMap.forEach(optionSelectedStateSetter);
   }
-  this._optionMap.forEach(optionSelectedStateSetter);
-}
-```
+  ```
 
 ### `RadioValueAccessor`
 
-* ways to set the default value on multiple radio buttons
-  *  `{{ true && first.valueAccessor.writeValue('foo1') }}`
-  *  `<input ngModel="foo3" name="option" value="foo4" type="radio">` - explain why you use the last radio btn`
+This value accessor keeps track of the radio buttons with the help of an internal service: `RadioControlRegistry`, which holds an array of `[NgControl, RadioValueAccessor]` pairs, where `NgControl` is a provider token that maps to one of the form-control-based directives: `NgModel`, `FormControl`, `FormControlName`.
 
-**Using radio buttons with same names, but different parents**
-
-```html
-<form #f="ngForm"> 
-  <input ngModel name="name" type="text">
-
-  <input #first="ngModel" ngModel name="option" value="foo1" type="radio">
-  <input ngModel name="option" value="foo2" type="radio">
-  <input ngModel name="option" value="foo3" type="radio">
-  <input ngModel name="option" value="foo4" type="radio">
-
-  <br>
-  
-  <!-- Same name, but different parents -->
-  <ng-container ngModelGroup="foo">
-    <input ngModel name="option" value="foo2" type="radio">
-    <input ngModel name="option" value="foo3" type="radio">
-  </ng-container>
-</form>
-
-{{ f.value | json }}
-```
-
-This is possible because, under the hood, Angular keeps track of the radio buttons from the current view with the help of `RadioControlRegistry`.
-
-`RadioControlRegistry` holds an array of `[NgControl, RadioValueAccessor]` pairs, where `NgControl` is a provider token that maps to one of the form-control-based directives: `NgModel`, `FormControl`, `FormControlName`
+Let's see how it actually works:
 
 ```ts
 @Injectable()
@@ -1200,10 +1236,10 @@ Let's narrow it down with a simpler example:
 
 ```html
 <form>
-  <input ngModel name="option" value="value1" type="radio"> <!-- #1 NgControl._parent = the top-level `FormGroup` which results from `<form>` -->
+  <input ngModel name="option" value="value1" type="radio"> <!-- #1 NgModel._parent = the top-level `FormGroup` which results from `<form>` -->
 
   <ng-container ngModelGroup="foo">
-    <input ngModel name="option" value="value1" type="radio"> <!-- #2 NgControl._parent = the sub-group `FormGroup` which results from `ngModelGroup` -->
+    <input ngModel name="option" value="value1" type="radio"> <!-- #2 NgModel._parent = the sub-group `FormGroup` which results from `ngModelGroup` -->
   </ng-container>
 </form>
 ```
@@ -1214,8 +1250,8 @@ The `RadioControlRegistry._accessors` array would look like this:
 
 ```ts
 [
-  NgControl /* #1 */, RadioControlValueAccessor,
-  NgControl /* #2 */, RadioControlValueAccessor,
+  NgControl(-> NgModel) /* #1 */, RadioControlValueAccessor,
+  NgControl(-> NgModel) /* #2 */, RadioControlValueAccessor,
 ]
 ```
 
@@ -1262,6 +1298,8 @@ That's because out of `N` radio buttons with the same `name` and `value` attribu
 `this._isSameGroup(c, accessor) && c[1] !== accessor`
 
 where `accessor` is the `RadioControlValueAccessor` of the selected radio button.
+
+[ng-run Example](https://ng-run.com/edit/Xx0irFLVo4FdueEBtSAF?open=app%2Fradio-example.component.ts).
 
 ---
 
