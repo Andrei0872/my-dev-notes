@@ -80,7 +80,7 @@ You can find more about `formArrayName` and `formGroupName` in the upcoming sect
 
 It extends `AbstractControl`, which means it will inherit all the characteristics listed above. What's important to mention here is that `FormControl` is put together with **only one** form control(a **DOM element**: `<input>`, `<textarea>`) or a custom component(with the help of `ControlValueAccessor`- more on that later!).
 
-A `FormControl` can be considered **standalone** if it **does not belong** to an `AbstractControl` tree. As a result, it will be **completely independent**, meaning that its validity, value and user interaction won't be affect any of its **form container ancestors**.
+A `FormControl` can be considered **standalone** if it **does not belong** to an `AbstractControl` tree. As a result, it will be **completely independent**, meaning that its validity, value and user interaction won't be affect any of its **form container ancestors**([Example](https://ng-run.com/edit/Xx0irFLVo4FdueEBtSAF?open=app%2Fexample-standalone.component.ts)).
 
 #### FormArray
 
@@ -723,101 +723,286 @@ this.fooForm = this.fb.group({
 
 ---
 
-### Validators
+## Validators
 
-* particularly useful when you want to validate a sub-group of controls
-  For example, you have a **filter form** and you need to make sure that the **min filter** is always smaller than **max filter**:
-  ```html
-  <form #f="ngForm">
-    <ng-container min-max-validator ngModelGroup="price" #priceGrp="ngModelGroup">
-      <input type="text" ngModel name="min" pattern="^\d+$" required />
-      <input type="text" ngModel name="max" pattern="^\d+$" required >
-    </ng-container>
-  </form>
-  ```
+Validators allow developers to put constraints on `AbstractControl` instances(`FormControl`, `FormArray`, `FormGroup`).
 
-  ```ts
-  // min-max-validator.directive.ts
-  @Directive({
-    selector: '[min-max-validator]',
-    providers: [
-      {
-        provide: NG_VALIDATORS,
-        useExisting: forwardRef(() => MinMaxValidator),
-        multi: true,
-      }
-    ]
-  })
-  export class MinMaxValidator implements Validator {
+Validators are **set and run** when the `AbstractControl` tree is initialized. If you want to set them after the initialization has taken place, you can use `AbstractFormControl.setValidators` and `AbstractFormControl.setAsyncValidators` to set them and `AbstractFormControl.updateValueAndValidity` to run them.
 
-    constructor() { }
+```ts
+setValidators(newValidator: ValidatorFn|ValidatorFn[]|null): void {
+  this.validator = coerceToValidator(newValidator);
+}
 
-    validate (f: FormGroup): ValidationErrors | null {
-      if (f.pristine) {
-        return null;
-      }
+updateValueAndValidity(opts: {onlySelf?: boolean, emitEvent?: boolean} = {}): void {
+  /* ... */
 
-      const { min, max } = f.controls;
+  if (this.enabled) {
+    this._cancelExistingSubscription();
+    // Run sync validators
+    // and will invoke `this.validator`
+    (this as{errors: ValidationErrors | null}).errors = this._runValidator();
+    // If `errors` property is not null -> status = 'INVALID'
+    (this as{status: string}).status = this._calculateStatus();
 
-      // `min` or `max` is not a number or is empty
-      if (min.invalid || max.invalid) {
-        return null;
-      }
+    if (this.status === VALID || this.status === PENDING) {
+      this._runAsyncValidator(opts.emitEvent);
+    }
+  }
 
-      if (+min.value >= +max.value) {
-        return { minGreaterMax: 'min cannot be greater than max!' };
-      }
+  /* ... */
 
+  if (this._parent && !opts.onlySelf) {
+    this._parent.updateValueAndValidity(opts);
+  }
+}
+```
+
+From the above code snippet we can also deduce that **async validators** will **not** run if the **sync validators** returned **errors**.
+
+### Usage of built-in Validators
+
+The built-in validators are available as **directives** or as **static members** of `Validator` class.
+
+For example, the **email validator** can be used directly in the view like this:
+
+```html
+<form>
+  <input email ngModel name="email" type="text">
+</form>
+```
+
+```ts
+@Directive({
+  selector: '[email][formControlName],[email][formControl],[email][ngModel]',
+  providers: [EMAIL_VALIDATOR]
+})
+export class EmailValidator implements Validator {
+  /* ... */
+
+  validate(control: AbstractControl): ValidationErrors|null {
+    return this._enabled ? Validators.email(control) : null;
+  }
+
+  /* ... */
+}
+```
+
+Whereas with `Reactive Forms` you'd use it like this:
+
+```ts
+this.form = new FormGroup({
+  name: new FormControl(defaultValue, [Validators.Email])
+})
+```
+
+Although when using `Reactive Forms` the validators are usually set in the component class, you can still provide validators inside the view; when the `AbstractControl` instance is created, the validators will eventually be merged inside `setUpControl`
+
+```ts
+// dir.validator - sync validators provided via directives
+// control.validator - sync validators provided through `Reactive Forms`(eg: new FormControl('', [syncValidators]))
+export function setUpControl(control: FormControl, dir: NgControl): void {
+  if (!control) _throwError(dir, 'Cannot find control with');
+  if (!dir.valueAccessor) _throwError(dir, 'No value accessor for form control with');
+
+  control.validator = Validators.compose([control.validator !, dir.validator]);
+  control.asyncValidator = Validators.composeAsync([control.asyncValidator !, dir.asyncValidator]);
+  
+  /* ... */
+}
+```
+
+### Validators' Composition
+
+Validators can be provided from multiple sources: either form the view, or from the class, or from both.
+
+All the validators will be eventually be **merged into** a **single function** that, when invoked, will execute all of them sequentially and accumulate their results(returned errors). 
+
+Those which implement the `Validator` interface will be normalized first, meaning that will be transformed into a function that, when invoked, will execute the `Validator.validate` method:
+
+```ts
+export function normalizeValidator(validator: ValidatorFn | Validator): ValidatorFn {
+  if ((<Validator>validator).validate) {
+    return (c: AbstractControl) => (<Validator>validator).validate(c);
+  } else {
+    return <ValidatorFn>validator;
+  }
+}
+```
+
+Validators are set and merged(if needed) inside `setUpControl` function:
+
+```ts
+export function setUpControl(control: FormControl, dir: NgControl): void {
+  if (!control) _throwError(dir, 'Cannot find control with');
+  if (!dir.valueAccessor) _throwError(dir, 'No value accessor for form control with');
+
+  control.validator = Validators.compose([control.validator !, dir.validator]);
+  control.asyncValidator = Validators.composeAsync([control.asyncValidator !, dir.asyncValidator]);
+  
+  /* ... */
+}
+```
+
+Let's explore the magic behind `Validators.compose`:
+
+```ts
+export class Validators {
+  static compose(validators: (ValidatorFn|null|undefined)[]|null): ValidatorFn|null {
+    if (!validators) return null;
+    const presentValidators: ValidatorFn[] = validators.filter(isPresent) as any;
+    if (presentValidators.length == 0) return null;
+
+    return function(control: AbstractControl) {
+      return _mergeErrors(_executeValidators(control, presentValidators));
+    };
+  }
+}
+
+function _executeValidators(control: AbstractControl, validators: ValidatorFn[]): any[] {
+  return validators.map(v => v(control));
+}
+
+// Accumulate errors
+function _mergeErrors(arrayOfErrors: ValidationErrors[]): ValidationErrors|null {
+  const res: {[key: string]: any} =
+      arrayOfErrors.reduce((res: ValidationErrors | null, errors: ValidationErrors | null) => {
+        return errors != null ? {...res !, ...errors} : res !;
+      }, {});
+  return Object.keys(res).length === 0 ? null : res;
+}
+```
+
+The same logic applies to `Validator.composeAsync`, with the exception of the way validators are executed. First, it will convert all the async validators into observables and then will execute them with the help of the `forkJoin` operator.
+
+```ts
+export class Validators {
+  static composeAsync(validators: (AsyncValidatorFn|null)[]): AsyncValidatorFn|null {
+    if (!validators) return null;
+    const presentValidators: AsyncValidatorFn[] = validators.filter(isPresent) as any;
+    if (presentValidators.length == 0) return null;
+
+    return function(control: AbstractControl) {
+      const observables = _executeAsyncValidators(control, presentValidators).map(toObservable);
+      return forkJoin(observables).pipe(map(_mergeErrors));
+    };
+  }
+}
+```
+
+### Custom Validators
+
+A recommended way to create a custom validator is to create is as a directive:
+
+```ts
+// min-max-validator.directive.ts
+@Directive({
+  selector: '[min-max-validator]',
+  providers: [
+    {
+      provide: NG_VALIDATORS,
+      useExisting: forwardRef(() => MinMaxValidator),
+      multi: true,
+    }
+  ]
+})
+export class MinMaxValidator implements Validator {
+
+  constructor() { }
+
+  validate (f: FormGroup): ValidationErrors | null {
+    if (f.pristine) {
       return null;
     }
-  }
-  ```
 
-* the **async validators** will **not** run if the **sync validators** returned **errors**
+    const { min, max } = f.controls;
 
-* implement a **custom validator** by using a **directive** that implements `Validator`; this way, you can use the validator with both `Template Driven Forms` and `Reactive Forms`
-
-* after `AbstractFormControl.setValidators` you'll have to manually run `AbstractFormControl.updateValueAndValidity` in order to **run** the new validators
-* expose them: as directive(when possible) & `Validators.validatorName`
-* the input for `Validator.pattern` can either be a string or a `Regex` object
-* for any validator except `RequiredValidator`, if the control value is an empty(`null` or **empty string**), the validator logic will pe skipped
-* you can use the email validator in the context of template driven like this:
- `[email][formControlName],[email][formControl],[email][ngModel]`;
-  whereas when using reactive forms you have to add the validator this way:
-  `({ name: this.fb.control(defaultValue, [Validators.Email]) })`
-* explain how validators are set up for a **FormControl**(`FormControl.updateValueAndValidity`)
-* expose validators and how they can be used, depending on the context(add examples! :D)
-* explain validators' composition
-* `control.validator = Validators.compose([control.validator !, dir.validator]);`(`shared.ts`) - because of `FormControl`(`RF`);
-  although when using `Reactive Forms` the validators are usually set in the component class, one can provide still provide validators inside the view; when the `AbstractControl` instance is created, the validators will eventually be merged
-* * `Validator.registerOnValidatorChange()` to be executed when a validator inputs change its value
-  ex: from `<input [required]="true">` --> `<input [required]="false">`
-  
-  ```ts
-  @Directive({
-  selector:
-      ':not([type=checkbox])[required][formControlName],:not([type=checkbox])[required][formControl],:not([type=checkbox])[required][ngModel]',
-  providers: [REQUIRED_VALIDATOR],
-  host: {'[attr.required]': 'required ? "" : null'}
-  })
-  export class RequiredValidator implements Validator {
-    set required(value: boolean|string) {
-      this._required = value != null && value !== false && `${value}` !== 'false';
-      if (this._onChange) this._onChange();
+    // `min` or `max` is not a number or is empty
+    if (min.invalid || max.invalid) {
+      return null;
     }
-  
-    registerOnValidatorChange(fn: () => void): void { this._onChange = fn; }
+
+    if (+min.value >= +max.value) {
+      return { minGreaterMax: 'min cannot be greater than max!' };
+    }
+
+    return null;
   }
-  ```
+}
+```
 
-#### Providing validators
+```html
+<form #f="ngForm">
+  <ng-container min-max-validator ngModelGroup="price" #priceGrp="ngModelGroup">
+    <input type="text" ngModel name="min" pattern="^\d+$" required />
+    <input type="text" ngModel name="max" pattern="^\d+$" required >
+  </ng-container>
+</form>
+```
 
-* you can define validators in the component class or in the view
-* view: as attributes(`<input required>`), as property binding(`<input [required]="shouldBeRequired">`)
+[ng-run Example](https://ng-run.com/edit/Xx0irFLVo4FdueEBtSAF?open=app%2Fmin-max-example.component.ts)
 
-### Exploring custom `ControlValueAccessor`s
+### Dynamic Validators
 
-### Exploring built-in Control Value Accessors
+The `Validator` interface looks like this:
+
+```ts
+export interface Validator {
+  validate(control: AbstractControl): ValidationErrors|null;
+
+  registerOnValidatorChange?(fn: () => void): void;
+}
+```
+
+We can use the `registerOnValidatorChange` to register a **callback function** that should be called whenever the validator's inputs change. Invoking that callback function will ensure that your `AbstractControl` instance is in line with the updated validator.
+
+Example: `<input [required]="true">` --> `<input [required]="false">`
+
+```ts
+@Directive({
+selector:
+    ':not([type=checkbox])[required][formControlName],:not([type=checkbox])[required][formControl],:not([type=checkbox])[required][ngModel]',
+providers: [REQUIRED_VALIDATOR],
+host: {'[attr.required]': 'required ? "" : null'}
+})
+export class RequiredValidator implements Validator {
+  set required(value: boolean|string) {
+    this._required = value != null && value !== false && `${value}` !== 'false';
+    if (this._onChange) this._onChange();
+  }
+
+  registerOnValidatorChange(fn: () => void): void { this._onChange = fn; }
+}
+```
+
+```ts
+export function setUpControl(control: FormControl, dir: NgControl): void {
+  /* ... */
+  
+  // re-run validation when validator binding changes, e.g. minlength=3 -> minlength=4
+  dir._rawValidators.forEach((validator: Validator | ValidatorFn) => {
+    if ((<Validator>validator).registerOnValidatorChange)
+      (<Validator>validator).registerOnValidatorChange !(() => control.updateValueAndValidity());
+  });
+
+  dir._rawAsyncValidators.forEach((validator: AsyncValidator | AsyncValidatorFn) => {
+    if ((<Validator>validator).registerOnValidatorChange)
+      (<Validator>validator).registerOnValidatorChange !(() => control.updateValueAndValidity());
+  });
+
+  /* ... */
+}
+```
+
+[ng-run Example](https://ng-run.com/edit/Xx0irFLVo4FdueEBtSAF?open=app%2Fdynamic-validator.component.ts).
+
+---
+
+## Exploring custom `ControlValueAccessor`s
+
+* custom component
+
+## Exploring built-in Control Value Accessors
 
 * talk about the relevant ones(`RadioValueAccessor`, `SelectControlValueAccessor`)
   * `SelectControlValueAccessor` - 2 ways of using its API
@@ -843,9 +1028,9 @@ const BUILTIN_ACCESSORS = [
 ];
 ```
 
-#### `SelectValueAccessor`
+### `SelectValueAccessor`
 
-##### Using `[value]="primitiveValue"`
+#### Using `[value]="primitiveValue"`
 
 * `primitiveValue`, as its name implies, cannot be something else than a **primitive value**; if you'd like to bind an object, `[ngValue]` is your choice
 
@@ -859,7 +1044,7 @@ this._renderer.setProperty(this._elementRef.nativeElement, 'value', valueString)
 
 where `valueString` is the argument(i.e: the `id`) passed to `FormControl.setValue()`
 
-### Using `[ngValue]="primitiveOrNonPrimitiveValue"`
+#### Using `[ngValue]="primitiveOrNonPrimitiveValue"`
 
 * unlike `[value]`, `[ngValue]` can take both **primitive** and **non-primitive** as values
 
@@ -917,7 +1102,7 @@ Here's an example with a custom `_compareWith` function: https://stackblitz.com/
 Here is the test case for such behavior: https://github.com/angular/angular/blob/master/packages/forms/test/value_accessor_integration_spec.ts#L216-L240
 
 
-#### `SelectMultipleValueAccessor`
+### `SelectMultipleValueAccessor`
 
 Each option is tracked(added to the internal `_optionMap` property), because
   
@@ -940,7 +1125,7 @@ writeValue(value: any): void {
 }
 ```
 
-#### `RadioValueAccessor`
+### `RadioValueAccessor`
 
 * ways to set the default value on multiple radio buttons
   *  `{{ true && first.valueAccessor.writeValue('foo1') }}`
@@ -1080,7 +1265,7 @@ where `accessor` is the `RadioControlValueAccessor` of the selected radio button
 
 ---
 
-### A better understanding of the `AbstractControl` tree
+## A better understanding of the `AbstractControl` tree
 
 TODO: search for the `statusChanges` subsection
 * `FormControl.status` = DISABLED | INVALID | VALID | PENDING
@@ -1616,3 +1801,5 @@ const address = this.fb.group({
 * check for **FROM** instead of **FORM** misspellings 😟
 * diagrams for `disable()/enable()`, `reset()` ❓
 * intro
+* expect that...
+* convert `Example` to `ng-run Example`
