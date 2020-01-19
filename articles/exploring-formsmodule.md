@@ -1339,14 +1339,50 @@ _I'd recommend reading [Basic Entities](#basic-entities) before continuing on._
 TODO: search for the `statusChanges` subsection
 * `FormControl.status` = DISABLED | INVALID | VALID | PENDING
 
-### `_pendingDirty`, `_pendingValue`, `_pendingChange` and `_pendingTouched`
+### `_pendingDirty`, `_pendingValue`, `_pendingChange`
 
-* link to [Connecting the dots](#add-link) - where you explain how `ControlValueAccessor` can communicate with a `FormControl`
-* explain what they do and why they are useful - prevent from traversing the tree redundantly; TODO:(ex): `updateOn: 'blur'` - `input`, `blur`, `blur` - `pendingChange!`
+* add this somewhere at the end
 
 These private properties of the `AbstractControl` class are details that you might not have to be concerned about. However, they play a significant role regarding the `AbstractControl` tree's effectiveness.
 
-These properties are encountered in the context of a `FormControl` because their values depend on the values that are sent from the view(from the `ControlValueAccessor`). `FormControl` nodes are eventually going to update their ancestors.
+These properties are encountered in the context of a `FormControl` because their values depend on the values that are sent from the view(from the `ControlValueAccessor`).
+
+#### `_pendingChange`
+
+This property indicates whether or not the user has changed the `FormControl`'s value.
+
+Suppose you have an `<input ngModel name="name" type="text">` and the user types in it. As soon as that happens, the `ControlValueAccessor`'s `onChange` function will be invoked. The function that has been assigned to `onChange` looks as follows:
+
+```ts
+function setUpViewChangePipeline(control: FormControl, dir: NgControl): void {
+  dir.valueAccessor !.registerOnChange((newValue: any) => {
+    control._pendingValue = newValue;
+    control._pendingChange = true;
+    control._pendingDirty = true;
+
+    if (control.updateOn === 'change') updateControl(control, dir);
+  });
+}
+```
+
+`control._pendingChange = true` marks that the user has **visibly interacted** with the `<input>`.
+
+Why is this useful anyway? It is because you can set the event on which the `AbstractControl` updates itself(it defaults to `change`).  
+You can se the **update strategy** through `_updateOn` property: `updateOn: 'change'|'blur'|'submit';`
+
+With this mind, what would happen if the `FormControl` has the update strategy set to `blur`, and the `blur` event occurs in the view, without the user typing anything in the `<input>`? In this case, `_pendingChange` prevents the tree from being redundantly traversed.
+
+```ts
+function setUpBlurPipeline(control: FormControl, dir: NgControl): void {
+  dir.valueAccessor !.registerOnTouched(() => {
+    /* ... */
+    if (control.updateOn === 'blur' && control._pendingChange) updateControl(control, dir);
+    /* ... */
+  });
+}
+```
+
+Had the user typed anything in the `<input>`, the `control._pendingChange` would've been set to `true`. As a result, the `FormControl` and its **ancestors** would've been updated.
 
 #### `_pendingDirty`
 
@@ -1356,6 +1392,7 @@ A `FormControl` is considered `dirty` if the user has changed its value in the U
 function setUpViewChangePipeline(control: FormControl, dir: NgControl): void {
   dir.valueAccessor !.registerOnChange((newValue: any) => {
     /* ... */
+    control._pendingChange = true;
     control._pendingDirty = true;
 
     if (control.updateOn === 'change') updateControl(control, dir);
@@ -1382,7 +1419,7 @@ markAsDirty(opts: {onlySelf?: boolean} = {}): void {
 }
 ```
 
-So, if a `FormControl` is marked as dirty(due to UI change), all its ancestors will be updated accordingly(in this case, they will be marked as dirty).
+So, if a `FormControl` is marked as dirty(due to UI change), its ancestors will be updated accordingly(in this case, they will be marked as dirty).
 
 ```
    FG (3)
@@ -1400,41 +1437,129 @@ Assuming `(1)` a `FormControl` bound to an `<input>` and the user has just typed
 
 There is also an option to solely mark `(1)` as dirty: `(1).markedAsDirty({ onlySelf: true })`.
 
-#### `_pendingChange`
+Now you be wondering, what's the need of `_pendingDirty`, if the control's dirtiness will be changed as soon as the user types something in? This is because the default strategy defaults to `change`, but it can be changed to something else like `blur` or `submit`.
 
-* prevent the tree from being redundantly traversed, as well as they 
+For example, here's what happens when the **blur event** occurs in the view:
 
-#### `_pendingTouched`s
+```ts
+function setUpBlurPipeline(control: FormControl, dir: NgControl): void {
+  dir.valueAccessor !.registerOnTouched(() => {
+    /* ... */
+    if (control.updateOn === 'blur' && control._pendingChange) updateControl(control, dir);
+    /* ... */
+  });
+}
+```
+
 
 #### `_pendingValue`
 
-* on `FormControl.setValue(newValue)` - the `_pendingValue` also becomes `newValue`; add example: `updateOn = 'blur'` and the user had already typed into the input, but in the meanwhile `FormControl.setValue(newValue)` was executed
+You can think of the property as being the _freshest_ value of a `FormControl`.
 
-### `AbstractControl.setValue()`
+Its value is set when the `ControlValueAccessor.onChange` is invoked, where `ControlValueAccessor.onChange` does this:
+
+```ts
+function setUpViewChangePipeline(control: FormControl, dir: NgControl): void {
+  dir.valueAccessor !.registerOnChange((newValue: any) => {
+    control._pendingValue = newValue;
+
+    /* ... */
+
+    if (control.updateOn === 'change') updateControl(control, dir);
+  });
+}
+
+function updateControl(control: FormControl, dir: NgControl): void {
+  if (control._pendingDirty) control.markAsDirty();
+  control.setValue(control._pendingValue, {emitModelToViewChange: false});
+  dir.viewToModelUpdate(control._pendingValue);
+  control._pendingChange = false;
+}
+```
+
+However, what is the difference between `_pendingValue` and `value`? `_pendingValue` is the most recent value, whereas `value` is the value that is visible to the `AbstractControl` tree. The `value` is not always equal to `_pendingValue` as the `FormControl` might have a different update strategy than `change`. Of course, the view layer can hold the most recent value, but it doesn't mean that the model layer can.
+
+For example, if the `FormControl`'s update strategy is set to `submit` the model's value(`FormControl.value`) won't be equal to `_pendingValue`(which is the value that reflects the view) until the submit event occurs.
+
+### `AbstractControl.setValue()` and `AbstractControl.patchValue()`
 
 TODO: make sure it precedes `updateValueAndValidity` ! 😄
 
-* `{FormGroup|FormArray}.setValue` vs `{FormGroup|FormArray}.patchValue`
-  * the former will **require** you to **provide** a **value** for **all** the **existing controls**, whereas the latter will allow you to provide **values** for **any** of the **existing controls**
-  * `{FormGroup|FormArray}.setValue`
-    * will first check if you _provided_ an object which consists of all the existing controls
-    * then it will check if you provided any **redundant** controls(controls that are **not** among the existing ones)
-
-_`patchValue` example_ TODO: refactor with clearer examples :D
-
 ```ts
-c = new FormControl('');
-c2 = new FormControl('');
-a = new FormArray([c, c2]);
-
-a.patchValue([null]);
-expect(a.value).toEqual([null, '']);
-
-a.patchValue([, , 'three']);
-expect(a.value).toEqual(['', '']);
+// {FormGroup|FormArray}.setValue
+setValue(value: {[key: string]: any}, options: {onlySelf?: boolean, emitEvent?: boolean} = {}):
+    void {
+  this._checkAllValuesPresent(value);
+  Object.keys(value).forEach(name => {
+    this._throwIfControlMissing(name);
+    this.controls[name].setValue(value[name], {onlySelf: true, emitEvent: options.emitEvent});
+  });
+  this.updateValueAndValidity(options);
+}
 ```
 
-_`setValue` example_
+```ts
+// {FormGroup|FormArray}.patchValue
+patchValue(value: {[key: string]: any}, options: {onlySelf?: boolean, emitEvent?: boolean} = {}):
+    void {
+  Object.keys(value).forEach(name => {
+    if (this.controls[name]) {
+      this.controls[name].patchValue(value[name], {onlySelf: true, emitEvent: options.emitEvent});
+    }
+  });
+  this.updateValueAndValidity(options);
+}
+```
+
+`AbstractControl.setValue` will **require** you to **provide** a **value** for **all** the **existing controls**, whereas `AbstractControl.patchValue` will allow you to provide **values** for **any** of the **existing controls**.
+
+`{FormGroup|FormArray}.setValue` will first check if you provided an object which contains of all the existing controls, then it will check if you provided any **redundant** controls(controls that are **not** among the existing ones)
+
+When calling `setValue`/`patchValue`, if `AbstractControl` is `FormControl`, it will first update the `FormControl` instance, then its ancestors. Otherwise, it will first update its descendants, then its ancestors.
+
+Updating the ancestors can be avoided with `{ onlySelf: true }` passed as the second argument.
+
+Here's once again the first example:
+
+```ts
+const fg = new FormGroup({
+  name: new FormControl(''),
+  address: new FormGroup({
+    city: new FormControl(''),
+    street: new FormControl(''),
+  }),
+});
+```
+
+```ts
+   FG (4)
+  /  \
+ FC  FG (3) - address 
+    /  \
+   FC  FC
+   (1) (2)
+```
+
+After performing
+
+```ts
+fg.get('address').setValue({ city: 'city', street: 'street' })
+```
+
+It will first update `(1)` and `(2)`, then it will update the value and validity of their container(`3`) and then it will finally update its ancestors.
+
+#### `patchValue` example
+
+```ts
+const c = new FormControl('');
+const c2 = new FormControl('');
+const a = new FormArray([c, c2]);
+
+a.patchValue(['andrei']);
+console.log(a.value) // ['andrei', '']
+```
+
+#### `setValue` example
 
 ```ts
 const c1 = new FormControl('c1');
@@ -1450,28 +1575,9 @@ a.setValue(['c1-updated', 'c2-updated']);
 console.log(a.value); // ["c1-updated", "c2-updated"]
 ```
 
-* when setting the value to an `AbstractControl`, unless `{ onlySelf: true }` is specified, its ancestors are also going to be updated:
+### What happens with the `AbstractControl` tree on submit?
 
-```ts
-c = new FormControl('');
-c2 = new FormControl('');
-a = new FormArray([c, c2]);
-
-it('should emit one valueChange event per control', () => {
-  form.valueChanges.subscribe(() => logger.push('form'));
-  a.valueChanges.subscribe(() => logger.push('array'));
-  c.valueChanges.subscribe(() => logger.push('control1'));
-  c2.valueChanges.subscribe(() => logger.push('control2'));
-
-  a.setValue(['one', 'two']);
-  expect(logger).toEqual(['control1', 'control2', 'array', 'form']);
-});
-```
-
-* what happens with the `AbstractControl` tree on **reset**
-parent ----> children(**depth first**)
-
-* what happens with the `AbstractControl` tree on **submit**
+_Note: Only `FormGroupDirective` and `NgForm` can call `onSubmit`_.
 
 ```typescript
 onSubmit($event) {
@@ -1481,9 +1587,32 @@ onSubmit($event) {
   return false;
 }
 ```
-* the `submitted` property becomes true, so you can **access** it now the **view** or in the **class**
-* `syncPendingControls()`: some `AbstractControl` instances might have set the option `updateOn` differently. Therefore, if one `FormControl` has the `updateOn` option set to `submit`, it means that its **value** and **UI status**(`dirty`, `untouched`) will only be updated when the `submit` event occurs. It is important to mention that the above statement holds true unless the `FormControl` is manually altered(`control.markAsDirty`).
-TODO: show example! :)
+
+Some `AbstractControl` instances might have set the option `updateOn` differently. Therefore, if one `FormControl` has the `updateOn` option set to `submit`, it means that its **value** and **UI status**(`dirty`, `untouched`) will only be updated when the `submit` event occurs. This is what `syncPendingControls()` does.
+
+```ts
+// FormControl
+_syncPendingControls(): boolean {
+  if (this.updateOn === 'submit') {
+    if (this._pendingDirty) this.markAsDirty();
+    if (this._pendingTouched) this.markAsTouched();
+    if (this._pendingChange) {
+      this.setValue(this._pendingValue, {onlySelf: true, emitModelToViewChange: false});
+      return true;
+    }
+  }
+  return false;
+}
+
+// FormArray - FormGroup works in a very similar fashion
+_syncPendingControls(): boolean {
+    let subtreeUpdated = this.controls.reduce((updated: boolean, child: AbstractControl) => {
+      return child._syncPendingControls() ? true : updated;
+    }, false);
+    if (subtreeUpdated) this.updateValueAndValidity({onlySelf: true});
+    return subtreeUpdated;
+  }
+```
 
 Consider this example:
 
@@ -1498,11 +1627,10 @@ When having a view like this
 ```html
 <form [formGroup]="form" (ngSubmit)="onSubmit()">
   <input [formControl]="form.get('name')" type="text">
-
-  <br><br>
   <button type="submit">Submit</button>
 </form>
 ```
+
 you get the **same values** **every time** the **submit** event occurs, whereas with this view
 
 ```html
@@ -1514,48 +1642,27 @@ you get the **same values** **every time** the **submit** event occurs, whereas 
 </form>
 ```
 
-   you get the **values** **only once**, when the **submit** event occurs
+you get the **values** **only once**, when the **submit** event occurs
 
-   That's because of the way `FormControlName` directives work inside a `FormGroupDirective`. A `FormGroupDirective` will keep track of `FormControlName` directives with the help of `directives` property. When the **submit** event occurs, each `FormControlName` will set the `_pendingChange` property of their bound `FormControl` to `false`.
-
-   ```ts
-  directives.forEach(dir => {
-    const control = dir.control as FormControl;
-    if (control.updateOn === 'submit' && control._pendingChange) {
-      dir.viewToModelUpdate(control._pendingValue);
-      control._pendingChange = false;
-    }
-  });
-   ```
-
-  `FormControl._pendingChange` is set to `true` every time the `change` event occurs.
-
-  You can find more about `_pendingChange` [here](#add-link). TODO:
-
-* how to get the form value, including the disabled controls ? : `FormGroup.getRawValue()`
-
-#### How to mark all descendants of a control and the control itself as touched
-
-* `markAllAsTouched`
+That's because of the way `FormControlName` directives work inside a `FormGroupDirective`. A `FormGroupDirective` will keep track of `FormControlName` directives with the help of `directives` property. When the **submit** event occurs, each `FormControlName` will set the `_pendingChange` property of their bound `FormControl` to `false`.
 
 ```ts
-// Put numbers beside child nodes so you can show the order in which they are marked as touched
-// TODO: show ASCII graph! :)
-const formArray: FormArray = new FormArray([
-  new FormControl('v1'), new FormControl('v2'),
-  new FormGroup({'c1': new FormControl('v1')}),
-  new FormArray([new FormGroup({'c2': new FormControl('v2')})])
-]);
-markAllAsTouched(): void {
-  this.markAsTouched({onlySelf: true});
-
-  this._forEachChild((control: AbstractControl) => control.markAllAsTouched());
-}
+directives.forEach(dir => {
+  const control = dir.control as FormControl;
+  if (control.updateOn === 'submit' && control._pendingChange) {
+    /* ... */
+    control._pendingChange = false;
+  }
+});
 ```
 
-If you want to only mark this `AbstractControl` as touched you can use `AbstractControl.markAsTouched({ onlySelf: true })`, whereas if you want to mark its ancestors as well, you can simply omit the `{ onlySelf: true }` argument.
+`FormControl._pendingChange` is set to `true` every time the `change` event occurs.
 
-#### `_onCollectionChange`
+You can find more about `_pendingChange` [here](#add-link). TODO:(link)
+
+[ng-run Example](https://ng-run.com/edit/Xx0irFLVo4FdueEBtSAF?open=app%2Fsubmit-catch.component.ts).
+
+### `_onCollectionChange`
 
 * show when it is used(`FormGroupDirective`)
 * when the **root of the tree** is **altered** **after the view** has been **built**; it's like **refreshing** the **tree**;
@@ -1577,7 +1684,7 @@ If you want to only mark this `AbstractControl` as touched you can use `Abstract
     fixture.detectChanges();
     ```
 
-#### Retrieving `AbstractControl`s from the tree
+### Retrieving `AbstractControl`s from the tree
 
 * ways to retrieve form controls: `this.form.get(path)` -> `shared.ts: find()`
 * `this.form.controls[nameOfCtrl]`
@@ -1586,7 +1693,7 @@ If you want to only mark this `AbstractControl` as touched you can use `Abstract
 * `this.form.get(['path', 'to', 'ctrl'])`
 * when verifying whether an `AbstractControl` has a certain error or not: `this.form.hasError(errName, 'path.to.ctrl')`
 
-#### AbstractControl.updateValueAndValidity()
+### AbstractControl.updateValueAndValidity()
 
 * how do a **FormControl container**'s status, value get updated ? (explain the flow: `child` -> `parent` : `this._parent.updateValueAndValidity`)
 * invoked inside `AbstractControl.setValue()`
@@ -1623,6 +1730,7 @@ updateValueAndValidity(opts: {onlySelf?: boolean, emitEvent?: boolean} = {}): vo
 
 ### Disabling/enabling `AbstractControls`s
 
+* how to get the form value, including the disabled controls ? : `FormGroup.getRawValue()`
 * explain `ControlValueAccessor.setDisabledState`
 * The value is updated in the UI through `ControlValueAccessor.setDisabledState`
 
@@ -1737,6 +1845,9 @@ mention that when a **control** is **disabled**, its `dirty` and `touched` statu
   ```
 
 #### `FormGroup.reset()`
+
+* what happens with the `AbstractControl` tree on **reset**
+parent ----> children(**depth first**)
 
 * `FormGroup.reset()`: 2 phases:
   * 1) its children are reset (top -> bottom)
