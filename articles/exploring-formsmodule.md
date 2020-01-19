@@ -1305,17 +1305,112 @@ where `accessor` is the `RadioControlValueAccessor` of the selected radio button
 
 ## A better understanding of the `AbstractControl` tree
 
+Throughout the article you might have noticed the phrase **`AbstractControl` tree**. Remember that `AbstractControl` is an abstract class and its concrete implementations are `FormControl`, `FormGroup` and `FormArray`.
+
+In order to make things more intuitive, we can visualize their connections as a tree structure.
+
+For instance, this
+
+```ts
+new FormGroup({
+  name: new FormControl(''),
+  address: new FormGroup({
+    city: new FormControl(''),
+    street: new FormControl(''),
+  }),
+});
+```
+
+can be pictured as follows:
+
+```ts
+   FG
+  /  \
+ FC  FG
+    /  \
+   FC  FC
+```
+
+Using the above diagram we are going to understand how the tree is altered by common `AbstractControl` actions, such as `reset()`, `submit()`, `markAsDirty()`.
+
+TODO: (link)
+_I'd recommend reading [Basic Entities](#basic-entities) before continuing on._
+
 TODO: search for the `statusChanges` subsection
 * `FormControl.status` = DISABLED | INVALID | VALID | PENDING
 
-
-#### `_pendingDirty`, `_pendingValue`, `_pendingChange` and `_pendingTouched`
+### `_pendingDirty`, `_pendingValue`, `_pendingChange` and `_pendingTouched`
 
 * link to [Connecting the dots](#add-link) - where you explain how `ControlValueAccessor` can communicate with a `FormControl`
 * explain what they do and why they are useful - prevent from traversing the tree redundantly; TODO:(ex): `updateOn: 'blur'` - `input`, `blur`, `blur` - `pendingChange!`
 
+These private properties of the `AbstractControl` class are details that you might not have to be concerned about. However, they play a significant role regarding the `AbstractControl` tree's effectiveness.
 
-#### `AbstractControl.setValue()`
+These properties are encountered in the context of a `FormControl` because their values depend on the values that are sent from the view(from the `ControlValueAccessor`). `FormControl` nodes are eventually going to update their ancestors.
+
+#### `_pendingDirty`
+
+A `FormControl` is considered `dirty` if the user has changed its value in the UI.
+
+```ts
+function setUpViewChangePipeline(control: FormControl, dir: NgControl): void {
+  dir.valueAccessor !.registerOnChange((newValue: any) => {
+    /* ... */
+    control._pendingDirty = true;
+
+    if (control.updateOn === 'change') updateControl(control, dir);
+  });
+}
+
+function updateControl(control: FormControl, dir: NgControl): void {
+  if (control._pendingDirty) control.markAsDirty();
+  /* ... */
+}
+```
+
+The callback registered in with `dir.valueAccessor !.registerOnChange(cb)` will be invoked by the `ControlValueAccessor`(which resides in the **view layer**) whenever the value the UI changed.
+
+The `AbstractControl.markedAsDirty` implementation looks like this:
+
+```ts
+markAsDirty(opts: {onlySelf?: boolean} = {}): void {
+  (this as{pristine: boolean}).pristine = false;
+
+  if (this._parent && !opts.onlySelf) {
+    this._parent.markAsDirty(opts);
+  }
+}
+```
+
+So, if a `FormControl` is marked as dirty(due to UI change), all its ancestors will be updated accordingly(in this case, they will be marked as dirty).
+
+```
+   FG (3)
+  /  \
+ FC  FG (2)
+    /  \
+   FC  FC (1)
+
+(1).parent = (2)
+(2).parent = (3)
+(3).parent = null(root)
+```
+
+Assuming `(1)` a `FormControl` bound to an `<input>` and the user has just typed in it, the above method will be invoked from the `updateControl` function: `control.markAsDirty()`, where `control` is `(1)`. This will propagate up to the root, the order being this: `(1) -> (2) -> (3)`. Thus, the entire tree will be marked as dirty!
+
+There is also an option to solely mark `(1)` as dirty: `(1).markedAsDirty({ onlySelf: true })`.
+
+#### `_pendingChange`
+
+* prevent the tree from being redundantly traversed, as well as they 
+
+#### `_pendingTouched`s
+
+#### `_pendingValue`
+
+* on `FormControl.setValue(newValue)` - the `_pendingValue` also becomes `newValue`; add example: `updateOn = 'blur'` and the user had already typed into the input, but in the meanwhile `FormControl.setValue(newValue)` was executed
+
+### `AbstractControl.setValue()`
 
 TODO: make sure it precedes `updateValueAndValidity` ! 😄
 
@@ -1518,7 +1613,7 @@ updateValueAndValidity(opts: {onlySelf?: boolean, emitEvent?: boolean} = {}): vo
 }
 ```
 
-#### Setting Errors
+### Setting Errors
 
 * how are errors set ?
 * why a validator must return null when there haven't been found any errors?
@@ -1526,9 +1621,10 @@ updateValueAndValidity(opts: {onlySelf?: boolean, emitEvent?: boolean} = {}): vo
   * what happens to the form-control tree after `AbstractControl.setErrors(null)`?
     * only the status of this node and of each ancestor will be updated(and also `statusChanges` will emit if `emitEvent !== false`): `_updateControlsErrors`
 
-#### Disabling/enabling `AbstractControls`s
+### Disabling/enabling `AbstractControls`s
 
 * explain `ControlValueAccessor.setDisabledState`
+* The value is updated in the UI through `ControlValueAccessor.setDisabledState`
 
 * when **disabling** an `AbstractControl` instance
   * you can choose not to update its ancestors by using `this.control.disable({ onlySelf: true })` (TODO: example); i.e: a `FormControl` might be part of the a `FormGroup` and because of this **control** being **invalid**, the entire `FormGroup` is marked as invalid; disabling this `FormControl` can influence the parent `FormGroup` or not(`this.control.disable({ onlySelf: true })`)
@@ -1663,11 +1759,7 @@ mention that when a **control** is **disabled**, its `dirty` and `touched` statu
 <button (click)="f.resetForm()">reset(empty)</button>
 ```
 
-
----
-
-### Form-control-based directives
-
+### How are CSS classes added depending on AbstractControl's status ?
 
 * how are classes being added depending on status?
   * with the help of `NgControlStatus`, a directive that is automatically bound to a form control element when using `ngModel`, `formControl`, `formControlName`
@@ -1684,7 +1776,7 @@ mention that when a **control** is **disabled**, its `dirty` and `touched` statu
 
 ---
 
-### How can an AbstractControl be updated ?
+### When can an AbstractControl be updated ?
 
 * `AbstractControl.updateOn` - unless explicitly set(i.e `new FormControl('', { updateOn: 'change' /* 'change' | 'blur' | 'submit' */ })`), it will be determined when this property will be accessed.
 
@@ -1782,7 +1874,7 @@ mention that when a **control** is **disabled**, its `dirty` and `touched` statu
 
 ---
 
-### FormBuilder
+## FormBuilder
 
 const address = this.fb.group({
   city: this.fb.control('default value', { 
