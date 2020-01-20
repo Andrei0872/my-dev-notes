@@ -1656,42 +1656,98 @@ directives.forEach(dir => {
 });
 ```
 
-`FormControl._pendingChange` is set to `true` every time the `change` event occurs.
+`FormControl._pendingChange` is set to `true` every time the `change` event occurs in the UI.
+
+```ts
+function setUpViewChangePipeline(control: FormControl, dir: NgControl): void {
+  dir.valueAccessor !.registerOnChange((newValue: any) => {
+    control._pendingValue = newValue;
+    control._pendingChange = true;
+    control._pendingDirty = true;
+
+    if (control.updateOn === 'change') updateControl(control, dir);
+  });
+}
+```
 
 You can find more about `_pendingChange` [here](#add-link). TODO:(link)
 
 [ng-run Example](https://ng-run.com/edit/Xx0irFLVo4FdueEBtSAF?open=app%2Fsubmit-catch.component.ts).
 
-### `_onCollectionChange`
-
-* show when it is used(`FormGroupDirective`)
-* when the **root of the tree** is **altered** **after the view** has been **built**; it's like **refreshing** the **tree**;
-    https://ng-run.com/edit/rrYWgA7tmNKCSsFbpmfX
-    If, for instance, a `FormArray`(let's call it `fa`) or a `FormGroup`(let's call it `fg`) is added to the root, every addition/removal of `fa` or `fg` will cause the entire tree to refresh itself
-
-    ```html
-     <form [formGroup]="form">
-      <div formGroupName="signin" login-is-empty-validator>
-        <input formControlName="login">
-        <input formControlName="password">
-      </div>
-      <input *ngIf="form.contains('email')" formControlName="email">
-    </form>`
-    ```
-
-    ```ts
-    form.addControl('email', new FormControl('', Validators.email))
-    fixture.detectChanges();
-    ```
-
 ### Retrieving `AbstractControl`s from the tree
 
-* ways to retrieve form controls: `this.form.get(path)` -> `shared.ts: find()`
-* `this.form.controls[nameOfCtrl]`
-* `this.form.get('path.to.ctrl')`
-* when the container is a `FormArray` instance `this.form.get('0.path')`
-* `this.form.get(['path', 'to', 'ctrl'])`
-* when verifying whether an `AbstractControl` has a certain error or not: `this.form.hasError(errName, 'path.to.ctrl')`
+```ts
+const fg = new FormGroup({
+  name: new FormControl(''),
+  address: new FormGroup({
+    city: new FormControl(''),
+    street: new FormControl(''),
+  }),
+});
+```
+
+There are a couple of ways to retrieve an `AbstractControl`.
+
+If the `AbstractControl` you want to retrieve is a direct descendant of a **form control container**(`fg` in this case), you can do this:
+
+```ts
+fg.controls[nameOfCtrl];
+
+// In our example
+fg.controls['name']
+fg.controls['address']
+```
+
+However, if the `AbstractControl` is a few levels deep, you might find it annoying to write such things:
+
+```ts
+fg.controls['address'].controls['city']
+```
+
+You can use the `AbstractControl.get()` method instead
+
+```ts
+fg.get('address.city')
+
+// Or
+
+fg.get(['address', 'street'])
+```
+
+`AbstractControl.get()` will internally call a function `_find` which will traverse the tree downwards based on the path provided.
+```ts
+
+function _find(control: AbstractControl, path: Array<string|number>| string, delimiter: string) {
+  if (path == null) return null;
+
+  if (!(path instanceof Array)) {
+    path = (<string>path).split(delimiter);
+  }
+  if (path instanceof Array && (path.length === 0)) return null;
+
+  return (<Array<string|number>>path).reduce((v: AbstractControl | null, name) => {
+    if (v instanceof FormGroup) {
+      return v.controls.hasOwnProperty(name as string) ? v.controls[name] : null;
+    }
+
+    if (v instanceof FormArray) {
+      return v.at(<number>name) || null;
+    }
+
+    return null;
+  }, control);
+}
+```
+
+As you might have noticed, if `fg` had been a `FormArray` instance, you could've retrieved its descendants by specifying an **index**, as opposed to a **property name**(like you'd do with `FormGroup`)
+
+```ts
+fg.get('1.city');
+
+// Or
+
+fg.get(['1', 'city']);
+```
 
 ### AbstractControl.updateValueAndValidity()
 
@@ -1721,6 +1777,8 @@ updateValueAndValidity(opts: {onlySelf?: boolean, emitEvent?: boolean} = {}): vo
 ```
 
 ### Setting Errors
+
+* when verifying whether an `AbstractControl` has a certain error or not: `this.form.hasError(errName, 'path.to.ctrl')`
 
 * how are errors set ?
 * why a validator must return null when there haven't been found any errors?
