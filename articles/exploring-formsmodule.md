@@ -1336,9 +1336,6 @@ Using the above diagram we are going to understand how the tree is altered by co
 TODO: (link)
 _I'd recommend reading [Basic Entities](#basic-entities) before continuing on._
 
-TODO: search for the `statusChanges` subsection
-* `FormControl.status` = DISABLED | INVALID | VALID | PENDING
-
 ### `_pendingDirty`, `_pendingValue`, `_pendingChange`
 
 * add this somewhere at the end
@@ -1482,8 +1479,6 @@ However, what is the difference between `_pendingValue` and `value`? `_pendingVa
 For example, if the `FormControl`'s update strategy is set to `submit` the model's value(`FormControl.value`) won't be equal to `_pendingValue`(which is the value that reflects the view) until the submit event occurs.
 
 ### `AbstractControl.setValue()` and `AbstractControl.patchValue()`
-
-TODO: make sure it precedes `updateValueAndValidity` ! 😄
 
 ```ts
 // {FormGroup|FormArray}.setValue
@@ -1751,15 +1746,9 @@ fg.get(['1', 'city']);
 
 ### AbstractControl.updateValueAndValidity()
 
-* how do a **FormControl container**'s status, value get updated ? (explain the flow: `child` -> `parent` : `this._parent.updateValueAndValidity`)
-* invoked inside `AbstractControl.setValue()`
-* explain visually :D
-* arguments(options)
-* how are value/status changes emitted ? :`updateValueAndValidity`
-
 ```ts
 updateValueAndValidity(opts: {onlySelf?: boolean, emitEvent?: boolean} = {}): void {
-  this._setInitialStatus(); // DISABLED | VALID
+  this._setInitialStatus();
   this._updateValue();
 
   if (this.enabled) {
@@ -1772,9 +1761,66 @@ updateValueAndValidity(opts: {onlySelf?: boolean, emitEvent?: boolean} = {}): vo
     }
   }
 
-  /* Skipped for brevity */
+  if (opts.emitEvent !== false) {
+    (this.valueChanges as EventEmitter<any>).emit(this.value);
+    (this.statusChanges as EventEmitter<string>).emit(this.status);
+  }
+
+  if (this._parent && !opts.onlySelf) {
+    this._parent.updateValueAndValidity(opts);
+  }
 }
 ```
+
+As shown above, this method is responsible for multiple things:
+
+1) updating the current `AbstractControl`'s value
+2) running validators(sync & async)
+3) calculating status based on what validators return
+4) emitting the new value and the new status to the subscribers(unless `emitEvent = false`)
+5) repeating 1-4 for the parent(unless `onlySelf = true`)
+
+```ts
+const fg = new FormGroup({
+  name: new FormControl(''),
+  address: new FormGroup({
+    city: new FormControl(''),
+    street: new FormControl(''),
+  }),
+});
+```
+
+```
+   FG (3)
+  /  \
+ FC  FG (2)
+    /  \
+   FC  FC (1)
+
+(1) - fg.get('address.street')
+(2) - fg.get('address')
+(3) - fg
+```
+
+As soon as you do `(1).setValue('new value')`, `(1).updateValueAndValidity()` will be invoked.
+
+```ts
+setValue(value: any, options: {
+  onlySelf?: boolean,
+  emitEvent?: boolean,
+  emitModelToViewChange?: boolean,
+  emitViewToModelChange?: boolean
+} = {}): void {
+  (this as{value: any}).value = this._pendingValue = value;
+  if (this._onChange.length && options.emitModelToViewChange !== false) {
+    this._onChange.forEach(
+        (changeFn) => changeFn(this.value, options.emitViewToModelChange !== false));
+  }
+  this.updateValueAndValidity(options);
+}
+```
+
+After `(1)` has been updated, `(2)` will be updated and so on.. until the root is reached.
 
 ### Setting Errors
 
