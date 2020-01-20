@@ -1,31 +1,31 @@
 # A thorough exploration of Angular Forms
 
-After delving into the `@angular/forms` package I've been able to get a better understanding of how things really work under the hood. In this article I'd like to share my acquired vision with you. 
+After delving into the `@angular/forms` package I've been able to get a better understanding of how things really work under the hood. In this article I'd like to share my vision with you. 
 
 _Note: This article is based on **Angular 8.2.x**_.
 
 ## Contents
 
 - [Base entities](#base-entities)
-- [AbstractControl](#abstractcontrol)
-  - [FormControl](#formcontrol)
-  - [FormArray](#formarray)
-  - [FormGroup](#formgroup)
-- [AbstractControlDirective](#abstractcontroldirective)
-- [AbstractFormGroupDirective](#abstractformgroupdirective)
-- [ControlValueAccessor](#controlvalueaccessor)
-- [Connecting `FormControl` with `ControlValueAccessor`](#connecting-formcontrol-with-controlvalueaccessor)
+  - [AbstractControl](#abstractcontrol)
+    - [FormControl](#formcontrol)
+    - [FormArray](#formarray)
+    - [FormGroup](#formgroup)
+  - [AbstractControlDirective](#abstractcontroldirective)
+  - [AbstractFormGroupDirective](#abstractformgroupdirective)
+  - [ControlValueAccessor](#controlvalueaccessor)
+  - [Connecting `FormControl` with `ControlValueAccessor`](#connecting-formcontrol-with-controlvalueaccessor)
 - [Template Driven Forms and Reactive Forms](#template-driven-forms-and-reactive-forms)
-- [Template Driven Forms](#template-driven-forms)
-  - [NgModel](#ngmodel)
-  - [NgModelGroup](#ngmodelgroup)
-  - [NgForm](#ngform)
-- [Reactive Forms](#reactive-forms)
-  - [FormControlDirective](#formcontroldirective)
-  - [FormGroupDirective](#formgroupdirective)
-  - [FormControlName](#formcontrolname)
-  - [FormGroupName](#formgroupname)
-  - [FormArrayName](#formarrayname)
+  - [Template Driven Forms](#template-driven-forms)
+    - [NgModel](#ngmodel)
+    - [NgModelGroup](#ngmodelgroup)
+    - [NgForm](#ngform)
+  - [Reactive Forms](#reactive-forms)
+    - [FormControlDirective](#formcontroldirective)
+    - [FormGroupDirective](#formgroupdirective)
+    - [FormControlName](#formcontrolname)
+    - [FormGroupName](#formgroupname)
+    - [FormArrayName](#formarrayname)
 - [Validators](#validators)
   - [Usage of built-in Validators](#usage-of-built-in-validators)
   - [Validators' Composition](#validators-composition)
@@ -48,12 +48,13 @@ _Note: This article is based on **Angular 8.2.x**_.
   - [What happens with the `AbstractControl` tree on submit?](#what-happens-with-the-abstractcontrol-tree-on-submit)
   - [Retrieving `AbstractControl`s from the tree](#retrieving-abstractcontrols-from-the-tree)
   - [AbstractControl.updateValueAndValidity()](#abstractcontrolupdatevalueandvalidity)
-  - [Disabling/enabling `AbstractControls`s](#disablingenabling-abstractcontrolss)
+  - [Disabling/enabling `AbstractControl`s](#disablingenabling-abstractcontrols)
   - [How are CSS classes added depending on AbstractControl's status ?](#how-are-css-classes-added-depending-on-abstractcontrols-status)
+- [Conclusion](#conclusion)
 
 ## Base entities
 
-In order to get the most out of the **Forms API**, we must ensure that look over some of its essential parts.
+In order to get the most out of the **Forms API**, we must ensure that we look over some of its essential parts.
 
 ### AbstractControl
 
@@ -66,7 +67,7 @@ This (**abstract**) class contains logic shared across `FormControl`, `FormGroup
 
 This class, as well as its subclasses, can referred to as the **model layer** - it stores data related to a specific entity.
 
-Multiple `AbstractControl`s can be seen as tree where the leaves are always going to be `FormControl` instances and the other 2 (`FormArray`, `FormGroup`) can be thought of as `FormControl` containers, which entails that they **can't be used as leaves** because they must contain at least on `AbstractControl` instance.
+Multiple `AbstractControl`s can be seen as tree where the leaves are always going to be `FormControl` instances and the other 2 (`FormArray`, `FormGroup`) can be thought of as `AbstractControl` containers, which entails that they **can't be used as leaves** because they must contain at least on `AbstractControl` instance.
 
 ```ts
 // FG - FormGroup
@@ -106,7 +107,7 @@ You can find more about `formArrayName` and `formGroupName` in the upcoming sect
 
 It extends `AbstractControl`, which means it will inherit all the characteristics listed above. What's important to mention here is that `FormControl` is put together with **only one** form control(a **DOM element**: `<input>`, `<textarea>`) or a custom component(with the help of `ControlValueAccessor`- more on that later!).
 
-A `FormControl` can be considered **standalone** if it **does not belong** to an `AbstractControl` tree. As a result, it will be **completely independent**, meaning that its validity, value and user interaction won't be affect any of its **form container ancestors**([Example](https://ng-run.com/edit/Xx0irFLVo4FdueEBtSAF?open=app%2Fexample-standalone.component.ts)).
+A `FormControl` can be considered **standalone** if it **does not belong** to an `AbstractControl` tree. As a result, it will be **completely independent**, meaning that its validity, value and user interaction won't be affect any of its **form container ancestors**([ng-run Example](https://ng-run.com/edit/Xx0irFLVo4FdueEBtSAF?open=app%2Fexample-standalone.component.ts)).
 
 #### FormArray
 
@@ -122,12 +123,12 @@ Same as `FormArray`, except that it stores its descendants in an **object**.
 
 ### AbstractControlDirective
 
-It is the base class for **form-control-based directives**(`NgModel`, `FormControlName`, `FormControlDirective`) and contains **boolean getters** that reflect the current status of the control(`valid`, `touched`, `dirty` etc...).  
+It is the base class for **form-control-based directives**(`NgModel`, `FormControlName`, `FormControlDirective`) and contains **boolean getters** that reflect the current status of the bound control(`valid`, `touched`, `dirty` etc...).  
 The previously mentioned control is bound to a **DOM element** with the help of a concrete implementation of `AbstractControlDirective`(`NgModel`, `FormControlName`) and a `ControlValueAccessor`.
 
 Thus, this class can be thought of as a `middleman` that connects `ControlValueAccessor`(**view layer**) with `AbstractControl`(**model layer**) - more on that in the forthcoming sections.
 
-It is worth mentioning that multiple `AbstractControlDirective`s can **bind the same** `AbstractControl` to multiple **DOM elements or custom components**, to multiple `ControlValueAccessor`s
+It is worth mentioning that multiple `AbstractControlDirective`s can **bind the same** `AbstractControl` to multiple **DOM elements or custom components**, to multiple `ControlValueAccessor`s.
 
 Consider this example:
 
@@ -141,7 +142,7 @@ Consider this example:
 </form>
 ```
 
-As a side node, providing a default value right from the template can be achieved by setting the `ngModel` directive's value to the value of the radio button you want to be checked by default. In the above snippet, the first button will be checked.
+As a side note, providing a default value right from the template can be achieved by setting the last `ngModel` directive's value to the value of the radio button you want to be checked by default. In the above snippet, the first button will be checked.
 
 This happens because the last directive will be the one which will have the _final_ call
 of `setUpControl()` function.
@@ -153,7 +154,7 @@ export function setUpControl(control: FormControl, dir: NgControl): void {
 
   /* ... */
 
-  dir.valueAccessor !.writeValue(control.value); // <-- Here!
+  dir.valueAccessor !.writeValue(control.value);
   
   /* ... */
 }
@@ -163,12 +164,9 @@ export function setUpControl(control: FormControl, dir: NgControl): void {
 
 ### AbstractFormGroupDirective
 
-It's a container for `AbstractFormGroupDirective` and `AbstractControlDirective` instances and its useful when you want to create a sub-group of `AbstractControl`s(eg: `address: { city, street, zip }`) or run validators for some specific `AbstractControls`(eg: min-max validator that makes sure that `min` control can't have a value that is greater than `max` control's value).
+It's a container for `AbstractFormGroupDirective` and `AbstractControlDirective` instances and its useful when you want to create a sub-group of `AbstractControl`s(eg: `address: { city, street, zipcode }`) or run validators for some specific `AbstractControls`(eg: min-max validator that makes sure that `min` control can't have a value that is greater than `max` control's value).
 
 Its concrete implementations are: `formGroupName`, `formArrayName`, `ngModelGroup`.
-
-Now you might be wondering, what's the difference between `FormGroupName` and `FormGroup`?
-We'll dive deeper into this here(TODO: add link), but here's a quick explanation:
 
 ```html
 <form [formGroup]="filterForm">
@@ -201,7 +199,7 @@ For instance:
 * when user is typing into an input: `View` -> `Model`
 * when the value is set programmatically(`FormControl.setValue('newValue')`): `Model` -> `View`
 
-Only `FormControl` instances can 'directly' interact with a `ControlValueAccessor`, because a `FormControl`, in a tree of `AbstractControl`s, can only be the leaf node as it is not supposed to contains other nodes. Along these lines, we can deduce that **updates** that come **from the view** will **start** **from leaf** nodes.
+Only `FormControl` instances can 'directly' interact with a `ControlValueAccessor`, because, in a tree of `AbstractControl`s, a `FormControl` can only be the leaf node as it is not supposed to contain other nodes. Along these lines, we can deduce that **updates** that come **from the view** will **start** **from leaf** nodes.
 
 ```ts
 // FG - FormGroup
@@ -228,12 +226,12 @@ export interface ControlValueAccessor {
 }
 ```
 
-* `writeValue()` - writes a new value to an element; the new value comes from the **MODEL**(`FormControl/setValue` -> `ControlValueAccessor.writeValue` -> update element -> change is visible in the UI)
+* `writeValue()` - writes a new value to an element; the new value comes from the **MODEL**(`FormControl.setValue` -> `ControlValueAccessor.writeValue` -> update element -> change is visible in the UI)
 * `registerOnChange()` - registers a **callback function** that will be called whenever the value **changes** **in** the **UI** and will **propagate** the new value to the model.
 * `registerOnTouched()` - registers a **callback function** that will be called when the **blur** event occurs; the `FormControl` will be notified of this event as it may need to perform some updates when this event occurs.
 * `setDisabledState` - will **disable/enable** the **DOM element** depending on the value provided; this method is usually called as a result of a change in the **MODEL**.
 
-You can see these methods' usefulness in the following section: Connecting...(TODO: add link)
+You can see these methods' usefulness in the following section: [Connecting `FormControl` with `ControlValueAccessor`](#connecting-formcontrol-with-controlvalueaccessor).
 
 There are 3 types of `ControlValueAccessor`s:
 
@@ -260,7 +258,7 @@ There are 3 types of `ControlValueAccessor`s:
   ];
   ```
 
-  You can read more about **built-in** accessor here(TODO: add link).
+  You can read more about **built-in** accessors in [Exploring built-in `ControlValueAccessor`s](#exploring-built-in-controlvalueaccessors).
 
 * custom - when you want a custom component to be part of the `AbstractControl` tree
 
@@ -286,8 +284,6 @@ There are 3 types of `ControlValueAccessor`s:
 
   Remember that `ngModel` is a **form-control-based** directive, so it will become a bridge between a `ControlValueAccessor`(**view**) and `FormControl`(**model**).
   
-  You can read more about **custom** accessor here(TODO: add link).
-
 ### Connecting `FormControl` with `ControlValueAccessor`
 
 As mentioned in the previous sections, `AbstractControlDirective` is what the **view layer**(`ControlValueAccessor`) needs in order to effectively communicate with the **model layer**(`AbstractControl`, concretely `FormControl`) and vice versa.
@@ -399,7 +395,7 @@ export interface ControlValueAccessor {
 }
 ```
 
-As you can see, the `setUpViewChangePipeline` method is how the `AbstractControlDirective`(the `dir` argument) connects the **view** with the **model**(unidirectional connection), by assigning a **callback function** to `ControlValueAccessor.onChange`. This will allow an action of that happens in the view to be propagated into the model.
+As you can see, the `setUpViewChangePipeline` method is how the `AbstractControlDirective`(the `dir` argument) connects the **view** with the **model**(unidirectional connection), by assigning a **callback function** to `ControlValueAccessor.onChange`. This will allow an action that happens in the view to be propagated into the model.
 
 Here's a concrete implementation of `ControlValueAccessor.registerOnChange`:
 
@@ -417,7 +413,7 @@ export class CustomValueAccessor {
 
 The `setUpModelChangePipeline` will allow the `AbstractControlDirective` to **connect** the **model** with the **view**. This means that every time `FormControl.setValue()` is invoked, **all the callback functions registered** within that `FormControl` will be invoked as well, in order to update that view based on the new model's value.
 
-Notice that I said **all the callback function**. This is because multiple `AbstractControlDirective` can make use of the same `FormControl` instance.
+Notice that I said **all the callback functions**. This is because multiple `AbstractControlDirective` can make use of the same `FormControl` instance.
 
 ```ts
 // Inside `FormControl`
@@ -451,9 +447,9 @@ Here's an example:
 </form>
 ```
 
-The `setUpControl(control, dir)` will be called twice, once for every `ngModel`. But, on every call, the `control`(a `FormControl` instance) argument will be the same(you can read more on why this happens inside: A better understanding of(TODO: add link)). This means that `control.onChanges` will contain 2 callback function, one for each `ControlValueAccessor`(`<input type="radio">` has the `RadioControlValueAccessor` bound to it).
+The `setUpControl(control, dir)` will be called twice, once for every `ngModel`. But, on every call, the `control`(a `FormControl` instance) argument will be the same. This means that `control.onChanges` will contain 2 callback function, one for each `ControlValueAccessor`(`<input type="radio">` has the `RadioControlValueAccessor` bound to it).
 
-The `ControlValueAccessor.registerOnTouched` follows the same principle as `ControlValueAccessor.registerOnChange`:
+As a side note, the `ControlValueAccessor.registerOnTouched` follows the same principle as `ControlValueAccessor.registerOnChange`:
 
 ```ts
 // Called inside `setUpControl`
@@ -499,11 +495,7 @@ When using this directive, you can also specify some options:
   options !: {name?: string, standalone?: boolean, updateOn?: 'change' | 'blur' | 'submit'};
 ```
 
-The `updateOn` option is discussed in Observing(TODO:(link)).
-
 If you want to use a **standalone** `FormControl` instance, you can follow this approach:
-
-TODO:(ng-run)
 
 ```html
 <form #f="ngForm">
@@ -516,6 +508,8 @@ TODO:(ng-run)
 
 {{ f.value | json }}
 ```
+
+[ng-run Example](https://ng-run.com/edit/Xx0irFLVo4FdueEBtSAF?open=app%2Fexample-standalone.component.ts).
 
 #### NgModelGroup
 
@@ -844,7 +838,7 @@ this.form = new FormGroup({
 Although when using `Reactive Forms` the validators are usually set in the component class, you can still provide validators inside the view; when the `AbstractControl` instance is created, the validators will eventually be merged inside `setUpControl`
 
 ```ts
-// dir.validator - sync validators provided via directives
+// dir.validator - sync validators provided via directives(eg: `<input email type="text">`)
 // control.validator - sync validators provided through `Reactive Forms`(eg: new FormControl('', [syncValidators]))
 export function setUpControl(control: FormControl, dir: NgControl): void {
   if (!control) _throwError(dir, 'Cannot find control with');
@@ -937,7 +931,7 @@ export class Validators {
 
 ### Custom Validators
 
-A recommended way to create a custom validator is to create is as a directive:
+A recommended way to create a custom validator is to use it as a directive that implements the `Validator` interface:
 
 ```ts
 // min-max-validator.directive.ts
@@ -1287,7 +1281,7 @@ The `RadioControlRegistry._accessors` array would look like this:
 ]
 ```
 
-When the user clicks on the first radio button, this method from `RadioControlRegistry` will be executed:
+When the user clicks on the **first** radio button, this method from `RadioControlRegistry` will be executed:
 
 ```ts
 select(accessor: RadioControlValueAccessor) {
@@ -1367,12 +1361,9 @@ can be pictured as follows:
 
 Using the above diagram we are going to understand how the tree is altered by common `AbstractControl` actions, such as `reset()`, `submit()`, `markAsDirty()`.
 
-TODO: (link)
-_I'd recommend reading [Basic Entities](#basic-entities) before continuing on._
+_I'd recommend reading [Base entities](#base-entities) before continuing on._
 
 ### `_pendingDirty`, `_pendingValue`, `_pendingChange`
-
-* add this somewhere at the end
 
 These private properties of the `AbstractControl` class are details that you might not have to be concerned about. However, they play a significant role regarding the `AbstractControl` tree's effectiveness.
 
@@ -1399,7 +1390,7 @@ function setUpViewChangePipeline(control: FormControl, dir: NgControl): void {
 `control._pendingChange = true` marks that the user has **visibly interacted** with the `<input>`.
 
 Why is this useful anyway? It is because you can set the event on which the `AbstractControl` updates itself(it defaults to `change`).  
-You can se the **update strategy** through `_updateOn` property: `updateOn: 'change'|'blur'|'submit';`
+You can se the **update strategy** through `_updateOn` property: `_updateOn: 'change'|'blur'|'submit';`
 
 With this mind, what would happen if the `FormControl` has the update strategy set to `blur`, and the `blur` event occurs in the view, without the user typing anything in the `<input>`? In this case, `_pendingChange` prevents the tree from being redundantly traversed.
 
@@ -1413,7 +1404,7 @@ function setUpBlurPipeline(control: FormControl, dir: NgControl): void {
 }
 ```
 
-Had the user typed anything in the `<input>`, the `control._pendingChange` would've been set to `true`. As a result, the `FormControl` and its **ancestors** would've been updated.
+Had the user typed anything in the `<input>`, the `control._pendingChange` would've been set to `true`. As a result, the `FormControl` and its **ancestors** would've been updated when the blur event had occurred.
 
 #### `_pendingDirty`
 
@@ -1510,7 +1501,7 @@ function updateControl(control: FormControl, dir: NgControl): void {
 
 However, what is the difference between `_pendingValue` and `value`? `_pendingValue` is the most recent value, whereas `value` is the value that is visible to the `AbstractControl` tree. The `value` is not always equal to `_pendingValue` as the `FormControl` might have a different update strategy than `change`. Of course, the view layer can hold the most recent value, but it doesn't mean that the model layer can.
 
-For example, if the `FormControl`'s update strategy is set to `submit` the model's value(`FormControl.value`) won't be equal to `_pendingValue`(which is the value that reflects the view) until the submit event occurs.
+For example, if the `FormControl`'s update strategy is set to `submit`, the model's value(`FormControl.value`) won't be equal to `_pendingValue`(which is the value that reflects the view) until the submit event occurs.
 
 ### `AbstractControl.setValue()` and `AbstractControl.patchValue()`
 
@@ -1617,7 +1608,7 @@ onSubmit($event) {
 }
 ```
 
-Some `AbstractControl` instances might have set the option `updateOn` differently. Therefore, if one `FormControl` has the `updateOn` option set to `submit`, it means that its **value** and **UI status**(`dirty`, `untouched`) will only be updated when the `submit` event occurs. This is what `syncPendingControls()` does.
+Some `AbstractControl` instances might have set the option `updateOn` differently. Therefore, if one `FormControl` has the `updateOn` option set to `submit`, it means that its **value** and **UI status**(`dirty`, `untouched` etc...) will only be updated when the `submit` event occurs. This is what `syncPendingControls()` does.
 
 ```ts
 // FormControl
@@ -1699,7 +1690,7 @@ function setUpViewChangePipeline(control: FormControl, dir: NgControl): void {
 }
 ```
 
-You can find more about `_pendingChange` [here](#add-link). TODO:(link)
+You can find more about `_pendingChange` [here](#pendingchange).
 
 [ng-run Example](https://ng-run.com/edit/Xx0irFLVo4FdueEBtSAF?open=app%2Fsubmit-catch.component.ts).
 
@@ -1856,7 +1847,7 @@ setValue(value: any, options: {
 
 After `(1)` has been updated, `(2)` will be updated and so on.. until the root is reached.
 
-### Disabling/enabling `AbstractControls`s
+### Disabling/enabling `AbstractControl`s
 
 An `AbstractControl` can be disabled/enabled from the **model**. The change can be seen in the view with the help of `ControlValueAccessor.setDisabledState`:
 
@@ -2057,3 +2048,9 @@ constructor (private ngControlStatus: NgControlStatus) { }
 _Note: in order for this to work, your element(or component), besides the above directive, must include one of these **form-control-based** directives: `[formControlName],[ngModel],[formControl]`_
 
 _[Back to Contents](#contents)_
+
+## Conclusion
+
+I hope this article has clarified some concepts and emphasized how powerful can this package be.
+
+Thanks for reading!
