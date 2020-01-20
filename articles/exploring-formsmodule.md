@@ -7,25 +7,25 @@ _Note: This article is based on **Angular 8.2.x**_.
 ## Contents
 
 - [Base entities](#base-entities)
-  - [AbstractControl](#abstractcontrol)
-    - [FormControl](#formcontrol)
-    - [FormArray](#formarray)
-    - [FormGroup](#formgroup)
-  - [AbstractControlDirective](#abstractcontroldirective)
-  - [AbstractFormGroupDirective](#abstractformgroupdirective)
-  - [ControlValueAccessor](#controlvalueaccessor)
-  - [Connecting `FormControl` with `ControlValueAccessor`](#connecting-formcontrol-with-controlvalueaccessor)
+- [AbstractControl](#abstractcontrol)
+  - [FormControl](#formcontrol)
+  - [FormArray](#formarray)
+  - [FormGroup](#formgroup)
+- [AbstractControlDirective](#abstractcontroldirective)
+- [AbstractFormGroupDirective](#abstractformgroupdirective)
+- [ControlValueAccessor](#controlvalueaccessor)
+- [Connecting `FormControl` with `ControlValueAccessor`](#connecting-formcontrol-with-controlvalueaccessor)
 - [Template Driven Forms and Reactive Forms](#template-driven-forms-and-reactive-forms)
-  - [Template Driven Forms](#template-driven-forms)
-    - [NgModel](#ngmodel)
-    - [NgModelGroup](#ngmodelgroup)
-    - [NgForm](#ngform)
-  - [Reactive Forms](#reactive-forms)
-    - [FormControlDirective](#formcontroldirective)
-    - [FormGroupDirective](#formgroupdirective)
-    - [FormControlName](#formcontrolname)
-    - [FormGroupName](#formgroupname)
-    - [FormArrayName](#formarrayname)
+- [Template Driven Forms](#template-driven-forms)
+  - [NgModel](#ngmodel)
+  - [NgModelGroup](#ngmodelgroup)
+  - [NgForm](#ngform)
+- [Reactive Forms](#reactive-forms)
+  - [FormControlDirective](#formcontroldirective)
+  - [FormGroupDirective](#formgroupdirective)
+  - [FormControlName](#formcontrolname)
+  - [FormGroupName](#formgroupname)
+  - [FormArrayName](#formarrayname)
 - [Validators](#validators)
   - [Usage of built-in Validators](#usage-of-built-in-validators)
   - [Validators' Composition](#validators-composition)
@@ -469,6 +469,8 @@ function setUpBlurPipeline(control: FormControl, dir: NgControl): void {
 
 This will allow the **model** to be **updated** whenever the **blur event occurs** inside the view.
 
+_[Back to Contents](#contents)_
+
 ---
 
 ## Template Driven Forms and Reactive Forms
@@ -762,6 +764,8 @@ this.fooForm = this.fb.group({
 {{ f.value | json }}
 ```
 
+_[Back to Contents](#contents)_
+
 ---
 
 ## Validators
@@ -1036,6 +1040,8 @@ export function setUpControl(control: FormControl, dir: NgControl): void {
 ```
 
 [ng-run Example](https://ng-run.com/edit/Xx0irFLVo4FdueEBtSAF?open=app%2Fdynamic-validator.component.ts).
+
+_[Back to Contents](#contents)_
 
 ---
 
@@ -1326,6 +1332,8 @@ That's because out of `N` radio buttons with the same `name` and `value` attribu
 where `accessor` is the `RadioControlValueAccessor` of the selected radio button.
 
 [ng-run Example](https://ng-run.com/edit/Xx0irFLVo4FdueEBtSAF?open=app%2Fradio-example.component.ts).
+
+_[Back to Contents](#contents)_
 
 ---
 
@@ -2048,6 +2056,4 @@ constructor (private ngControlStatus: NgControlStatus) { }
 
 _Note: in order for this to work, your element(or component), besides the above directive, must include one of these **form-control-based** directives: `[formControlName],[ngModel],[formControl]`_
 
-## TODO
-
-* contents
+_[Back to Contents](#contents)_
