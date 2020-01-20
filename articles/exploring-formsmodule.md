@@ -1,29 +1,55 @@
-# TODO: find a good title about forms! :)
+# A thorough exploration of Angular Forms
 
----
+After delving into the `@angular/forms` package I've been able to get a better understanding of how things really work under the hood. In this article I'd like to share my acquired vision with you. 
 
-## Ideas
+_Note: This article is based on **Angular 8.2.x**_.
 
-* before showing any feature(ex: `What happens when you disable an AbstractControl?`), start by showing a tree-like representation of a `AbstractControl` instances so that the feature can be easily understood
-  ex:
-  `What happens when you disable an AbstractControl`
-  
-  ```ts
-  const f = new FormGroup({ /* ... */ });
+## Contents
 
-  f.disable();
-  ```
-
-  ```
-      (3)FG (FG.disable())
-      /   \
-  (1)FC   (2)FC
-  ```
-
-  The disabling order: `(1), (2), (3)`..
-  * notes
-  * further explanations
-  * :)
+- [Base entities](#base-entities)
+  - [AbstractControl](#abstractcontrol)
+    - [FormControl](#formcontrol)
+    - [FormArray](#formarray)
+    - [FormGroup](#formgroup)
+  - [AbstractControlDirective](#abstractcontroldirective)
+  - [AbstractFormGroupDirective](#abstractformgroupdirective)
+  - [ControlValueAccessor](#controlvalueaccessor)
+  - [Connecting `FormControl` with `ControlValueAccessor`](#connecting-formcontrol-with-controlvalueaccessor)
+- [Template Driven Forms and Reactive Forms](#template-driven-forms-and-reactive-forms)
+  - [Template Driven Forms](#template-driven-forms)
+    - [NgModel](#ngmodel)
+    - [NgModelGroup](#ngmodelgroup)
+    - [NgForm](#ngform)
+  - [Reactive Forms](#reactive-forms)
+    - [FormControlDirective](#formcontroldirective)
+    - [FormGroupDirective](#formgroupdirective)
+    - [FormControlName](#formcontrolname)
+    - [FormGroupName](#formgroupname)
+    - [FormArrayName](#formarrayname)
+- [Validators](#validators)
+  - [Usage of built-in Validators](#usage-of-built-in-validators)
+  - [Validators' Composition](#validators-composition)
+  - [Custom Validators](#custom-validators)
+  - [Dynamic Validators](#dynamic-validators)
+- [Exploring built-in `ControlValueAccessor`s](#exploring-built-in-controlvalueaccessors)
+  - [`SelectValueAccessor`](#selectvalueaccessor)
+    - [Using `<option [value]="primitiveValue">`](#using-option-value%22primitivevalue%22)
+    - [Using `<option [ngValue]="primitiveOrNonPrimitiveValue">`](#using-option-ngvalue%22primitiveornonprimitivevalue%22)
+  - [`SelectMultipleValueAccessor`](#selectmultiplevalueaccessor)
+  - [`RadioValueAccessor`](#radiovalueaccessor)
+- [A better understanding of the `AbstractControl` tree](#a-better-understanding-of-the-abstractcontrol-tree)
+  - [`_pendingDirty`, `_pendingValue`, `_pendingChange`](#pendingdirty-pendingvalue-pendingchange)
+    - [`_pendingChange`](#pendingchange)
+    - [`_pendingDirty`](#pendingdirty)
+    - [`_pendingValue`](#pendingvalue)
+  - [`AbstractControl.setValue()` and `AbstractControl.patchValue()`](#abstractcontrolsetvalue-and-abstractcontrolpatchvalue)
+    - [`patchValue` example](#patchvalue-example)
+    - [`setValue` example](#setvalue-example)
+  - [What happens with the `AbstractControl` tree on submit?](#what-happens-with-the-abstractcontrol-tree-on-submit)
+  - [Retrieving `AbstractControl`s from the tree](#retrieving-abstractcontrols-from-the-tree)
+  - [AbstractControl.updateValueAndValidity()](#abstractcontrolupdatevalueandvalidity)
+  - [Disabling/enabling `AbstractControls`s](#disablingenabling-abstractcontrolss)
+  - [How are CSS classes added depending on AbstractControl's status ?](#how-are-css-classes-added-depending-on-abstractcontrols-status)
 
 ## Base entities
 
@@ -137,7 +163,7 @@ export function setUpControl(control: FormControl, dir: NgControl): void {
 
 ### AbstractFormGroupDirective
 
-It's a container for `AbstractFromGroupDirective` and `AbstractControlDirective` instances and its useful when you want to create a sub-group of `AbstractControl`s(eg: `address: { city, street, zip }`) or run validators for some specific `AbstractControls`(eg: min-max validator that makes sure that `min` control can't have a value that is greater than `max` control's value).
+It's a container for `AbstractFormGroupDirective` and `AbstractControlDirective` instances and its useful when you want to create a sub-group of `AbstractControl`s(eg: `address: { city, street, zip }`) or run validators for some specific `AbstractControls`(eg: min-max validator that makes sure that `min` control can't have a value that is greater than `max` control's value).
 
 Its concrete implementations are: `formGroupName`, `formArrayName`, `ngModelGroup`.
 
@@ -153,7 +179,7 @@ We'll dive deeper into this here(TODO: add link), but here's a quick explanation
 </form>
 ```
 
-`FormGroupName`, being a subclass of `AbstractFromGroupDirective` it has all the attributes listed at the beginning of this section. It acts as a container for `AbstractControl` instances as well.
+`FormGroupName`, being a subclass of `AbstractFormGroupDirective` it has all the attributes listed at the beginning of this section. It acts as a container for `AbstractControl` instances as well.
 But, `FormGroup` can only be the top-level container. This means, you can't use `FormGroupName` as a top-level container as it will result in an error.
 
 `AbstractFormGroupDirective` provides a way to access to top level `FormGroup` instance: 
@@ -1822,64 +1848,98 @@ setValue(value: any, options: {
 
 After `(1)` has been updated, `(2)` will be updated and so on.. until the root is reached.
 
-### Setting Errors
-
-* when verifying whether an `AbstractControl` has a certain error or not: `this.form.hasError(errName, 'path.to.ctrl')`
-
-* how are errors set ?
-* why a validator must return null when there haven't been found any errors?
-* manually setting errors: 
-  * what happens to the form-control tree after `AbstractControl.setErrors(null)`?
-    * only the status of this node and of each ancestor will be updated(and also `statusChanges` will emit if `emitEvent !== false`): `_updateControlsErrors`
-
 ### Disabling/enabling `AbstractControls`s
 
-* how to get the form value, including the disabled controls ? : `FormGroup.getRawValue()`
-* explain `ControlValueAccessor.setDisabledState`
-* The value is updated in the UI through `ControlValueAccessor.setDisabledState`
+An `AbstractControl` can be disabled/enabled from the **model**. The change can be seen in the view with the help of `ControlValueAccessor.setDisabledState`:
 
-* when **disabling** an `AbstractControl` instance
-  * you can choose not to update its ancestors by using `this.control.disable({ onlySelf: true })` (TODO: example); i.e: a `FormControl` might be part of the a `FormGroup` and because of this **control** being **invalid**, the entire `FormGroup` is marked as invalid; disabling this `FormControl` can influence the parent `FormGroup` or not(`this.control.disable({ onlySelf: true })`)
-    ```ts
-    const fg = this.fb.group({
-      name: this.fb.control('', Validators.required),
-      age: '',
-      city: this.fb.control('', Validators.required)
-    });
-
-
-    fg.controls['name'].disable();
-    fg.controls['city'].disable({ onlySelf: true });
-    
-    console.log(fg.valid) // false
-    ```
-  * you can be notified when an `AbstractControl` is **disabled** with the help of `valueChanges` and `statusChanges` event emitters; you can also choose not to be notified at all: `this.control.disable({ emitEvent: false })`(TODO: example)
-  * when an `AbstractControl` is **disabled**, its validators won't run and its errors will be marked as `null`;
-  * its children are also going to be disabled
-  * only the `touch` and `dirtiness` statuses are affecting the control's ancestors
-  * if **parent** has been marked **artificially dirty**(dirtiness **not determined** by its children: manually doing `control.markAsDirty`) -> there is **no need** to **recalculate** the **parent's dirtiness** based on the children because they don't have any influence the parent;
-  for example
+```ts
+export function setUpControl(control: FormControl, dir: NgControl): void {
+  /* ... */
   
-  ```typescript
-  this.form = this.fb.group({
-    name: this.fb.control({ value: 'andrei', disabled: false }),
-    age: this.fb.control(''),
-  });
+  if (dir.valueAccessor !.setDisabledState) {
+    control.registerOnDisabledChange(
+        (isDisabled: boolean) => { dir.valueAccessor !.setDisabledState !(isDisabled); });
+  }
 
-  const nameCtrl = this.form.controls['name'];
+  /* ... */
+}
+```
 
-  // Simulating user input...
-  // Now, its ancestors will be marked as dirty as well
-  // In this case, there is only one `FormGroup`(=form)
-  nameCtrl.markAsDirty();
+When **disabling** an `AbstractControl` instance you can choose not to update its ancestors by using `this.control.disable({ onlySelf: true })`. This might be the case when a `FormControl` might be part of the a `FormGroup` and because of this control being **invalid**, the entire `FormGroup` is marked as invalid.   
 
-  nameCtrl.disable();
+```ts
+const fg = this.fb.group({
+  name: this.fb.control('', Validators.required),
+  age: '',
+  city: this.fb.control('', Validators.required)
+});
 
-  // Now, form will be marked as `pristine`, because the child that influenced the parent's dirtiness
-  // is disabled
-  ```
 
-If a `FormControl` container(`FormGroup` or `FormArray`) is disabled, its `value` will the value collected from all its descendants, regardless of their `disabled` value.
+fg.controls['name'].disable();
+fg.controls['city'].disable({ onlySelf: true });
+
+console.log(fg.valid) // false
+```
+
+Had we omitted `{ onlySelf: true }`, the entire form group(`fg`) would've been valid(`fg.valid === true`).
+
+```ts
+disable(opts: {onlySelf?: boolean, emitEvent?: boolean} = {}): void {
+  // If parent has been marked artificially dirty we don't want to re-calculate the
+  // parent's dirtiness based on the children.
+  const skipPristineCheck = this._parentMarkedDirty(opts.onlySelf);
+
+  (this as{status: string}).status = DISABLED;
+  (this as{errors: ValidationErrors | null}).errors = null;
+  this._forEachChild(
+      (control: AbstractControl) => { control.disable({...opts, onlySelf: true}); });
+  this._updateValue();
+
+  if (opts.emitEvent !== false) {
+    (this.valueChanges as EventEmitter<any>).emit(this.value);
+    (this.statusChanges as EventEmitter<string>).emit(this.status);
+  }
+
+  // Will update the value, validity, dirtiness, and touch status
+  this._updateAncestors({...opts, skipPristineCheck});
+  this._onDisabledChange.forEach((changeFn) => changeFn(true));
+}
+
+private _updateAncestors(
+    opts: {onlySelf?: boolean, emitEvent?: boolean, skipPristineCheck?: boolean}) {
+  if (this._parent && !opts.onlySelf) {
+    this._parent.updateValueAndValidity(opts);
+    if (!opts.skipPristineCheck) {
+      this._parent._updatePristine();
+    }
+    this._parent._updateTouched();
+  }
+}
+```
+
+When an `AbstractControl` is **disabled**, its validators won't run and its errors will be marked as `null` and its children are also going to be disabled.
+
+If a **parent** has been marked **artificially dirty**(dirtiness is **not determined** by its children: manually doing `{FormGroup|FormArray}.markAsDirty`), there is **no need** to **recalculate** the **parent's dirtiness** based on the children because they don't have any effect on the parent:
+  
+```typescript
+this.form = this.fb.group({
+  name: this.fb.control({ value: 'andrei', disabled: false }),
+  age: this.fb.control(''),
+});
+
+const nameCtrl = this.form.controls['name'];
+
+// Now, its ancestors will be marked as dirty as well
+// In this case, there is only one `FormGroup`(this.form)
+nameCtrl.markAsDirty();
+
+nameCtrl.disable();
+
+// Now, `this.form` will be marked as `pristine`, because 
+// the child that influenced the parent's dirtiness is disabled
+```
+
+Also, if a **form-control-container**(`FormGroup` or `FormArray`) is disabled, its `value` will the value collected from all its descendants, regardless of their `disabled` value:
 
 ```typescript
 const g = new FormGroup({
@@ -1914,7 +1974,7 @@ console.log(g.value)
 }
 ```
 
-The reason behind this is the way `AbstractControl.disable()` works. Starting from the current `AbstractControl` it will **first disable all its ancestors**, then collect their value. For example, here is how a `FormArray` would accumulate the values from its descendants:
+The reason behind this is the way `AbstractControl.disable()` works. Starting from the current `AbstractControl` it will **first disable all its descendants**, then collect their value. For example, here is how a `FormArray` would accumulate the values from its descendants:
 
 ```ts
 _updateValue(): void {
@@ -1926,225 +1986,68 @@ _updateValue(): void {
 
 The `control.enabled || this.disabled` expression allows us to get the value, even though the child control might be disabled.
 
+However, if the container is **not disabled** and the child control is, its value won't be taken into account.
 
-mention that when a **control** is **disabled**, its `dirty` and `touched` statuses won't affect the status determination for its ancestors
-  * a few things you can do while an `AbstractControl` is disabled
-    * `setValue` - the validators won't be run
-  
-  ```ts
-  it('should ignore disabled controls when determining touched state', () => {
-      const c = new FormControl('one');
-      const c2 = new FormControl('two');
-      const g = new FormGroup({one: c, two: c2});
-      c.markAsTouched();
-      expect(g.touched).toBe(true);
+If you still want to get the form value, **including** the **disabled controls** you can use `{FormGroup|FormArray}.getRawValue()`:
 
-      c.disable();
-      expect(c.touched).toBe(true);
-      expect(g.touched).toBe(false);
-
-      c.enable();
-      expect(g.touched).toBe(true);
-    });
-  ```
-
-#### `FormGroup.reset()`
-
-* what happens with the `AbstractControl` tree on **reset**
-parent ----> children(**depth first**)
-
-* `FormGroup.reset()`: 2 phases:
-  * 1) its children are reset (top -> bottom)
-  * 2) the ancestors are being updated(setting `pristine`, `touched` state and value) depending on their (fresh) children
-* `_syncPendingControls`
-* exemplify tree
-* starting from the `FormGroup` in question, it will reset its descendants, if any descendants have other descendants on their own, it will reset them first and so on. Then, the ancestors will determine their **value**, **status**(`valid`, `invalid`), **UI status**(`dirty`, `touched`) based on those provided by the ancestors
-* you can reset with initial values
-
-```html
-<form #f="ngForm">
-    <input type="radio" ngModel name="food" value="chicken">
-    <input type="radio" ngModel name="food" value="fish">
-    <input type="radio" ngModel name="drink" value="cola">
-    <input type="radio" ngModel name="drink" value="sprite">
-</form>
-
-<button (click)="f.resetForm({ food: 'fish' })">reset with val</button>
-
-<button (click)="f.resetForm()">reset(empty)</button>
+```ts
+// FormArray.getRawValue()
+getRawValue(): any[] {
+  return this.controls.map((control: AbstractControl) => {
+    return control instanceof FormControl ? control.value : (<any>control).getRawValue();
+  });
+}
 ```
 
 ### How are CSS classes added depending on AbstractControl's status ?
 
-* how are classes being added depending on status?
-  * with the help of `NgControlStatus`, a directive that is automatically bound to a form control element when using `ngModel`, `formControl`, `formControlName`
-  * at the same time, `NgControlStatusGroup` is added to the form group(`<form>`, `formGroupName`, `formGroup`, `ngModelGroup`, `formArrayName`)
-  * both `NgControlStatus` and `NgControlStatusGroup` will be updated when change detection occurs
-  * you can add your custom **css class** depending on form control's(or form control-container's) validity or user interaction status
-  * in a **custom directive**, inject `NgControlStatus` or `NgControlStatusGroup` and based on their getters, add the corresp. classes
-    ```ts
-    constructor (private ngControlStatus: NgControlStatus) { }
+CSS classes(`ng-valid`, `ng-pristine`, `ng-touched` etc) are added with the help of `NgControlStatus` directive, which is automatically bound to a form control element when using `ngModel`, `formControl`, `formControlName`.
 
-    @HostBinding('[class.card__price--incorrect]') this.ngControlStatus.ngClassInvalid();
-    ```
-    _Note: in order for this to work, your element(or component), besides the above directive, must include one of these **FromControl**-based directives: `[formControlName],[ngModel],[formControl]`_
+Additionally, `NgControlStatusGroup` is added to the form group(`<form>`, `formGroupName`, `formGroup`, `ngModelGroup`, `formArrayName`).
 
----
-
-### When can an AbstractControl be updated ?
-
-* `AbstractControl.updateOn` - unless explicitly set(i.e `new FormControl('', { updateOn: 'change' /* 'change' | 'blur' | 'submit' */ })`), it will be determined when this property will be accessed.
-
-  ```ts
-  get updateOn(): FormHooks {
-    return this._updateOn ? this._updateOn : (this.parent ? this.parent.updateOn : 'change');
-  }
-  ```
-
-  For instance, `AbstractControl.updateOn` is needed whenever the form is **submitted** 
-
-  However, you can still set the value of any status of the control(`dirty`, `touched`, `pending`) **programmatically**, through: `FormControl.setValue`, `FormControl.markAsDirty()` etc...
-
-  Consider this test case:
-
-  ```ts
-  @Component({selector: 'form-control-comp', template: `<input type="text" [formControl]="control">`})
-  class FormControlComp {
-    control !: FormControl;
-  }
-
-  it('should not use stale pending value if value set programmatically', () => {
-    const fixture = initTest(FormControlComp);
-    const control = new FormControl('', {validators: Validators.required, updateOn: 'blur'});
-    fixture.componentInstance.control = control;
-    fixture.detectChanges();
-
-    const input = fixture.debugElement.query(By.css('input')).nativeElement;
-    input.value = 'aa';
-    dispatchEvent(input, 'input'); // (1)
-    fixture.detectChanges();
-
-    control.setValue('Nancy'); // (2)
-    fixture.detectChanges();
-
-    dispatchEvent(input, 'blur');
-    fixture.detectChanges();
-
-    expect(input.value).toEqual('Nancy', 'Expected programmatic value to stick after blur.');
-  });
-  ```
-  **(1)**: `FormControl._pendingValue = 'aa'`
-  **(2)**: `FormControl.value = FormControl._pendingValue = 'Nancy'`
-
-  `FormControl._pendingValue` - an internal property, whose value changes on every `input` event;
-
-  When a `FormControl` has the **update strategy** set on `blur`, this callback function will be invoked
-
-  ```ts
-    function updateControl(control: FormControl, dir: NgControl): void {
-    if (control._pendingDirty) control.markAsDirty();
-    control.setValue(control._pendingValue, {emitModelToViewChange: false});
-    dir.viewToModelUpdate(control._pendingValue);
-    control._pendingChange = false;
-  }
-  ```
-
-  `FormControl.setValue` is defined like this
-
-  ```ts
-  setValue(value: any, options: /* ... */) {
-    (this as{value: any}).value = this._pendingValue = value;
-
-    /* ... Skipped for brevity ... */
-  }
-  ```
-
-  _`(this as{value: any}).value` is used as opposed to `this.value` because the `value` property is declared like this `public readonly value: any;`_
-
-  Consequently, after `control.setValue('Nancy')`(step **(2)**), the `control._pendingValue` will be `Nancy`, because after the **blur event** finally occurs, the previous `control._pendingValue='aa'` will have already been replaced with `Nancy`.
-
-  The same goes for the `submit` strategy, except that the updates are executed inside `AbstractControl._syncPendingControls`, which for `FormControl` looks like this:
-
-  ```ts
-  _syncPendingControls(): boolean {
-    if (this.updateOn === 'submit') {
-      if (this._pendingDirty) this.markAsDirty();
-      if (this._pendingTouched) this.markAsTouched();
-      if (this._pendingChange) {
-        this.setValue(this._pendingValue, {onlySelf: true, emitModelToViewChange: false});
-        return true;
-      }
-    }
-    return false;
-  }
-  ```
-
-  _You can find more about `_syncPendingControls` in [What happens when a form is submitted](#add-link); TODO:_
-  _You can read more about `_pendingDirty`, `_pendingValue`, `_pendingChange` [here](#add-link)_ TODO:
-* `[ngFormOptions]="{ updateOn: 'change' | 'blur' | 'submit' }"` - applicable to `NgForm`
-* `FormControl.updateOn` can me inherited from parent control(which will inherit from its parent and so on; defaults to `change`), unless manually specified(`this.fb.control('', { updateOn })`, or `<input [ngModelOptions]="{ updateOn }">`). If the `FormControl` is standalone, unless manually specified, `FormControl.updateOn` will default to `change` - TODO: examples
-* `updatedOn` property
-* why does `FormGroupDirective` keep track of `directives` when `FormControl`s are registered with `formControlName` ?
-* the top level form directive(`NgForm`) tracks the existing directives. Because the form controls can be updated on `submit` event, after the form is submitted, the `NgForm` directive will go through each registered `NgModel` directive and will update its internal state and the view(if the view depends on that `NgModel` directive - `(ngModelChange)="doSmth()"`)
-
----
-
-## FormBuilder
-
-const address = this.fb.group({
-  city: this.fb.control('default value', { 
-    validators: [],
-    asyncValidators: [],
-    updateOn: 'blur' /* 'blur' | 'change'(default) | 'submit' */
-  }),
-  street: this.fb.control('', [/* validators */], [/* async validators */]),
-  streetNumber: ['', [/* validators */] /* | validatorFn */, [/* async validators */] /* | asyncValidatorFn */],
-  zip: '',
-  country: { value: '', disabled: true },
-});
-
-With `FormBuilder`, you can create forms with less boilerplate.
-
-Instead of doing this
+Both `NgControlStatus` and `NgControlStatusGroup` will be updated when change detection occurs.
 
 ```ts
-this.form = new FormGroup({
-  name: new FormControl(''),
-  address: new FormGroup({ city: new FormControl({ value: '', disabled: true }) })
-})
+export class AbstractControlStatus {
+  private _cd: AbstractControlDirective;
+
+  constructor(cd: AbstractControlDirective) { this._cd = cd; }
+
+  get ngClassUntouched(): boolean { return this._cd.control ? this._cd.control.untouched : false; }
+  get ngClassTouched(): boolean { return this._cd.control ? this._cd.control.touched : false; }
+  get ngClassPristine(): boolean { return this._cd.control ? this._cd.control.pristine : false; }
+  get ngClassDirty(): boolean { return this._cd.control ? this._cd.control.dirty : false; }
+  get ngClassValid(): boolean { return this._cd.control ? this._cd.control.valid : false; }
+  get ngClassInvalid(): boolean { return this._cd.control ? this._cd.control.invalid : false; }
+  get ngClassPending(): boolean { return this._cd.control ? this._cd.control.pending : false; }
+}
+
+export const ngControlStatusHost = {
+  '[class.ng-untouched]': 'ngClassUntouched',
+  '[class.ng-touched]': 'ngClassTouched',
+  '[class.ng-pristine]': 'ngClassPristine',
+  '[class.ng-dirty]': 'ngClassDirty',
+  '[class.ng-valid]': 'ngClassValid',
+  '[class.ng-invalid]': 'ngClassInvalid',
+  '[class.ng-pending]': 'ngClassPending',
+};
+
+@Directive({selector: '[formControlName],[ngModel],[formControl]', host: ngControlStatusHost})
+export class NgControlStatus extends AbstractControlStatus {
+  constructor(@Self() cd: NgControl) { super(cd); }
+}
 ```
 
-you can do this
-
+With that in mind you can add your custom **css class** depending on form control's(or form-control-container's) validity or user interaction status by using a **custom directive**
+    
 ```ts
-this.form = this.fb.group({
-  name: this.fb.control(''),
-  address: this.fb.group({ city: this.fb.control({ value: '', disabled: true }) })
-})
+constructor (private ngControlStatus: NgControlStatus) { }
+
+@HostBinding('[class.card__price--incorrect]') this.ngControlStatus.ngClassInvalid();
 ```
 
-Using `FormBuilder`, `FormControl` instances can be declared as follows:
-
-```ts
-const address = this.fb.group({
-  city: this.fb.control('default value', {
-    validators: [],
-    asyncValidators: [],
-    updateOn: 'blur' /* 'blur' | 'change'(default) | 'submit' */
-  }),
-  street: this.fb.control('', [/* validators */], [/* async validators */]),
-  streetNumber: ['', [/* validators */] /* | validatorFn */, [/* async validators */] /* | asyncValidatorFn */],
-  zip: '',
-});
-```
-
----
+_Note: in order for this to work, your element(or component), besides the above directive, must include one of these **form-control-based** directives: `[formControlName],[ngModel],[formControl]`_
 
 ## TODO
 
-* create `ng-run` examples ! 😃
-* check for **FROM** instead of **FORM** misspellings 😟
-* diagrams for `disable()/enable()`, `reset()` ❓
-* intro
-* expect that...
-* convert `Example` to `ng-run Example`
+* contents
