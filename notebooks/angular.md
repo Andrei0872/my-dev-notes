@@ -471,6 +471,39 @@ in this case, the providers will be singletons: **one singleton per element/comp
   }
   ```
 
+### Custom components
+
+#### Accessibility 'gotcha'
+
+[ng-run](https://ng-run.com/edit/d32P1dYCKg1jALxIUsuJ?open=app%2Fcustom-input%2Fcustom-input.component.ts).
+
+```html
+<!-- parent.component.html -->
+<form>
+  <label for="foo">Foo input</label>
+  <app-custom-input id="foo"></app-custom-input>
+</form>
+```
+
+```ts
+// app-custom-input.component.ts
+
+@Component({
+  selector: 'app-custom-input',
+  template: `
+    <input [id]="id" type="text">
+  `
+})
+export class CustomInputComponent implements OnInit {
+  @HostBinding('attr.id')
+  private externalId = '';
+  
+  @Input() id: string;
+}
+```
+
+Without `@HostBinding('attr.id')`, the `id` would've been set twice: once as an attribute on the `app-custom-input` and once on `<input>` tag. Because of this, when clicking on the label, nothing would happen. The solution is to remove the `id` attribute from the `app-custom-input`.
+
 ---
 
 ## Cool Stuff
