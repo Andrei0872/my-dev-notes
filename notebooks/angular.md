@@ -443,6 +443,34 @@ in this case, the providers will be singletons: **one singleton per element/comp
     ```
     </details>
 
+### Strategies
+
+#### Creating dynamic form components
+
+* create a `dynamic-form` module
+* export one component, `dynamic-form-container`, which will receive a config object based in which it will display the desired form controls
+* in that module, declare some **form-control-based** components which will only be used internally 
+* create a directive(`dynamic-form-directive`) that will handle rendering logic
+  * could be attached to an `<ng-container>`
+  ```ts
+  const formControlBasedComponents = [/* ... */];
+
+  {
+    @Input('type') fcType: 'text' | 'select' | 'radio'
+
+    constructor (private vcr: ViewContainerRef) { }
+  
+    ngOnInit () {
+      const factory = this.cfr.resolveComponentFactory(formControlBasedComponents[this.fc.type])
+
+      const viewRef = this.vcr.createComponent(factory);
+
+      viewRef.instance.prop1 = 'prop1231';
+      viewRef.instance.prop2 = 'prop1231';
+    }
+  }
+  ```
+
 ---
 
 ## Cool Stuff
