@@ -504,6 +504,40 @@ export class CustomInputComponent implements OnInit {
 
 Without `@HostBinding('attr.id')`, the `id` would've been set twice: once as an attribute on the `app-custom-input` and once on `<input>` tag. Because of this, when clicking on the label, nothing would happen. The solution is to remove the `id` attribute from the `app-custom-input`.
 
+### Synchronizing multiple `AbstractControls`
+
+```ts
+const fg = this.fb.array([
+  this.fb.group({ name: '', city: '' }),
+  this.fb.group({ name: '', city: '' }),
+  this.fb.group({ name: '', city: '' }),
+]);
+```
+
+```ts
+const getControlsToSync = (container: FormArray, nameOfChild: string) => {
+  return (container.controls as Array<FormGroup>).reduce((acc, ctrlChild) => {
+    const ctrl = ctrlChild.get(nameOfChild);
+
+    acc.controls.push(ctrl);
+    acc.valueChanges.push(ctrl.valueChanges);
+
+    return acc;
+  }, { controls: [], valueChanges: [] })
+};
+
+const ctrlToSync = getControlsToSync(fg, 'name');
+
+const subscription = merge(...ctrlToSync.valueChanges)
+  .subscribe(v => {
+      ctrlToSync.controls.forEach(c => c.setValue(v, { emitEvent: false, }));
+  });
+
+// At a later point
+// All the `valueChanges` will be unsubscribed from as well
+subscription.unsubscribe();
+```
+
 ---
 
 ## Cool Stuff
