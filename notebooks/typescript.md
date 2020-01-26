@@ -512,3 +512,43 @@ const r2: Random2 = {
 
 ```
 </details>
+
+---
+
+### Generics
+
+* a **concrete type parameter** cannot be assigned to a **generic type parameter**, as the generic one can defined differently than the concrete one
+
+```ts
+type Fn<P extends unknown[], R extends object> = (...args: P) => R;
+
+type DefaultFn<P extends any[] = any[], R extends object = object> = Fn<P, R>;
+
+function fun<
+  T extends string,
+  P extends any[], // P - generic type
+  R extends object
+>(type: T, c: Fn<P, R>): Fn<P, R> { // P - still generic
+  // ...args: any[]: `any[]` is **more defined** than `P`
+  return (...args: any[]) => ({
+    ...c(...args),
+  })
+}
+
+// Solution - function overloading
+function fun<
+  T extends string,
+  P extends any[],
+  R extends object
+> (t: T, c: Fn<P, R>): Fn<P, R> & { type: string }
+function fun<T extends string, F extends DefaultFn>(t: T, c: F) {
+  return (...args: any[]) => ({
+    ...c(...args),
+    type: t,
+  })
+}
+
+const r = fun('[action]', (u: User) => u);
+r({ data: { name: 'a', age: 18 } });
+// r(); // ERROR
+```
