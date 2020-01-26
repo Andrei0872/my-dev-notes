@@ -2,7 +2,7 @@
 
 - [TypeScript Notebook](#typescript-notebook)
   - [Knowledge](#knowledge)
-    - [types[] &amp; typeRoots[]](#types-amp-typeroots)
+    - [types[] & typeRoots[]](#types--typeroots)
     - [typeRoots[]](#typeroots)
     - [types[]](#types)
     - [files](#files)
@@ -17,13 +17,18 @@
       - [Union Types](#union-types)
     - [Generic type inference](#generic-type-inference)
       - [Generic Class](#generic-class)
-  - [Types](#types)
+    - [Subtypes](#subtypes)
+      - [Type Constraints](#type-constraints)
+  - [Types](#types-1)
     - [Create a condition-based subset of types](#create-a-condition-based-subset-of-types)
     - [Type Assignments](#type-assignments)
     - [infer](#infer)
-    - [as const](#as-const)
-    - [never](#never)
+    - [`as const`](#as-const)
+    - [`never`](#never)
     - [Merge Types](#merge-types)
+    - [Contextual typing](#contextual-typing)
+    - [Generics](#generics)
+    
 
 ## Knowledge
 
@@ -204,6 +209,51 @@ if (isDog(animal)) {
 
   ```
   </details>
+
+### Subtypes
+
+* `A` is a **subtype** of `B` is `A` is equal to `B`, but it also has additional information(**properties** and/or **methods**)
+
+#### Type Constraints
+
+* **only restricts different types**, **not different subtypes**
+
+```ts
+interface Foo {
+  prop1: string;
+}
+
+interface FooSubtype1 {
+  prop1: string;
+  prop2: string;
+}
+
+// Different subtype
+interface FooSubtype2 {
+  prop1: string;
+  prop3: string;
+}
+
+const fooObj: Foo = { prop1: 'prop1 - foo' };
+const fooObjSubtype1: FooSubtype1 = { prop1: 'prop1-subtype1', prop2: 'prop2-subtype1'};
+const fooObjSubtype2: FooSubtype2 = { prop1: 'prop1-subtype2', prop3: 'prop3-subtype2' };
+
+// No restrictions
+const foo = <T>(p: T) => 'andrei';
+
+foo(fooObj);
+foo(fooObjSubtype1);
+foo(fooObjSubtype2);
+foo(undefined);
+
+// Only (different) subtypes of `Foo` are allowed
+const foo2 = <T extends Foo>(p: T) => 'hello';
+
+foo2(fooObj);
+foo2(fooObjSubtype1);
+foo2(fooObjSubtype2);
+foo2(undefined); // ERROR
+```
 
 ---
 
