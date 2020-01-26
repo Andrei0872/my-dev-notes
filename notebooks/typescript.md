@@ -513,6 +513,28 @@ const r2: Random2 = {
 ```
 </details>
 
+### Contextual typing
+
+* the type of an expression is determined based on the location
+
+```ts
+interface Foo<T> {
+  foo: T;
+  ok: 'ok',
+}
+
+function fun<P extends object>(): Foo<P> {
+  return { ok: 'ok', foo: undefined! };
+}
+
+function bar<P extends object>(a: Foo<P>): P {
+  return {} as P;
+}
+
+const r = bar(fun<{ age: number }>());
+// r.age
+```
+
 ---
 
 ### Generics
