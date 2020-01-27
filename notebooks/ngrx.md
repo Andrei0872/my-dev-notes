@@ -392,6 +392,117 @@ will look like this:
 
 
 ❓ custom reducer factory
+
+---
+
+## Store
+
+```ts
+export class Store<T> extends Observable<T> implements Observer<Action> {
+  constructor(
+    state$: StateObservable,
+    private actionsObserver: ActionsSubject,
+    private reducerManager: ReducerManager
+  ) {
+    super();
+
+    this.source = state$;
+  }
+  
+  /* ... */
+}
+```
+
+From the above snippet we can tell that the `Store` class is a **hot observable** because its emitted data comes from outside, namely `state$`.
+This means that every time the `source`(`state$`) emits, the `Store` class will send the value to its subscribers. _You can find a simplified example [here](https://stackblitz.com/edit/manual-set-source?file=index.ts)_.
+
+It is worth noting the presence of `ActionsSubject`, with which we are able to **push** values in the **action stream** whenever the `Store.dispatch` is called.
+
+```ts
+dispatch<V extends Action = Action>(
+  action: V /* ... type check here - skipped for brevity ... */
+) {
+  this.actionsObserver.next(action);
+}
+```
+
+You can think of this `Store` class as a **dispatcher**, because it can dispatch actions with `Store.dispatch(action)`, but you can also think of it as a **data receiver**, because you can be notified about changes in the state is by subscribing to a `Store` instance(`Store.subscribe()`).
+
+```
+allows consumer ↔️ state communication
+        ⬆️
+        |
+        |
+-----------      newState          -----------                         
+|         | <-------------------   |         |                         
+|         |  Store.source=$state   |         |
+|         |                        |         | <---- where the data is stored
+|  Store  |      Action            |  State  |                         
+|         | -------------------->  |         |
+|         |   Store.dispatch()     |         |          
+-----------                        ----------- 
+                                   |        ⬆️
+                          Action   |        | newState
+                                   |        |
+                                   ⬇️        |
+                                  ------------- 
+                                  |           | 
+                                  |  Reducer  | <---- handle state changes
+                                  |           | 
+                                  ------------- 
+```
+
+So, the `State` class is the place where _actions meet reducers_, where the **reducers** are **called** with the **existing state** and based on the action, it will generate and emit a new state through the `Store`(because the `Store`'s source is the `State` itself).
+
+```ts
+export class State<T> extends BehaviorSubject<any> implements OnDestroy {
+  constructor(
+    actions$: ActionsSubject,
+    reducer$: ReducerObservable,
+    scannedActions: ScannedActionsSubject,
+    @Inject(INITIAL_STATE) initialState: any
+  ) { 
+    /* ... */ 
+
+    this.stateSubscription = stateAndAction$.subscribe(({ state, action }) => {
+      this.next(state); // Emitting the new state
+      scannedActions.next(action);
+    });
+  }
+  /* ... */
+}
+```
+I'd see the `Store` class as some sort of middleman between the `Model`(the place where the data is actually stored) and the `Data Consumer`:
+
+`Data Consumer` -> `Model`: `Store.dispatch()` 
+`Model` -> `Data Consumer`: `Store.subscribe()`
+
+As a side note, `Store` can not only be used as an **observable**, but also as an **observer**.
+
+```ts
+next(action: Action) {
+  this.actionsObserver.next(action);
+}
+
+error(err: any) {
+  this.actionsObserver.error(err);
+}
+
+complete() {
+  this.actionsObserver.complete();
+}
+```
+
+This might come handy when you can't know which action and when you'll want to dispatch.
+
+```ts
+const actions$ = of(FooActions.add({ age: 18, name: 'andrei' }));
+
+actions$.subscribe(this.store)
+```
+
+### Selecting from the Store
+
 ---
 
 ## State
@@ -500,3 +611,5 @@ implements OnDestroy {
     }
 }
 ```
+
+* `Store.addReducer` & `Store.removeReducer`
