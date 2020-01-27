@@ -585,6 +585,29 @@ const r = bar(fun<{ age: number }>());
 // r.age
 ```
 
+```ts
+interface Foo<T> {
+  foo: T;
+}
+
+type Fn<S> = (s: S) => Foo<S>;
+
+interface State {
+  users: string[];
+}
+
+const initState: State = {
+  users: ['andrei'],
+}
+
+function bar<S>(state: S, fn: Fn<S>) {}
+
+bar(initState, ({ users }) => {
+  return { foo: { users } };
+})
+
+```
+
 ---
 
 ### Generics
