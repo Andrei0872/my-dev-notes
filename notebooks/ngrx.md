@@ -121,7 +121,6 @@ StoreModule.forRoot({ entity: entityReducer })
 As you can see, unless you provide a **custom reducer factory**, the `combineReducers` function will be used instead(we'll have a look at it in a moment).
 `createReducerFactory` is mainly used to add the **meta reducers**(TODO:(link)).
 
-* you might be missing the old class syntax that was used to define classes; with the new API, this is automatically handled for you;
 
 The `REDUCER_FACTORY` token will only be injected in `ReducerManager` class:
 
@@ -274,13 +273,146 @@ If you want to visualize the above process you can open this [ng-run](#https://n
   }
   ```
 
-* `switch` replaced by `on`
 
+### `createReducer`
+
+It receives 2 arguments: the `initialState` and an indefinite number of `on` functions whose type will depend on the type of `initialState`.
+
+The `on` functions are an alternative for using the good old `switch` statement.
+An `on` function can receive multiple **action creators**(results of `createAction`(TODO:(link))) and the **actual reducer** as the last argument.  
+It will return an object `{ types: string[], reducer: ActionReducer<S> }`, where types is the type of each provided action creator and **reducer** is a **pure function** which handles state changes based on the action and has this signature: `(state: T | undefined, action: V): T;`.
+
+```ts
+export interface On<S> {
+  reducer: ActionReducer<S>;
+  types: string[];
+}
+
+export interface OnReducer<S, C extends ActionCreator[]> {
+  (state: S, action: ActionType<C[number]>): S; // `ActionType` - Will infer the return type of the action
+}
+
+export function on<C1 extends ActionCreator, S>(
+  creator1: C1,
+  reducer: OnReducer<S, [C1]>
+): On<S>;
+/* ... Overloads ... */
+export function on(
+  ...args: (ActionCreator | Function)[]
+): { reducer: Function; types: string[] } {
+  const reducer = args.pop() as Function;
+  const types = args.reduce(
+    (result, creator) => [...result, (creator as ActionCreator).type],
+    [] as string[]
+  );
+  return { reducer, types };
+}
+```
+
+❓ multiple action creators - discriminated unions - better types
+
+The `createReducer` function will create a **private** `Map<string, ActionReducer<S, A>>` object, where the **key** is the `type` of the action, and the **value** is the **reducer**.
+It will also return a **function** whose **arguments** will be a given **state** and an **action**. Because it is a closure, it has access to the `Map` object.
+
+This function will be invoked every time when an action is dispatched and what will do is to get the **reducer** **based on** the **action type**. Then, if the reducer is found, it will be called and will potentially return a new state.
+
+```ts
+export interface ActionReducer<T, V extends Action = Action> {
+  (state: T | undefined, action: V): T;
+}
+
+export function createReducer<S, A extends Action = Action>(
+initialState: S,
+...ons: On<S>[]
+): ActionReducer<S, A> {
+  const map = new Map<string, ActionReducer<S, A>>();
+  for (let on of ons) {
+    for (let type of on.types) {
+      if (map.has(type)) {
+        const existingReducer = map.get(type) as ActionReducer<S, A>;
+        const newReducer: ActionReducer<S, A> = (state, action) =>
+          on.reducer(existingReducer(state, action), action);
+        map.set(type, newReducer);
+      } else {
+        map.set(type, on.reducer);
+      }
+    }
+  }
+
+  return function(state: S = initialState, action: A): S {
+    // This is the body of `_counterReducer` function from below
+    const reducer = map.get(action.type);
+    return reducer ? reducer(state, action) : state;
+  };
+}
+```
+
+For instance, the `Map` object for the following `createReducer` reducer
+
+```ts
+const increment = createAction('increment');
+const decrement = createAction('decrement');
+const reset = createAction('reset');
+
+const _counterReducer = createReducer(initialState,
+  on(increment, state => state + 1 /* reducer#1 */),
+  on(decrement, state => state - 1 /* reducer#2 */),
+  on(reset, state => 0 /* reducer#3 */),
+);
+
+export function counterReducer(state, action) {
+  return _counterReducer(state, action);
+}
+```
+
+will look like this:
+
+```ts
+{
+  key: "increment"
+  value: ƒ (state) // reducer#1
+},
+{
+  key: "decrement"
+  value: ƒ (state) // reducer#2
+},
+{
+  key: "reset"
+  value: ƒ (state) // reducer#3
+}
+```
+
+❓ Where is the closure called from?
+❓ what happens when multiple actions are set to multiple reducers, in the same `createReducer()` ?
+
+### How are the types of the reducer inferred ?
+
+* `OnReducer`
+* depends on `ActionCreator`
+
+
+❓ custom reducer factory
 ---
 
 ## State
 
+* it has _the last word_ 
+* it's where reducer's invocation is done
+* it's where reducers _meet_ actions
+
 * `select` - uses `pluck()` operator for strings: `this.store.pipe(select('count'))`
+
+Can be provided as a function:
+
+```ts
+export function _initialStateFactory(initialState: any): any {
+  if (typeof initialState === 'function') {
+    return initialState();
+  }
+
+  return initialState;
+}
+```
 
 ---
 
@@ -351,3 +483,20 @@ provide: _REDUCER_FACTORY,
       }
     }
   ```
+
+* you can provide an initial state 
+
+```ts
+export class ReducerManager extends BehaviorSubject<ActionReducer<any, any>>
+implements OnDestroy {
+  constructor(
+    private dispatcher: ReducerManagerDispatcher,
+    @Inject(INITIAL_STATE) private initialState: any,
+    @Inject(INITIAL_REDUCERS) private reducers: ActionReducerMap<any, any>,
+    @Inject(REDUCER_FACTORY)
+    private reducerFactory: ActionReducerFactory<any, any>
+  ) {
+    super(reducerFactory(reducers, initialState));
+    }
+}
+```
