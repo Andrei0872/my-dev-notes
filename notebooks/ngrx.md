@@ -203,6 +203,8 @@ export function combineReducers(
 }
 ```
 
+Additionally, we can see in the above snippet why the **stored data** must be **immutable**. If a reducer would return the same reference of an object, but with a property changed, this would not be reflected into the UI as `nextStateForKey !== previousStateForKey` would fail.
+
 The gist resides in this snippet:
 
 ```ts
@@ -503,6 +505,173 @@ actions$.subscribe(this.store)
 
 ### Selecting from the Store
 
+We can use `Store.select` method:
+
+```ts
+export class Store<T> /* ... */ {
+  select<Props = any, K = any>(
+    pathOrMapFn: ((state: T, props?: Props) => K) | string,
+    ...paths: string[]
+  ): Observable<any> {
+    return (select as any).call(null, pathOrMapFn, ...paths)(this);
+  }
+}
+
+export function select<T, Props, K>(
+  pathOrMapFn: ((state: T, props?: Props) => any) | string,
+  propsOrPath?: Props | string,
+  ...paths: string[]
+) {
+  return function selectOperator(source$: Observable<T>): Observable<K> {
+    let mapped$: Observable<any>;
+
+    /* ... Important logic here ... */
+
+    return mapped$.pipe(distinctUntilChanged());
+  };
+}
+```
+`Store.select` will return an **observable** whose emitted values depend on the arguments passed to the `select` function.
+The **select function** is exported for a reason. Find out why in [Using custom selectors](#using-custom-selectors).
+
+Assuming you have have a state that complies with this interface:
+
+```ts
+interface AppState { foo: Foo; }
+
+interface Foo {
+  fooUsers: User[];
+  prop1: string;
+  prop2: number;
+}
+
+interface User { name: string; age: number; }
+```
+
+you'd inject the store like this: 
+
+```ts
+export class SmartComponent {
+  constructor (private store: Store<AppState>) { }
+}
+```
+
+There are a few ways to fetch data from the store. 
+
+1) Providing the **path** of the slice we're interested in with the help of a **sequence** of **string** values
+
+  ```ts
+  this.store.select('foo', 'fooUsers', /* ... */)
+    .subscribe(console.log)
+  ```
+
+  This approach is **not** that error-prone as you might expect, and this is due to the multiple **overloads** the `select` function is filled up with.
+  
+  ```ts
+  export function select<
+    T,
+    a extends keyof T,
+    b extends keyof T[a],
+    c extends keyof T[a][b],
+    d extends keyof T[a][b][c],
+    e extends keyof T[a][b][c][d]
+  >(
+    key1: a,
+    key2: b,
+    key3: c,
+    key4: d,
+    key5: e
+  ): (source$: Observable<T>) => Observable<T[a][b][c][d][e]>;
+  ```
+
+  where `T` is the generic type parameter passed into `Store`: `export class Store<T> extends Observable<T>`. In this case, it's `AppState`.
+  `foo` must be a key of `AppState`(the `T`), `fooUsers` must be a key of `AppState['foo']` and so forth...
+
+  Under the hood the mapping is done with the help of the `pluck` operator, which provides a declarative way to **select properties** from objects:
+
+  ```ts
+  export function select<T, Props, K>(
+    pathOrMapFn: ((state: T, props?: Props) => any) | string,
+    propsOrPath?: Props | string,
+    ...paths: string[]
+  ) {
+    return function selectOperator(source$: Observable<T>): Observable<K> {
+      let mapped$: Observable<any>;
+      
+      if (typeof pathOrMapFn === 'string') {
+        const pathSlices = [<string>propsOrPath, ...paths].filter(Boolean);
+        mapped$ = source$.pipe(pluck(pathOrMapFn, ...pathSlices));
+      } 
+      
+      /* ... */
+    }
+  }
+  ```
+
+TODO:(might get rid of it)
+2) Provide a custom function that will do the mapping
+  
+  ```ts
+  export function select<T, Props, K>(
+    mapFn: (state: T, props: Props) => K,
+    props?: Props
+  ): (source$: Observable<T>) => Observable<K>;
+  ```
+
+  This is similar to the previous approach, but instead of listing the properties, you provide a function and optionally another argument(`props`), based on which you'll do the mapping yourself. `props` may contain some data that is **not part of the store** and you can use it to alter the shape of the state.
+
+  ```ts
+  this.store.select(
+    (state, props) => {
+      return `${props.prefix}${state.foo.prop1}${props.suffix}` 
+    },
+    { suffix: '_____', prefix: '@@@@@@' }
+  )
+  .subscribe(console.log)
+  ```
+
+  This is achieved with the `map` operator:
+
+  ```ts
+  export function select<T, Props, K>(
+    pathOrMapFn: ((state: T, props?: Props) => any) | string,
+    propsOrPath?: Props | string,
+    ...paths: string[]
+  ) {
+    return function selectOperator(source$: Observable<T>): Observable<K> {
+      let mapped$: Observable<any>;
+
+      /* ... */
+
+      if (typeof pathOrMapFn === 'function') {
+        mapped$ = source$.pipe(
+          map(source => pathOrMapFn(source, <Props>propsOrPath))
+        );
+      }
+
+      /* ... */
+    };
+  }
+  ```
+
+#### Using custom selectors
+
+* can be more efficient - **memoization** takes place
+* **projection function** - gives shapes to the incoming that and pushes(**projects**) to the stream
+* this feature is strongly based on the power of **pure functions**
+* memoization happens in the `memoized function`; it deliberately declared as a **function declaration** in order to gain access to the `arguments` special variable; arrow functions don't have it!
+  ```ts
+  if (!isArgumentsChanged(arguments, lastArguments, isArgumentsEqual)) {
+    return lastResult;
+  }
+  ```
+
+* using nested custom selectors
+
+Instead of only selecting properties, sometimes you might want to have **more control** on the situation.
+
+❓ How the memoization actually works ?
+
 ---
 
 ## State
@@ -510,8 +679,6 @@ actions$.subscribe(this.store)
 * it has _the last word_ 
 * it's where reducer's invocation is done
 * it's where reducers _meet_ actions
-
-* `select` - uses `pluck()` operator for strings: `this.store.pipe(select('count'))`
 
 Can be provided as a function:
 
@@ -535,6 +702,8 @@ export function _initialStateFactory(initialState: any): any {
 ---
 
 ## Questions
+
+* what is `resultMemoize` ?
 
 * what is `@ngrx/data` ? 
 * `observeOn(queueScheduler)`
@@ -613,3 +782,11 @@ implements OnDestroy {
 ```
 
 * `Store.addReducer` & `Store.removeReducer`
+
+❓ why do results need to be compared?
+
+```ts
+if (isResultEqual(lastResult, newResult)) {
+  return lastResult;
+}
+```
