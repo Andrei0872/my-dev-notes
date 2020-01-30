@@ -656,21 +656,288 @@ TODO:(might get rid of it)
 
 #### Using custom selectors
 
-* can be more efficient - **memoization** takes place
-* **projection function** - gives shapes to the incoming that and pushes(**projects**) to the stream
-* this feature is strongly based on the power of **pure functions**
-* memoization happens in the `memoized function`; it deliberately declared as a **function declaration** in order to gain access to the `arguments` special variable; arrow functions don't have it!
-  ```ts
-  if (!isArgumentsChanged(arguments, lastArguments, isArgumentsEqual)) {
-    return lastResult;
-  }
-  ```
-
 * using nested custom selectors
 
 Instead of only selecting properties, sometimes you might want to have **more control** on the situation.
+In this case, we can use the `createSelector` function which can take a bunch of **selectors** and lastly, a **projection function**.
+The **selectors** will allow us to **select** certain **slices** from the store, whereas the last provided function will give the shape of the emitted value(i.e: the state object), based on the existing selectors. It will then project the value into the stream so the subscribers can consume it.
 
-❓ How the memoization actually works ?
+This feature is strongly based on the power of **pure functions**. Because selectors must be pure functions, **memoization** can take place, which prevents us from redoing the same task multiple times if the same arguments are provided.
+
+A selector might look like this:
+
+```ts
+export type Selector<T, V> = (state: T) => V;
+```
+
+or it might receive some `props` object that contains data which is not part of store, but might influence the final shape of the stream's values:
+
+```ts
+export type SelectorWithProps<State, Props, Result> = (
+  state: State,
+  props: Props
+) => Result;
+```
+
+As you can notice, there is no hint that indicates that the above selector can be **memoized**.
+
+A memoized selector, which can be the result of `createSelector`,  looks like this:
+
+```ts
+export interface MemoizedSelector<
+  State,
+  Result,
+  ProjectorFn = DefaultProjectorFn<Result>
+> extends Selector<State, Result> {
+  release(): void;
+  projector: ProjectorFn;
+  setResult: (result?: Result) => void;
+  clearResult: () => void;
+}
+
+export type DefaultProjectorFn<T> = (...args: any[]) => T;
+```
+
+* **projector** is just the projection function mentioned before, it computes the shape of the data based on the selectors
+* `release()` - release the memozied value from memory
+
+There is also `MemoizedSelectorWithProps<State, Props, Result>` which simply extends `SelectorWithProps`, but has the same methods as `MemoizedSelector`.
+
+```ts
+export function createSelector(
+  ...input: any[]
+): MemoizedSelector<any, any> | MemoizedSelectorWithProps<any, any, any> {
+  return createSelectorFactory(defaultMemoize)(...input);
+}
+```
+
+`defaultMemoize` will take a projection function and will provide a way to memoize it:
+
+```ts
+export function defaultMemoize(
+  projectionFn: AnyFn,
+  isArgumentsEqual = isEqualCheck,
+  isResultEqual = isEqualCheck
+): MemoizedProjection {
+  let lastArguments: null | IArguments = null;
+  let lastResult: any = null;
+  let overrideResult: any;
+
+  // Release value from memory 
+  function reset() {
+    lastArguments = null;
+    lastResult = null;
+  }
+
+  function setResult(result: any = undefined) { overrideResult = { result }; }
+
+  function clearResult() { overrideResult = undefined; }
+
+  function memoized(): any {
+    if (overrideResult !== undefined) {
+      return overrideResult.result;
+    }
+
+    // First time the function is invoked
+    if (!lastArguments) {
+      // Call the projection function with the provided arguments
+      lastResult = projectionFn.apply(null, arguments as any);
+      lastArguments = arguments;
+      return lastResult;
+    }
+
+    // If the arguments are not different than the previous ones
+    // there is no need to re-compute the results
+    if (!isArgumentsChanged(arguments, lastArguments, isArgumentsEqual)) {
+      return lastResult;
+    }
+
+    // If we reached this point, it means the arguments were different
+    // which requires a new computation of the result
+    const newResult = projectionFn.apply(null, arguments as any);
+    lastArguments = arguments;
+
+    if (isResultEqual(lastResult, newResult)) {
+      return lastResult;
+    }
+
+    lastResult = newResult;
+
+    return newResult;
+  }
+
+  return { memoized, reset, setResult, clearResult };
+}
+```
+
+The memoization happens in the `memoized` function. It is deliberately declared as a **function declaration** in order to gain access to the `arguments` special variable. Arrow functions don't have it!
+
+So, if you have something like this:
+
+```ts
+function isEqualCheck(a: any, b: any): boolean {
+  return a === b;
+}
+
+function sum (a, b) { return a + b; };
+
+const memoizedSum = defaultMemoize(sum, isEqualCheck, isEqualCheck);
+
+/* 
+  `sum` is executed
+
+  if (!lastArguments) {
+    // Call the projection function with the provided arguments
+    lastResult = projectionFn.apply(null, arguments as any);
+    lastArguments = arguments;
+    return lastResult;
+  }
+*/
+memoizedSum.memoized(1, 3);
+
+/*
+ `sum` will not be executed again as it would be called with the same parameters
+
+ if (!isArgumentsChanged(arguments, lastArguments, isArgumentsEqual)) {
+    return lastResult;
+  }
+*/
+memoizedSum.memoized(1, 3);
+```
+
+This(`defaultMemoize`) is one of the building blocks of `createSelector` and it is where the **memoization**  happens.
+However, when using `createSelector`, the memoization can occur in 2 places: 
+  * at state level - when the selector receives the same state
+  * at projection function level - when the projection function is called with the same selectors.
+
+These features are brought together with the `createSelectorFactory`:
+
+```ts
+export function createSelector(
+  ...input: any[]
+): MemoizedSelector<any, any> | MemoizedSelectorWithProps<any, any, any> {
+  return createSelectorFactory(defaultMemoize)(...input);
+}
+```
+
+Consider this example:
+
+```ts
+
+```
+
+
+
+```ts
+export function createSelectorFactory(
+  memoize: MemoizeFn,
+  options: SelectorFactoryConfig<any, any> = {
+    stateFn: defaultStateFn,
+  }
+) {
+  return function(
+    ...input: any[]
+  ): MemoizedSelector<any, any> | MemoizedSelectorWithProps<any, any, any> {
+    let args = input;
+    if (Array.isArray(args[0])) {
+      const [head, ...tail] = args;
+      args = [...head, ...tail];
+    }
+
+    const selectors = args.slice(0, args.length - 1);
+    const projector = args[args.length - 1];
+    const memoizedSelectors = selectors.filter(
+      (selector: any) =>
+        selector.release && typeof selector.release === 'function'
+    );
+
+    const memoizedProjector = memoize(function(...selectors: any[]) {
+      return projector.apply(null, selectors);
+    });
+
+    const memoizedState = defaultMemoize(function(state: any, props: any) {
+      return options.stateFn.apply(null, [
+        state,
+        selectors,
+        props,
+        memoizedProjector,
+      ]);
+    });
+
+    function release() {
+      memoizedState.reset();
+      memoizedProjector.reset();
+
+      memoizedSelectors.forEach(selector => selector.release());
+    }
+
+    return Object.assign(memoizedState.memoized, {
+      release,
+      projector: memoizedProjector.memoized,
+      setResult: memoizedState.setResult,
+      clearResult: memoizedState.clearResult,
+    });
+  };
+}
+```
+
+```ts
+export function defaultMemoize(
+  projectionFn: AnyFn,
+  isArgumentsEqual = isEqualCheck,
+  isResultEqual = isEqualCheck
+): MemoizedProjection {
+  let lastArguments: null | IArguments = null;
+  // tslint:disable-next-line:no-any anything could be the result.
+  let lastResult: any = null;
+  let overrideResult: any;
+
+  function reset() {
+    lastArguments = null;
+    lastResult = null;
+  }
+
+  function setResult(result: any = undefined) {
+    overrideResult = { result };
+  }
+
+  function clearResult() {
+    overrideResult = undefined;
+  }
+
+  // tslint:disable-next-line:no-any anything could be the result.
+  function memoized(): any {
+    if (overrideResult !== undefined) {
+      return overrideResult.result;
+    }
+
+    if (!lastArguments) {
+      lastResult = projectionFn.apply(null, arguments as any);
+      lastArguments = arguments;
+      return lastResult;
+    }
+
+    if (!isArgumentsChanged(arguments, lastArguments, isArgumentsEqual)) {
+      return lastResult;
+    }
+
+    const newResult = projectionFn.apply(null, arguments as any);
+    lastArguments = arguments;
+
+    if (isResultEqual(lastResult, newResult)) {
+      return lastResult;
+    }
+
+    lastResult = newResult;
+
+    return newResult;
+  }
+
+  return { memoized, reset, setResult, clearResult };
+}
+```
+
+❓ How does the memoization actually work ?
 
 ---
 
