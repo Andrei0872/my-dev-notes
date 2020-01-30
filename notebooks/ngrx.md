@@ -654,9 +654,16 @@ TODO:(might get rid of it)
   }
   ```
 
+* (Add as paragraph) why you should avoid shallow copying
+  where you have a custom selector, which takes a `userSelector`  that depends on `feat.users`.
+  when adding a new user to `feat.users`, if you're not creating a new instance of that array, the **projection function** of `userSelector`
+  will return the memoized value, because the reference would be same! :)
+
 #### Using custom selectors
 
 * using nested custom selectors
+* explain example from the documentation
+* `select(customSelector, { props })`
 
 Instead of only selecting properties, sometimes you might want to have **more control** on the situation.
 In this case, we can use the `createSelector` function which can take a bunch of **selectors** and lastly, a **projection function**.
@@ -786,7 +793,7 @@ const memoizedSum = defaultMemoize(sum, isEqualCheck, isEqualCheck);
 /* 
   `sum` is executed
 
-  if (!lastArguments) {
+  if (!lastArguments) { // <-- `lastArguments = null`
     // Call the projection function with the provided arguments
     lastResult = projectionFn.apply(null, arguments as any);
     lastArguments = arguments;
@@ -805,10 +812,88 @@ memoizedSum.memoized(1, 3);
 memoizedSum.memoized(1, 3);
 ```
 
-This(`defaultMemoize`) is one of the building blocks of `createSelector` and it is where the **memoization**  happens.
+`defaultMemoize` is one of the building blocks of `createSelector` and it is where the **memoization**  happens.
 However, when using `createSelector`, the memoization can occur in 2 places: 
-  * at state level - when the selector receives the same state
-  * at projection function level - when the projection function is called with the same selectors.
+  * at **state level** - when the selector receives the same state
+    ```ts
+    interface Foo { users: Array<{ name: string; companyId: number; }>; crtId: number; }
+    interface AppState { foo: Foo; }
+
+    const crtIdSelector = (s: AppState) => s.foo.crtId;
+    const usersSelector = (s: AppState) => s.foo.users;
+
+    const companyUsers = createSelector(
+      usersSelector,
+      crtIdSelector,
+      (users, companyId) => users.filter(u => u.companyId === companyId),
+    );
+
+    const state = { foo: /* ... */ };
+
+    // Run for the first time - the selectors & projection function are invoked
+    companyUsers(state);
+     
+    // The state has not changed its reference in the meanwhile
+    // so selectors & projection function won't be called again 
+    companyUsers(state);
+    ```
+  * at **projection function level** - when the projection function is called with the same selectors.  
+    Even though the state object might have changed due to some other updates, it does not mean that some **selectors**' return values did as well.
+
+    A **selector** created by `createSelector` can **use** the **memoized** value when **updating** a **slice** of the store that is **not relevant** for the projection function of that selector.
+
+    ```ts
+    interface User { name: string; age: number; isOk: boolean; }
+
+    interface State {
+      users: User[];
+      shouldShow: boolean;
+      notRelevantProperty: string;
+    }
+
+    const usersSelector = (s: State) => s.users;
+
+    const userProjectionFn = (users: User[]) => {
+      return users.filter(u => u.isOk);
+    };
+
+    const okUsersSelector = createSelector(
+      usersSelector,
+      userProjectionFn,
+    );
+
+    let dummyState: State = {
+      shouldShow: true,
+      users: [
+        { name: 'a', age: 1, isOk: true },
+        { name: 'b', age: 2, isOk: false },
+        { name: 'c', age: 3, isOk: false },
+        { name: 'd', age: 4, isOk: true },
+      ],
+      notRelevantProperty: 'not relevant'
+    };
+
+    // First time the selector is used with this state object
+    // The returned value will be memoized
+    console.log(okUsersSelector(dummyState));
+
+    // Although the `dummyState` object changed its reference
+    // `dummyState.users` did not, meaning that `userProjectionFn` should use the memoized value
+    // because `usersSelector` will return the same `users` object
+    dummyState = {
+      ...dummyState,
+      notRelevantProperty: 'not relevant - updated!',
+    };
+
+    console.log(okUsersSelector(dummyState));
+    ```
+
+    This happens because you'd usually run more **complex logic** inside the **projection function**, whereas a selector should only return a property's value(a piece of the state), which is not an expensive operation.
+
+    A high-level overview of what's going on behind the scenes would be this:
+    * 
+
+    TODO: explain the flow
 
 These features are brought together with the `createSelectorFactory`:
 
@@ -816,17 +901,11 @@ These features are brought together with the `createSelectorFactory`:
 export function createSelector(
   ...input: any[]
 ): MemoizedSelector<any, any> | MemoizedSelectorWithProps<any, any, any> {
-  return createSelectorFactory(defaultMemoize)(...input);
+  return createSelectorFactory(defaultMemoize)(...input); // `input` - the sequence of selectors followed by the projection function
 }
 ```
 
-Consider this example:
-
-```ts
-
-```
-
-
+* `memoizedSelectors` - `createSelector()` can receive selectors returned by `createSelector` as well
 
 ```ts
 export function createSelectorFactory(
@@ -881,61 +960,6 @@ export function createSelectorFactory(
 }
 ```
 
-```ts
-export function defaultMemoize(
-  projectionFn: AnyFn,
-  isArgumentsEqual = isEqualCheck,
-  isResultEqual = isEqualCheck
-): MemoizedProjection {
-  let lastArguments: null | IArguments = null;
-  // tslint:disable-next-line:no-any anything could be the result.
-  let lastResult: any = null;
-  let overrideResult: any;
-
-  function reset() {
-    lastArguments = null;
-    lastResult = null;
-  }
-
-  function setResult(result: any = undefined) {
-    overrideResult = { result };
-  }
-
-  function clearResult() {
-    overrideResult = undefined;
-  }
-
-  // tslint:disable-next-line:no-any anything could be the result.
-  function memoized(): any {
-    if (overrideResult !== undefined) {
-      return overrideResult.result;
-    }
-
-    if (!lastArguments) {
-      lastResult = projectionFn.apply(null, arguments as any);
-      lastArguments = arguments;
-      return lastResult;
-    }
-
-    if (!isArgumentsChanged(arguments, lastArguments, isArgumentsEqual)) {
-      return lastResult;
-    }
-
-    const newResult = projectionFn.apply(null, arguments as any);
-    lastArguments = arguments;
-
-    if (isResultEqual(lastResult, newResult)) {
-      return lastResult;
-    }
-
-    lastResult = newResult;
-
-    return newResult;
-  }
-
-  return { memoized, reset, setResult, clearResult };
-}
-```
 
 ❓ How does the memoization actually work ?
 
