@@ -70,6 +70,9 @@ export function createAction<
 
 ## Reducers
 
+❓ how does NgRx make set the `default` value?
+  * after the reducers are provided, NgRx dispatches an **init action** which will set the default values since there will not be any reducer that matches this action type.
+
 ### Providing reducers
 
 Reducers can be provided with:
@@ -1253,20 +1256,98 @@ will return the memoized value, because the reference would be same.
 
 ## State
 
-* it has _the last word_ 
-* it's where reducer's invocation is done
-* it's where reducers _meet_ actions
-
-Can be provided as a function:
+Among other traits, this is the place where the **application's information** is kept.
 
 ```ts
-export function _initialStateFactory(initialState: any): any {
-  if (typeof initialState === 'function') {
-    return initialState();
-  }
+constructor(
+  actions$: ActionsSubject,
+  reducer$: ReducerObservable,
+  scannedActions: ScannedActionsSubject,
+  @Inject(INITIAL_STATE) initialState: any
+) { /* ... */ }
+```
 
-  return initialState;
+* `actions$`: a `BehaviorSubject` that will emit every time an action is dispatched(i.e: `store.dispatch(newAction())`)
+* `reducer$`: a `BehaviorSubject` whose values are functions that, when invoked, will iterate over all the registered reducers and will execute them with the **current state** and the **action** that cause the function's invocation
+* `scannedActions`: used to inform other entities(e.g: `effects`) that some action occurred
+
+None of the above parameters have access modifiers, which indicates that most of the logic will happen inside the `constructor`:
+
+```ts
+constructor (/* ... */) {
+  super(initialState);
+
+  const actionsOnQueue$: Observable<Action> = actions$.pipe(
+    observeOn(queueScheduler)
+  );
+  const withLatestReducer$: Observable<
+    [Action, ActionReducer<any, Action>]
+  > = actionsOnQueue$.pipe(withLatestFrom(reducer$));
+
+  const seed: StateActionPair<T> = { state: initialState };
+  const stateAndAction$: Observable<{
+    state: any;
+    action?: Action;
+  }> = withLatestReducer$.pipe(
+    scan<[Action, ActionReducer<T, Action>], StateActionPair<T>>(
+      reduceState,
+      seed
+    )
+  );
+
+  this.stateSubscription = stateAndAction$.subscribe(({ state, action }) => {
+    this.next(state);
+    scannedActions.next(action);
+  });
 }
+```
+
+This is the place where `actions` are intercepted and applied to the existing **reducers**. After the reducers are called with the new action, the resulted state will be sent to the consumers. In this case, it is the `Store` entity, because it acts as a middleman between the consumer(e.g: a component, a service) and the `State`(the model, there the information is stored). This can be seen from this line of `Store` class: `this.source = state$;`.
+
+
+```ts
+const withLatestReducer$: Observable<
+    [Action, ActionReducer<any, Action>]
+  > = actionsOnQueue$.pipe(withLatestFrom(reducer$));
+```
+
+Will make sure that although `actionsOnQueue$` emits, if `reducer$` didn't, no values will be pushed forwards in the stream. If both emitted, the values will be emitted only if the observable which emits again is `actionsOnQueue$`.
+
+```
+-A---A--A--A-----A--> actionsOnQueue$
+       /  /    /
+      |  /    /
+------R------R------> reducer$
+```
+
+```ts
+const seed: StateActionPair<T> = { state: initialState };
+const stateAndAction$: Observable<{
+  state: any;
+  action?: Action;
+}> = withLatestReducer$.pipe(
+  scan<[Action, ActionReducer<T, Action>], StateActionPair<T>>(
+    reduceState,
+    seed
+  )
+);
+
+export function reduceState<T, V extends Action = Action>(
+  stateActionPair: StateActionPair<T, V> = { state: undefined },
+  [action, reducer]: [V, ActionReducer<T, V>]
+): StateActionPair<T, V> {
+  const { state } = stateActionPair;
+  return { state: reducer(state, action), action };
+}
+```
+
+`reducer`, when called, will loop through the provided reducers and will call them with the existing state and with the current action. It will eventually **return** a **new state** which will be pushed forwards into the stream:
+
+```ts
+this.stateSubscription = stateAndAction$.subscribe(({ state, action }) => {
+  this.next(state);
+  scannedActions.next(action);
+});
 ```
 
 ---
