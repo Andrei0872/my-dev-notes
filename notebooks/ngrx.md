@@ -660,11 +660,6 @@ There are a few ways to fetch data from the store.
   interface AppSate { users: UserState; }
   ```
 
-* (Add as paragraph) why you should avoid shallow copying
-  where you have a custom selector, which takes a `userSelector`  that depends on `feat.users`.
-  when adding a new user to `feat.users`, if you're not creating a new instance of that array, the **projection function** of `userSelector`
-  will return the memoized value, because the reference would be same! :)
-
 #### Using custom selectors
 
 Instead of only selecting properties, sometimes you might want to have **more control** on the situation.
@@ -1028,16 +1023,28 @@ merge(
 
 We can tell from the above 2 snippets that `props` are **available** both in **selectors** and **projection function**.
 
+`select` is the same function that is used in `Store.select`:
+
+```ts
+/* ... Inside `select` ... */
+if (typeof pathOrMapFn === 'string') {
+  const pathSlices = [<string>propsOrPath, ...paths].filter(Boolean);
+  mapped$ = source$.pipe(pluck(pathOrMapFn, ...pathSlices));
+} else if (typeof pathOrMapFn === 'function') {
+  mapped$ = source$.pipe(
+    map(source => pathOrMapFn(source, <Props>propsOrPath))
+  );
+}
+```
+
 #### How does the memoization actually work ?
 
-* using nested custom selectors
-* `select(customSelector, { props })`
-  
 In order to get a better understanding of how this process works, let's have a look at its foundation:
 
 ```ts
-// createSelectorFactory's returned function body
+// createSelectorFactory's returned function body: createSelector(...inputs) { return createSelectorFactory(defaultMemoize)(...input); }
 
+let args = input;
 const selectors = args.slice(0, args.length - 1);
 const projector = args[args.length - 1];
 const memoizedSelectors = selectors.filter(
@@ -1074,18 +1081,45 @@ return Object.assign(memoizedState.memoized, {
 });
 ```
 
-It will return a function(`memoizedState.memoized`) that can be called with 2 arguments: `state` and `props`. `memoizedState.memoized` is also the result of `createSelector()`.
+It will return a function(`memoizedState.memoized`) that can be called with 2 arguments: `state` and `props`. `memoizedState.memoized` is the result of `createSelector()`.
 
 Whenever `memoizedState.memoized` is called, it will verify if there is any difference between the current function's arguments and previous ones. If that's the case, it will call the callback function provided to `defaultMemoize`:
 
 ```ts
 export function defaultMemoize(projectionFn: AnyFn, /* ... */): MemoizedProjection { /* ... */ }
 export type MemoizedProjection = {
-  memoized: AnyFn;
+  memoized: AnyFn; // <-- Here is where the memoization happens
   reset: () => void;
   setResult: (result?: any) => void;
   clearResult: () => void;
 };
+
+function memoized(): any {
+  if (overrideResult !== undefined) {
+    return overrideResult.result;
+  }
+
+  if (!lastArguments) {
+    lastResult = projectionFn.apply(null, arguments as any);
+    lastArguments = arguments;
+    return lastResult;
+  }
+
+  if (!isArgumentsChanged(arguments, lastArguments, isArgumentsEqual)) {
+    return lastResult;
+  }
+
+  const newResult = projectionFn.apply(null, arguments as any);
+  lastArguments = arguments;
+
+  if (isResultEqual(lastResult, newResult)) {
+    return lastResult;
+  }
+
+  lastResult = newResult;
+
+  return newResult;
+}
 ```
 
 The `projectionFn` for `memoizedState` is:
@@ -1114,8 +1148,106 @@ function(...selectors: any[]) {
 Consider this example:
 
 ```ts
+const state = {
+  status: 'ok',
+  actions: [ {name:'a1', status: 'ok'}, {name:'a2', status: 'denied'} ],
+};
+
+const actionsOfCrtStatusSelector = createSelector(
+  s => s.status,
+  s => s.actions,
+  (status, actions) => actions.filter(a => a.status === status),
+);
+
+// `actionsOfCrtStatusSelector` = `memoizedState.memoized`
+actionsOfCrtStatusSelector(state);
+```
+
+Here's what happens after the selector is called with a `state`:
+
+* `actionsOfCrtStatusSelector(state)` equals to `memoizedState.memoized(state)`
+* `memoizedState.memoized` will check if the `state` argument is different than the previous one, but since it's the first call, these lines of `memoized` will be reached:
+  ```ts
+  if (!lastArguments) {
+    // Call the function and memoize its result
+    lastResult = projectionFn.apply(null, arguments as any);
+    lastArguments = arguments;
+    return lastResult;
+  }
+  ```
+  
+  where `projectionFn` is `#1`. When invoked, it will call `options.stateFn` which looks like this:
+  
+  ```ts
+  if (props === undefined) {
+    // In this case, the selectors are: `[s => s.status, s => s.actions]`
+    const args = (<Selector<any, any>[]>selectors).map(fn => fn(state));
+    return memoizedProjector.memoized.apply(null, args);
+  }
+
+  const args = (<SelectorWithProps<any, any, any>[]>selectors).map(fn =>
+    fn(state, props)
+  );
+  return memoizedProjector.memoized.apply(null, [...args, props]);
+  ```
+
+  it is where all the selectors are invoked.
+
+* `memoizedProjector.memoized` will be called with the selectors' results(and optionally a `props` object).
+  since it is the first time `memoizedProjector.memoized` is invoked, it will call its projection function(`#2`):
+  
+  ```ts
+  if (!lastArguments) {
+    // Call the function and memoize its result
+    lastResult = projectionFn.apply(null, arguments as any);
+    lastArguments = arguments;
+    return lastResult;
+  }
+
+  // `projectionFn` from above
+  function(...selectors: any[]) {
+    return projector.apply(null, selectors);
+  }
+
+  // `projector`
+  (status, actions) => actions.filter(a => a.status === status),
+  ```
+  _Note: even though arrow functions do not have `this` available, `call()`, `bind()`, `apply()` can be used to pass arguments_
+
+The flow would look like as follows:
+
+```ts
+memoizedProjector = memoize(/* #2 */function(...selectors: any[]) {
+  return projector.apply(null, selectors);
+});
+
+memoizedState = defaultMemoize(/* #1 */function(state: any, props: any) {
+  return options.stateFn.apply(null, [
+    state,
+    selectors,
+    props,
+    memoizedProjector,
+  ]);
+});
+```
 
 ```
+memoizedState.memoized(state) ---compare crtArgs with prevArgs---> #1(state) -> invoke selectors with the given `state` ----selectorResults---> memoizedProjector(selectorResults) ---compare crtArgs with prevArgs---> #2(selectorResults)
+```
+
+After the first call, `memoizedState.memoized(state)` will be the result of `#2(selectorResults)`.
+
+On subsequent calls, `memoizedState.memoized(state)` will not necessarily follow the same path.  
+For example, `state` is the same object, it will stop here, since `prevArgs`(previous state) equals to `crtArgs`(current state):
+
+```
+memoizedState.memoized(state) ---compare crtArgs with prevArgs---> prevArgs
+```
+
+This also justifies why we should **always** strive for **immutability**.  
+Imagine you have a custom selector, which takes a `userSelector` created by `createSelector()` that depends on `feat.users`.
+when adding a new user to `feat.users`, if you're not creating a new instance of that array, the **projection function** of `userSelector`
+will return the memoized value, because the reference would be same.
 
 ---
 
