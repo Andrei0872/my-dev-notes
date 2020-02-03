@@ -1605,6 +1605,34 @@ Furthermore, for a better visualization of how things are organized, you can put
 
 ## Using Features
 
+* lazy-load feature
+* `Store.forFeature(name, reducer: ActionReducerMap | ActionReducer, config)`
+* what happens when you have multiple `StoreModule.forFeature()` within a module
+* why `Module.onDestroy()` ?
+* 
+  ```ts
+  const featureReducerCollection = featureReducers.shift();
+  const reducers = featureReducerCollection /*TODO(#823)*/![index];
+  ```
+* reducers can be functions
+* when can multiple features be added at once ❓
+* `ReducerManager.addReducer()` ❓
+* `StoreModule.forFeature(name, { foo, bar })` => `{ foo: fooReducer, bar: barReducer }`(result of `combination`)
+* an action will be dispatched when a new feature has been added
+  ```ts
+    private updateReducers(featureKeys: string[]) {
+    this.next(this.reducerFactory(this.reducers, this.initialState));
+    this.dispatcher.next(<Action>{
+      type: UPDATE,
+      features: featureKeys,
+    });
+  }
+  ```
+* service `onDestroy`
+* can't add `StoreModule.forRoot()` in lazy-loaded modules ❓
+* https://medium.com/youngers-consulting/ngrx-tips-part-1-module-setup-with-lazy-loading-5dc8994b5a2d
+
+
 ---
 
 ## TODO
@@ -1694,7 +1722,7 @@ implements OnDestroy {
 }
 ```
 
-* `Store.addReducer` & `Store.removeReducer`
+* `Store.addReducer` & `Store.removeReducer` ❗️
 
 ❓ why do results need to be compared?
 
@@ -1703,3 +1731,5 @@ if (isResultEqual(lastResult, newResult)) {
   return lastResult;
 }
 ```
+
+* https://medium.com/youngers-consulting/angular-ngrx-boilerplate-reduction-2019-edition-f28454dd28d7
