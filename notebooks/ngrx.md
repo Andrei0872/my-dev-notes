@@ -1352,6 +1352,193 @@ this.stateSubscription = stateAndAction$.subscribe(({ state, action }) => {
 
 ---
 
+## Meta-reducers
+
+Simply put, **meta-reducers** are functions that **receive** a **reducer** and **return** a **reducer**. At the same time, they are similar to how interceptors act on an HTTP request, because a **meta-reducer** can add **behavior before** and **after** a **reducer** is **invoked**.
+
+### Setting up meta-reducers
+
+```ts
+export class StoreModule {
+  static forRoot(
+    reducers,
+    config: RootStoreConfig<any, any> = {}
+  ): ModuleWithProviders<StoreRootModule> {
+    return {
+      ngModule: StoreRootModule,
+      providers: [
+        /* ... */
+        {
+          provide: _RESOLVED_META_REDUCERS,
+          deps: [META_REDUCERS, USER_PROVIDED_META_REDUCERS],
+          useFactory: _concatMetaReducers,
+        },
+        {
+          provide: REDUCER_FACTORY,
+          deps: [_REDUCER_FACTORY, _RESOLVED_META_REDUCERS],
+          useFactory: createReducerFactory,
+        },
+        /* ... */
+      ]
+    }
+  }
+}
+```
+
+`_RESOLVED_META_REDUCERS` when injected in `createReducerFactory` will be an array resulted from merging the built-in meta-reducers with the custom ones.
+
+There are 2 built-in meta-reducers: `immutabilityCheckMetaReducer` and `serializationCheckMetaReducer`, at which we're going to have a look in the following sections.
+
+`createReducerFactory` will return a function that will be called with 2 arguments: `reducers` and `initialState`. At the beginning, when the app is barely loaded, the function will be called with the arguments provided in `StoreModule.forRoot({ reducers, }, { initialState })`. When called, it will **create a chain**(_sort of linked list_) **of meta-reducers**, whose **extremity** is going to be the **reducer** itself. This way, each meta-reducer can add behavior before and after the reducer's invocation.  
+The reason it returns that function is that `createReducerFactory` will be called when `REDUCER_FACTORY` is injected in `ReducerManager` class. `ReducerManager` will keep reducers up to date when features are added/removed. So, for instance, when a feature comes with its reducer, `ReducerManager` will combine the existing reducer with the new one
+
+```ts
+addReducers(reducers: { [key: string]: ActionReducer<any, any> }) {
+  this.reducers = { ...this.reducers, ...reducers };
+  this.updateReducers(Object.keys(reducers));
+}
+```
+
+then it will **re-create** the chain, so that meta-reducers can be applied properly:
+
+```ts
+private updateReducers(featureKeys: string[]) {
+  this.next(this.reducerFactory(this.reducers, this.initialState)); // <- re-create the chain
+  this.dispatcher.next(<Action>{
+    type: UPDATE,
+    features: featureKeys,
+  });
+}
+```
+
+```ts
+export function createReducerFactory<T, V extends Action = Action>(
+  reducerFactory: ActionReducerFactory<T, V>,
+  metaReducers?: MetaReducer<T, V>[]
+): ActionReducerFactory<T, V> {
+  // Setting up the `chain` - not created yet!
+  if (Array.isArray(metaReducers) && metaReducers.length > 0) {
+    (reducerFactory as any) = compose.apply(null, [
+      ...metaReducers,
+      reducerFactory,
+    ]);
+  }
+
+  return (reducers: ActionReducerMap<T, V>, initialState?: InitialState<T>) => {
+    const reducer = reducerFactory(reducers); // <- chain created
+    return (state: T | undefined, action: V) => {
+      state = state === undefined ? (initialState as T) : state;
+      return reducer(state, action);
+    };
+  };
+}
+```
+
+The gist resides in `compose`:
+
+```ts
+export function compose(...functions: any[]) {
+  return function(arg: any) {
+    if (functions.length === 0) {
+      return arg;
+    }
+
+    const last = functions[functions.length - 1];
+    const rest = functions.slice(0, -1);
+
+    return rest.reduceRight((composed, fn) => fn(composed), last(arg));
+  };
+}
+```
+
+where `functions` is an array of meta-reducers followed by the function that will combine the reducers in a single reducer object and `arg` will be reducers that will have to be combined.
+
+This could be visualized as follows:
+
+```ts
+// m-r -> meta-reducer
+
+const myMetaReducer = (reducer) => (state, action) => {
+  /* Logic before reducer's invocation */
+  
+  const result = reducer(state, action); // Invoke the reducer -> will return the new state
+
+  /* Logic after reducer's invocation */
+
+  return result; // Return it so other meta-reducers can access the new produced state
+}
+
+rest.reduceRight((composed, fn) => fn(composed), last(arg));
+
+                       |
+                       |
+                       ⬇️
+
+----------   reducer()    ----------   reducer()    -------------  
+|        |--------------->|        |--------------->|           | 
+|  m-r1  |                |  m-r2  |                |  reducer  |   <- // new state is produced
+|        |<---------------|        |<---------------|           |   
+----------    newState    ----------    newState    -------------     
+    |
+    |  // returned reducer; when called, it will in turn call the reducer received as an argument;
+    |  // that argument 'points' to the previous reducer in the chain
+    ⬇️
+  reducer(state, action)
+```
+
+### Providing custom meta-reducers
+
+```ts
+export class StoreModule {
+  static forRoot(
+    reducers,
+    config: RootStoreConfig<any, any> = {}
+  ): ModuleWithProviders<StoreRootModule> {
+    return {
+      ngModule: StoreRootModule,
+      providers: [
+        /* ... */
+        {
+          provide: _RESOLVED_META_REDUCERS,
+          deps: [META_REDUCERS, USER_PROVIDED_META_REDUCERS],
+          useFactory: _concatMetaReducers,
+        },
+        /* ... */
+      ]
+    }
+  }
+}
+/* ... */
+export function _concatMetaReducers(
+  metaReducers: MetaReducer[],
+  userProvidedMetaReducers: MetaReducer[]
+): MetaReducer[] {
+  return metaReducers.concat(userProvidedMetaReducers);
+}
+```
+
+#### `config.metaReducers`
+
+Where `RootStoreConfig` extends `StoreConfig`:
+
+```ts
+export interface StoreConfig<T, V extends Action = Action> {
+  initialState?: InitialState<T>;
+  reducerFactory?: ActionReducerFactory<T, V>;
+  metaReducers?: MetaReducer<T, V>[];
+}
+```
+
+#### Injecting a dependency into a meta-reducer
+
+* `META_REDUCER` - a `multi` provider token
+
+---
+
+## Using Features
+
+---
+
 ## TODO
 
 * check `example-app`
