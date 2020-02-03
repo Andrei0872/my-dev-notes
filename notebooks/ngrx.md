@@ -1354,7 +1354,7 @@ this.stateSubscription = stateAndAction$.subscribe(({ state, action }) => {
 
 ## Meta-reducers
 
-Simply put, **meta-reducers** are functions that **receive** a **reducer** and **return** a **reducer**. At the same time, they are similar to how interceptors act on an HTTP request, because a **meta-reducer** can add **behavior before** and **after** a **reducer** is **invoked**.
+Simply put, **meta-reducers** are functions that **receive** a **reducer** and **return** a **reducer**. Additionally, in the same way that interceptors act on an HTTP request, **meta-reducers** can add **behavior before** and **after** a **reducer** is **invoked**.
 
 ### Setting up meta-reducers
 
@@ -1368,6 +1368,10 @@ export class StoreModule {
       ngModule: StoreRootModule,
       providers: [
         /* ... */
+        {
+          provide: USER_PROVIDED_META_REDUCERS,
+          useValue: config.metaReducers ? config.metaReducers : [],
+        },
         {
           provide: _RESOLVED_META_REDUCERS,
           deps: [META_REDUCERS, USER_PROVIDED_META_REDUCERS],
@@ -1385,11 +1389,11 @@ export class StoreModule {
 }
 ```
 
-`_RESOLVED_META_REDUCERS` when injected in `createReducerFactory` will be an array resulted from merging the built-in meta-reducers with the custom ones.
+`_RESOLVED_META_REDUCERS` when injected in `createReducerFactory`, it will be an array resulted from merging the built-in meta-reducers with the custom ones.
 
-There are 2 built-in meta-reducers: `immutabilityCheckMetaReducer` and `serializationCheckMetaReducer`, at which we're going to have a look in the following sections.
+There are 2 built-in meta-reducers: `immutabilityCheckMetaReducer` and `serializationCheckMetaReducer`.
 
-`createReducerFactory` will return a function that will be called with 2 arguments: `reducers` and `initialState`. At the beginning, when the app is barely loaded, the function will be called with the arguments provided in `StoreModule.forRoot({ reducers, }, { initialState })`. When called, it will **create a chain**(_sort of linked list_) **of meta-reducers**, whose **extremity** is going to be the **reducer** itself. This way, each meta-reducer can add behavior before and after the reducer's invocation.  
+`createReducerFactory` will return a function that will be called with 2 arguments: `reducers` and `initialState`. At the beginning, when the app is barely loaded, the function will be called with the arguments provided in `StoreModule.forRoot({ reducers, }, { initialState })`. When called, it will **create a chain**(_sort of linked list_) **of meta-reducers**, whose **extremity** is going to be the **reducer**. This way, each meta-reducer can add behavior before and after the reducer's invocation.  
 The reason it returns that function is that `createReducerFactory` will be called when `REDUCER_FACTORY` is injected in `ReducerManager` class. `ReducerManager` will keep reducers up to date when features are added/removed. So, for instance, when a feature comes with its reducer, `ReducerManager` will combine the existing reducer with the new one
 
 ```ts
@@ -1488,6 +1492,8 @@ rest.reduceRight((composed, fn) => fn(composed), last(arg));
 
 ### Providing custom meta-reducers
 
+Armed with the knowledge from the previous section, we can now explore how to use custom meta-reducers.
+
 ```ts
 export class StoreModule {
   static forRoot(
@@ -1498,6 +1504,10 @@ export class StoreModule {
       ngModule: StoreRootModule,
       providers: [
         /* ... */
+        {
+          provide: USER_PROVIDED_META_REDUCERS,
+          useValue: config.metaReducers ? config.metaReducers : [],
+        },
         {
           provide: _RESOLVED_META_REDUCERS,
           deps: [META_REDUCERS, USER_PROVIDED_META_REDUCERS],
@@ -1519,7 +1529,7 @@ export function _concatMetaReducers(
 
 #### `config.metaReducers`
 
-Where `RootStoreConfig` extends `StoreConfig`:
+`RootStoreConfig`(from above) extends `StoreConfig`:
 
 ```ts
 export interface StoreConfig<T, V extends Action = Action> {
@@ -1529,9 +1539,67 @@ export interface StoreConfig<T, V extends Action = Action> {
 }
 ```
 
-#### Injecting a dependency into a meta-reducer
+Which means we can provide a custom meta-reducer like this:
 
-* `META_REDUCER` - a `multi` provider token
+```ts
+StoreModule.forRoot(
+  reducersMap,
+  { metaReducers, }
+)
+```
+
+where `metaReducers` is an array of `MetaReducer`:
+
+```ts
+const myMetaReducer: MetaReducer = (reducer: ActionReducer<any, any>) => {
+  return (state, action) => {
+    console.log('before', action, state);
+
+    const result = reducer(state, action);
+
+    console.log('after', result);
+
+    return result;
+  }
+}
+
+export const metaReducers: MetaReducer[] = [myMetaReducer];
+```
+
+#### Injecting dependencies into a meta-reducer
+
+Sometimes we might want to inject dependencies in our meta-reducers. We can take advantage of the `META_REDUCER` multi provider token.
+
+We can inject dependencies by registering the meta-reducer as **factory provider** with the help of `META_REDUCER`.
+
+For example, we can have something like this:
+
+```typescript
+export const metaReducerWithDepFactory: (d: any) => MetaReducer = 
+  (logger: LogService) => reducer =>  (state, action) => {
+  console.log('meta reducer with dep!', logger, action)
+
+  return reducer(state, action);
+}
+```
+
+and we can register it this way:
+
+```ts
+{
+  provide: META_REDUCERS,
+  multi: true,
+  useFactory: metaReducerWithDepFactory,
+  deps: [LogService]
+}
+```
+
+You can play around with this example [here](https://ng-run.com/edit/ufX1KYcBMOmV0sp78k7A?open=app%2Ffoo.meta-reducer.ts).
+
+Furthermore, for a better visualization of how things are organized, you can put some breakpoints in your **ng-run** tab:
+  * `foo.meta-reducer.ts`: line 5
+  * `utils.ts`: line 32 -> the `combination(state, action)` function is where the combined reducers are iterated over and invoked
+  * `foo.meta-reducer.ts`: line 7
 
 ---
 
