@@ -402,6 +402,9 @@ will look like this:
 
 ## Store
 
+* `this.store.select('path' | customSelector)`
+* `this.store.pipe(select('path') | select(customSelector))`
+
 ```ts
 export class Store<T> extends Observable<T> implements Observer<Action> {
   constructor(
@@ -1605,8 +1608,123 @@ Furthermore, for a better visualization of how things are organized, you can put
 
 ## Using Features
 
+### Registering feature modules
+
+* `Store.forFeature(featureName, reducer: ActionReducerMap | ActionReducer, config)`
+
+If `reducer` is a **function**, the process won't be the same as if an object of reducers was provided.
+
+
+
+```ts
+addReducers(reducers: { [key: string]: ActionReducer<any, any> }) {
+  this.reducers = { ...this.reducers, ...reducers };
+  this.updateReducers(Object.keys(reducers));
+}
+```
+
+After the above step, the new `reducers` object would look like this:
+
+```ts
+{
+  foo: ƒ (state, action) // Created with `StoreModule.forRoot()`
+  awesome-feat: ƒ (state, action) // Created with `StoreModule.forFeature()`
+}
+```
+
+Even though both reducers comply with the `ActionReducer` interface
+
+```ts
+export interface ActionReducer<T, V extends Action = Action> {
+  (state: T | undefined, action: V): T;
+}
+```
+
+they are different in terms of how they've been created. `foo` is created by `createReducer` which returns an `ActionReducer`
+
+```ts
+export function createReducer<S, A extends Action = Action>(
+  initialState: S,
+  ...ons: On<S>[]
+): ActionReducer<S, A> {
+  const map = new Map<string, ActionReducer<S, A>>();
+  /* ... Adding values to the map ...  */
+
+  return function(state: S = initialState, action: A): S {/* ... */};
+}
+```
+
+whereas `awesome-feat` is a created when the **reducer**(s) of the **feature module** are combined with the existing one(s)(e.g: the reducer(s) from the main store module). What happens from now depends on the reducer's type.
+
+```ts
+/* ReducerManager. */addFeatures(features: StoreFeature<any, any>[]) {
+  const reducers = features.reduce(
+    (
+      reducerDict,
+      { reducers, reducerFactory, metaReducers, initialState, key }
+    ) => {
+      const reducer =
+        typeof reducers === 'function'
+          ? createFeatureReducerFactory(metaReducers)(reducers, initialState)
+          : createReducerFactory(reducerFactory, metaReducers)(
+              reducers,
+              initialState
+            );
+
+      reducerDict[key] = reducer;
+      return reducerDict;
+    },
+    {} as { [key: string]: ActionReducer<any, any> }
+  );
+
+  this.addReducers(reducers);
+}
+```
+
+If it is an object of reducers(`{ f1: reducer1, f2: reducer2 }`), it will follow the same steps as the one described in [How are reducers set up?](#how-are-reducers-set-up). More concisely, the `awesome-feat`'s reducer will be a function that accepts `state` and `action` as arguments and, when invoked, will iterate over the feature's registered reducers(in this case `f1` and `f2`) and will call their reducer with the given arguments. This is actually the `combination` function: 
+
+```ts
+/* ... */
+return function combination(state, action) {
+  state = state === undefined ? initialState : state;
+  let hasChanged = false;
+  const nextState: any = {};
+  for (let i = 0; i < finalReducerKeys.length; i++) {
+    const key = finalReducerKeys[i];
+    const reducer: any = finalReducers[key];
+    const previousStateForKey = state[key];
+    const nextStateForKey = reducer(previousStateForKey, action);
+
+    nextState[key] = nextStateForKey;
+    hasChanged = hasChanged || nextStateForKey !== previousStateForKey;
+  }
+  return hasChanged ? nextState : state;
+};
+```
+
+If instead the provided feature reducer is function, it will simply invoke it with the `state` and `action` arguments. As with the other approach - the meta-reducer chain will be created
+
+```ts
+export function createFeatureReducerFactory<T, V extends Action = Action>(
+  metaReducers?: MetaReducer<T, V>[]
+): (reducer: ActionReducer<T, V>, initialState?: T) => ActionReducer<T, V> {
+  const reducerFactory =
+    Array.isArray(metaReducers) && metaReducers.length > 0
+      ? compose<ActionReducer<T, V>>(...metaReducers)
+      : (r: ActionReducer<T, V>) => r;
+
+  return (reducer: ActionReducer<T, V>, initialState?: T) => {
+    reducer = reducerFactory(reducer);
+
+    return (state: T | undefined, action: V) => {
+      state = state === undefined ? initialState : state;
+      return reducer(state, action);
+    };
+  };
+}
+```
+
 * lazy-load feature
-* `Store.forFeature(name, reducer: ActionReducerMap | ActionReducer, config)`
 * what happens when you have multiple `StoreModule.forFeature()` within a module
 * why `Module.onDestroy()` ?
 * 
