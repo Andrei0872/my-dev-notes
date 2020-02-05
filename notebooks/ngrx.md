@@ -1608,56 +1608,55 @@ Furthermore, for a better visualization of how things are organized, you can put
 
 ## Using Features
 
+Adding a feature module to a root module can be seen as adding a **decoupled slice** of cake back to its initial plate. The initial plate can be thought of as the **root module** and a slice of cake as the feature module. What this means is that there will still be a single source of truth(_the plate_) but each slice(feature module) can have its **own** _decorations_(**meta-reducers**, **reducers**). 
+
 ### Registering feature modules
 
-* `Store.forFeature(featureName, reducer: ActionReducerMap | ActionReducer, config)`
+Registering a feature can be achieved with: `Store.forFeature(featureName, reducer: ActionReducerMap | ActionReducer, config)`.
 
-If `reducer` is a **function**, the process won't be the same as if an object of reducers was provided.
+where `reducer` is either an **object of reducers**(`ActionReducerMap`) or a function `ActionReducer`
 
+You can register **multiple** feature modules **at once**.
 
+Suppose you have something like this:
 
 ```ts
-addReducers(reducers: { [key: string]: ActionReducer<any, any> }) {
-  this.reducers = { ...this.reducers, ...reducers };
-  this.updateReducers(Object.keys(reducers));
-}
+StoreModule.forRoot({ foo: fooReducer }),
+StoreModule.forFeature('awesome-feat', { feat: featReducer }), // `reducer` - ActionReducerMap
+StoreModule.forFeature('counter', counterReducer), // `reducer` - function
 ```
 
-After the above step, the new `reducers` object would look like this:
+After the initialization, our store should look like this:
 
 ```ts
 {
-  foo: ƒ (state, action) // Created with `StoreModule.forRoot()`
-  awesome-feat: ƒ (state, action) // Created with `StoreModule.forFeature()`
+  'foo': /* ... */,
+  'awesome-feat': /* ... */,
+  'counter': /* ... */,
 }
 ```
 
-Even though both reducers comply with the `ActionReducer` interface
+Let's find out how that happens. It all starts in `StoreFeatureModule`, where all the provided configurations are collected:
 
 ```ts
-export interface ActionReducer<T, V extends Action = Action> {
-  (state: T | undefined, action: V): T;
+export class StoreFeatureModule /* ... */ {
+  constructor(
+  @Inject(_STORE_FEATURES) private features: StoreFeature<any, any>[],
+  @Inject(FEATURE_REDUCERS) private featureReducers: ActionReducerMap<any>[],
+  private reducerManager: ReducerManager,
+  root: StoreRootModule
+  ) {
+    const feats = features.map((feature, index) => { /* ... */ });
+
+    reducerManager.addFeatures(feats);
+  }
 }
 ```
 
-they are different in terms of how they've been created. `foo` is created by `createReducer` which returns an `ActionReducer`
+Once everything is gathered in once place(`feats` array), `ReducerManager` comes in to play. `ReducerManager.addFeatures` will sort-out the features' reducers. Remember that a **feature module**'s reducer can be either a **function** or an **object of reducers**(_functions_).   
 
 ```ts
-export function createReducer<S, A extends Action = Action>(
-  initialState: S,
-  ...ons: On<S>[]
-): ActionReducer<S, A> {
-  const map = new Map<string, ActionReducer<S, A>>();
-  /* ... Adding values to the map ...  */
-
-  return function(state: S = initialState, action: A): S {/* ... */};
-}
-```
-
-whereas `awesome-feat` is a created when the **reducer**(s) of the **feature module** are combined with the existing one(s)(e.g: the reducer(s) from the main store module). What happens from now depends on the reducer's type.
-
-```ts
-/* ReducerManager. */addFeatures(features: StoreFeature<any, any>[]) {
+addFeatures(features: StoreFeature<any, any>[]) {
   const reducers = features.reduce(
     (
       reducerDict,
@@ -1681,7 +1680,7 @@ whereas `awesome-feat` is a created when the **reducer**(s) of the **feature mod
 }
 ```
 
-If it is an object of reducers(`{ f1: reducer1, f2: reducer2 }`), it will follow the same steps as the one described in [How are reducers set up?](#how-are-reducers-set-up). More concisely, the `awesome-feat`'s reducer will be a function that accepts `state` and `action` as arguments and, when invoked, will iterate over the feature's registered reducers(in this case `f1` and `f2`) and will call their reducer with the given arguments. This is actually the `combination` function: 
+If it is an object of reducers(`{ feat: featReducer }`), it will follow the same steps as the ones described in [How are reducers set up?](#how-are-reducers-set-up). More concisely, the `awesome-feat`'s reducer will be a function that accepts `state` and `action` as arguments and, when invoked, will iterate over the feature's registered reducers(in this case `feat`) and will call their reducer(which was created by `createReducer`) with the given arguments. This is actually the `combination` function:
 
 ```ts
 /* ... */
@@ -1702,12 +1701,16 @@ return function combination(state, action) {
 };
 ```
 
-If instead the provided feature reducer is function, it will simply invoke it with the `state` and `action` arguments. As with the other approach - the meta-reducer chain will be created
+If instead the provided feature reducer is function(created by `createReducer`), it will simply invoke it with the `state` and `action` arguments. As with the other approach, the meta-reducer chain will still be created, but the way it is created it slightly different.  
+That's because when a **single function** is **provided**, it can't be something more than that, it can't be an object of reducers, so there is **no need** to create another function that, when called, will iterate over the object of reducers and invoke them(which is what happens when an object of reducers is provided).
 
 ```ts
 export function createFeatureReducerFactory<T, V extends Action = Action>(
   metaReducers?: MetaReducer<T, V>[]
 ): (reducer: ActionReducer<T, V>, initialState?: T) => ActionReducer<T, V> {
+  // Pretty similar to the other approach, except that here there is no `combineReducers` function
+  // because the reducer is one single function
+  // as opposed to an object of reducers
   const reducerFactory =
     Array.isArray(metaReducers) && metaReducers.length > 0
       ? compose<ActionReducer<T, V>>(...metaReducers)
@@ -1724,30 +1727,22 @@ export function createFeatureReducerFactory<T, V extends Action = Action>(
 }
 ```
 
-* lazy-load feature
-* what happens when you have multiple `StoreModule.forFeature()` within a module
-* why `Module.onDestroy()` ?
-* 
-  ```ts
-  const featureReducerCollection = featureReducers.shift();
-  const reducers = featureReducerCollection /*TODO(#823)*/![index];
-  ```
-* reducers can be functions
-* when can multiple features be added at once ❓
-* `ReducerManager.addReducer()` ❓
-* `StoreModule.forFeature(name, { foo, bar })` => `{ foo: fooReducer, bar: barReducer }`(result of `combination`)
-* an action will be dispatched when a new feature has been added
-  ```ts
-    private updateReducers(featureKeys: string[]) {
-    this.next(this.reducerFactory(this.reducers, this.initialState));
-    this.dispatcher.next(<Action>{
-      type: UPDATE,
-      features: featureKeys,
-    });
-  }
-  ```
-* service `onDestroy`
-* can't add `StoreModule.forRoot()` in lazy-loaded modules ❓
+After the reducers have been created accordingly, the single source of truth(the object) will have to be updated:
+
+```ts
+addReducers(reducers: { [key: string]: ActionReducer<any, any> }) {
+  this.reducers = { ...this.reducers, ...reducers };
+  this.updateReducers(Object.keys(reducers));
+}
+
+updateReducers(featureKeys: string[]) {
+  this.next(this.reducerFactory(this.reducers, this.initialState));
+  /* ... */
+}
+```
+
+`this.next(this.reducerFactory(this.reducers, this.initialState));` will make sure that whenever actions are dispatched, the reducer of each slice will be invoked(including the new slices added). This is how the store is kept update to date every time a new feature is added/removed.
+
 * https://medium.com/youngers-consulting/ngrx-tips-part-1-module-setup-with-lazy-loading-5dc8994b5a2d
 
 
@@ -1756,7 +1751,6 @@ export function createFeatureReducerFactory<T, V extends Action = Action>(
 ## TODO
 
 * check `example-app`
-* meta-reducer -> hooks for `action -> reducer` pipeline
 
 ---
 
