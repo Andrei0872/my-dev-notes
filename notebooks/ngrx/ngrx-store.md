@@ -1,4 +1,28 @@
-# NgRx Notebook
+# @ngrx/store Notebook
+
+- [@ngrx/store Notebook](#ngrxstore-notebook)
+  - [Store](#store)
+  - [Actions](#actions)
+    - [Creating actions](#creating-actions)
+  - [Reducers](#reducers)
+    - [Providing reducers](#providing-reducers)
+    - [How are reducers set up?](#how-are-reducers-set-up)
+    - [`createReducer`](#createreducer)
+    - [How are the types of the reducer inferred ?](#how-are-the-types-of-the-reducer-inferred)
+  - [Store](#store-1)
+    - [Selecting from the Store](#selecting-from-the-store)
+      - [Using custom selectors](#using-custom-selectors)
+      - [How does the memoization actually work ?](#how-does-the-memoization-actually-work)
+  - [State](#state)
+  - [Meta-reducers](#meta-reducers)
+    - [Setting up meta-reducers](#setting-up-meta-reducers)
+    - [Providing custom meta-reducers](#providing-custom-meta-reducers)
+      - [`config.metaReducers`](#configmetareducers)
+      - [Injecting dependencies into a meta-reducer](#injecting-dependencies-into-a-meta-reducer)
+  - [Using Features](#using-features)
+    - [Registering feature modules](#registering-feature-modules)
+  - [TODO](#todo)
+  - [Questions](#questions)
 
 ## Store
 
@@ -1743,9 +1767,6 @@ updateReducers(featureKeys: string[]) {
 
 `this.next(this.reducerFactory(this.reducers, this.initialState));` will make sure that whenever actions are dispatched, the reducer of each slice will be invoked(including the new slices added). This is how the store is kept update to date every time a new feature is added/removed.
 
-* https://medium.com/youngers-consulting/ngrx-tips-part-1-module-setup-with-lazy-loading-5dc8994b5a2d
-
-
 ---
 
 ## TODO
@@ -1758,8 +1779,6 @@ updateReducers(featureKeys: string[]) {
 
 * what is `resultMemoize` ?
 
-* what is `@ngrx/data` ? 
-* `observeOn(queueScheduler)`
 * 
 ```ts
 provide: _REDUCER_FACTORY,
@@ -1796,43 +1815,7 @@ provide: _REDUCER_FACTORY,
     }
   ```
 
-* might need `@ngrx/store@8.6.0`
-  ```ts
-  export function createReducer<S, A extends Action = Action>(
-    initialState: S,
-    ...ons: On<S>[]
-  ): ActionReducer<S, A> {
-    const map = new Map<string, ActionReducer<S, A>>();
-    for (let on of ons) {
-      for (let type of on.types) {
-        if (map.has(type)) {
-          const existingReducer = map.get(type) as ActionReducer<S, A>;
-          const newReducer: ActionReducer<S, A> = (state, action) =>
-            on.reducer(existingReducer(state, action), action);
-          map.set(type, newReducer);
-        } else {
-          map.set(type, on.reducer);
-        }
-      }
-    }
-  ```
-
 * you can provide an initial state 
-
-```ts
-export class ReducerManager extends BehaviorSubject<ActionReducer<any, any>>
-implements OnDestroy {
-  constructor(
-    private dispatcher: ReducerManagerDispatcher,
-    @Inject(INITIAL_STATE) private initialState: any,
-    @Inject(INITIAL_REDUCERS) private reducers: ActionReducerMap<any, any>,
-    @Inject(REDUCER_FACTORY)
-    private reducerFactory: ActionReducerFactory<any, any>
-  ) {
-    super(reducerFactory(reducers, initialState));
-    }
-}
-```
 
 * `Store.addReducer` & `Store.removeReducer` ❗️
 
@@ -1844,4 +1827,4 @@ if (isResultEqual(lastResult, newResult)) {
 }
 ```
 
-* https://medium.com/youngers-consulting/angular-ngrx-boilerplate-reduction-2019-edition-f28454dd28d7
+* `createFeatureSelector`
