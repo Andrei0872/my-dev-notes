@@ -1,15 +1,18 @@
 # @ngrx/store Notebook
 
 - [@ngrx/store Notebook](#ngrxstore-notebook)
-  - [Store](#store)
   - [Actions](#actions)
     - [Creating actions](#creating-actions)
+    - [TypeScript's magic](#typescripts-magic)
+    - [`createAction` with only `type` parameter](#createaction-with-only-type-parameter)
+    - [`createAction` with props](#createaction-with-props)
+    - [`createAction` with a function](#createaction-with-a-function)
   - [Reducers](#reducers)
     - [Providing reducers](#providing-reducers)
     - [How are reducers set up?](#how-are-reducers-set-up)
     - [`createReducer`](#createreducer)
     - [How are the types of the reducer inferred ?](#how-are-the-types-of-the-reducer-inferred)
-  - [Store](#store-1)
+  - [Store](#store)
     - [Selecting from the Store](#selecting-from-the-store)
       - [Using custom selectors](#using-custom-selectors)
       - [How does the memoization actually work ?](#how-does-the-memoization-actually-work)
@@ -21,23 +24,13 @@
       - [Injecting dependencies into a meta-reducer](#injecting-dependencies-into-a-meta-reducer)
   - [Using Features](#using-features)
     - [Registering feature modules](#registering-feature-modules)
-  - [TODO](#todo)
   - [Questions](#questions)
-
-## Store
-
-* composed of **slices** ❓
 
 ---
 
 ## Actions
 
-* instructions for reducers
-* dispatched from components & services
-* events    
-* must be descriptive
-
-* write actions before writing the feature so you can get a better understanding of what it is going to happen
+Actions can be thought of as **instructions** for **reducers**. They are usually **dispatched** from the **view** layer(a smart component, a service etc...).
 
 ### Creating actions
 
@@ -52,14 +45,17 @@ action({ name: 'andrei', age: 18 });
 ```
 
 ```ts
-const action = createAction('[Entity] simple action', (u: User) => u.response);
+const action = createAction(
+  'action', 
+  (u: User, prefix: string) => ({ name: `${prefix}${u.name}` }) 
+);
 const u: User = { /* ... */ };
-action(u);
+action(u, '@@@@');
 ```
 
 In each case, the return value of the function will be an **object** that will contain at least this property: `{ type: T }`.
 
-Also, the **type**(first argument) will be attached as property to the function. This is useful when reducers are created(TODO:(link)).
+Also, the **type**(first argument of `createAction`) will be attached as property to the function. This is useful to know when [reducers are created](#createreducer).
 
 ```ts
 return Object.defineProperty(creator, 'type', {
@@ -68,10 +64,19 @@ return Object.defineProperty(creator, 'type', {
 });
 ```
 
+### TypeScript's magic
+
+The `createAction` function comes with **3 overloads**:
+
 ```ts
 export declare interface TypedAction<T extends string> extends Action {
   readonly type: T;
 }
+
+export type ActionCreator<
+  T extends string = string,
+  C extends Creator = Creator
+> = C & TypedAction<T>;
 
 export function createAction<T extends string>(
   type: T
@@ -89,6 +94,164 @@ export function createAction<
   creator: Creator<P, R> & NotAllowedCheck<R>
 ): FunctionWithParametersType<P, R & TypedAction<T>> & TypedAction<T>;
 ```
+
+which implies that the function's body will have to contain a few **type guards** in order to get the types right.
+
+`ActionCreator<T, C>` represents a function of type `C` that has a **readonly property** `type` of type `T`. The `type` can also be used to discriminate unions(TODO(link from reducers! 😃)).
+
+Let's examine each overload.
+
+### `createAction` with only `type` parameter
+
+```ts
+const action = createAction('[Entity] simple action');
+action(); // { type: [Entity] simple action }
+```
+
+corresponds to this overload:
+
+```ts
+export function createAction<T extends string>(
+  type: T
+): ActionCreator<T, () => TypedAction<T>>;
+```
+
+We can deduce from the above snippet that the return type will be a function which will return an object with a property `type`.
+
+Here's the type guard which reveals that:
+
+```ts
+export function createAction<T extends string, C extends Creator>(
+  type: T,
+  config?: { _as: 'props' } | C
+): ActionCreator<T> {
+  
+  const as = config ? config._as : 'empty';
+  
+  switch (as) {
+    case 'empty':
+      return defineType(type, () => ({ type }));
+    /* ... */
+  }
+}
+```
+
+where `defineType` will attach the property `type` to the function(in this case `() => ({ type })`).
+
+### `createAction` with props
+
+This approach can be used when you want to **dispatch** an **action** that contains some **data** which is **valuable** to the **reducer**(e.g `userActions.add({ name, age })`).
+
+```ts
+const action = createAction('[Entity] simple action', props<{ name: string, age: number, }>());
+action({ name: 'andrei', age: 18 });
+```
+
+What `props<T>()` does is to return an object with a predefined key(`_as: 'props'`) and with a key of type `T` which is useful for **type inference**.
+
+```ts
+export function props<P extends object>(): Props<P> {
+  return { _as: 'props', _p: undefined! };
+}
+
+export interface Props<T> {
+  _as: 'props';
+  _p: T;
+}
+```
+
+This is how the overload looks:
+
+```ts
+export function createAction<T extends string, P extends object>(
+  type: T,
+  config: Props<P> & NotAllowedCheck<P>
+): ActionCreator<T, (props: P & NotAllowedCheck<P>) => P & TypedAction<T>>;
+```
+
+`config` will be an instance of `props<P>()`, allows `P` to be inferred an be used in `(props: P & NotAllowedCheck<P>) => P & TypedAction<T>>`.  
+
+`ActionCreator<T, (props: P & NotAllowedCheck<P>) => P & TypedAction<T>>` will be a function that can be **called** with **one argument**(an object), whose type will be `P`(inferred from `props<P>()`) whose return type will be an object that contains all the properties of `P`(`P` is an object) and the `type` property(`TypedAction<T>`)
+
+Here's how `createAction` establishes this:
+
+```ts
+export function createAction<T extends string, C extends Creator>(
+  type: T,
+  config?: { _as: 'props' } | C
+): ActionCreator<T> {
+  if (typeof config === 'function') {
+  /* ... */
+  // `config._as` - returned from `props()`
+  const as = config ? config._as : 'empty';
+  
+  switch (as) {
+    /* ... */
+    case 'props':
+      return defineType(type, (props: object) => ({
+        ...props,
+        type,
+      }));
+    /* ... */
+  }
+}
+```
+
+### `createAction` with a function
+
+This comes in handy when you want to **modify** the **data before** it reaches the **reducer**. Or you might simply want to **determine** the **action's data** based on some more **complicated logic**.
+
+```ts
+const action = createAction(
+  'action', 
+  (u: User, prefix: string) => ({ name: `${prefix}${u.name}` }) 
+);
+const u: User = { /* ... */ };
+action(u, '@@@@');
+```
+
+The overload for this looks as follows:
+
+```ts
+export function createAction<
+  T extends string,
+  P extends any[],
+  R extends object
+>(
+  type: T,
+  creator: Creator<P, R> & NotAllowedCheck<R>
+): FunctionWithParametersType<P, R & TypedAction<T>> & TypedAction<T>;
+```
+
+`Creator<P, R>` is simply a function takes up a parameter of type `P` and **returns** **an object** of type `R`. This will allow us to infer the `P` and `R`. `NotAllowedCheck<R>` makes sure that the `creator` is not an existing action or an array. It must be a function that receives some arguments and based on them, it returns an object that represents the **action's data**.
+
+
+```ts
+export function createAction<T extends string, C extends Creator>(
+  type: T,
+  config?: { _as: 'props' } | C
+): ActionCreator<T> {
+  if (typeof config === 'function') {
+    return defineType(type, (...args: any[]) => ({
+      ...config(...args),
+      type,
+    }));
+  }
+  const as = config ? config._as : 'empty';
+  switch (as) {
+    case 'empty':
+      return defineType(type, () => ({ type }));
+    case 'props':
+      return defineType(type, (props: object) => ({
+        ...props,
+        type,
+      }));
+    default:
+      throw new Error('Unexpected config.');
+  }
+}
+```
+
 
 ---
 
@@ -331,6 +494,8 @@ export function on(
 ): { reducer: Function; types: string[] } {
   const reducer = args.pop() as Function;
   const types = args.reduce(
+    // `creator.type` is a property directly attached to the function so that
+    // it can be easily accessed(`createAction` is responsible for that)
     (result, creator) => [...result, (creator as ActionCreator).type],
     [] as string[]
   );
@@ -1769,13 +1934,9 @@ updateReducers(featureKeys: string[]) {
 
 ---
 
-## TODO
+## Questions
 
 * check `example-app`
-
----
-
-## Questions
 
 * what is `resultMemoize` ?
 
@@ -1828,3 +1989,5 @@ if (isResultEqual(lastResult, newResult)) {
 ```
 
 * `createFeatureSelector`
+
+* add _Back to Contents_
