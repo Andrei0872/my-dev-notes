@@ -11,7 +11,6 @@
     - [Providing reducers](#providing-reducers)
     - [How are reducers set up?](#how-are-reducers-set-up)
     - [`createReducer`](#createreducer)
-    - [How are the types of the reducer inferred ?](#how-are-the-types-of-the-reducer-inferred)
   - [Store](#store)
     - [Selecting from the Store](#selecting-from-the-store)
       - [Using custom selectors](#using-custom-selectors)
@@ -250,8 +249,15 @@ export function createAction<T extends string, C extends Creator>(
 
 ## Reducers
 
-❓ how does NgRx make set the `default` value?
-  * after the reducers are provided, NgRx dispatches an **init action** which will set the default values since there will not be any reducer that matches this action type.
+Reducers are **pure functions** that are **responsible** for **state changes**.
+
+```ts
+export interface ActionReducer<T, V extends Action = Action> {
+  (state: T | undefined, action: V): T;
+}
+```
+
+As you can see, a reducer takes 2 parameters: the current `state` and the current `action` that has been dispatched.
 
 ### Providing reducers
 
@@ -261,6 +267,8 @@ Reducers can be provided with:
   ```ts
   StoreModule.forRoot({ foo: fooReducer, user: UserReducer })
   ```
+
+  Each key represents a **slice** of the store.
 * an injection token
   ```ts
   const REDUCERS_TOKEN = new InjectionToken('REDUCERS');
@@ -302,7 +310,7 @@ StoreModule.forRoot({ entity: entityReducer })
 ```
 
 As you can see, unless you provide a **custom reducer factory**, the `combineReducers` function will be used instead(we'll have a look at it in a moment).
-`createReducerFactory` is mainly used to add the **meta reducers**(TODO:(link)).
+`createReducerFactory` is mainly used to add the [**meta reducers**](#setting-up-meta-reducers).
 
 
 The `REDUCER_FACTORY` token will only be injected in `ReducerManager` class:
@@ -321,7 +329,7 @@ export class ReducerManager /* ... */ {
 }
 ```
 
-As soon as that happens, the `createReducerFactory` function will be invoked, meaning that `reducerFactory` property will hold its **return value**:
+As soon as that happens, the `createReducerFactory` function will be invoked, meaning that `reducerFactory` property will hold its **return value**, which is a function that takes an **object of reducers**(`reducers`) and, optionally, the `initialState`:
 
 ```ts
 export function createReducerFactory<T, V extends Action = Action>(
@@ -337,9 +345,9 @@ export function createReducerFactory<T, V extends Action = Action>(
 
   // `ReducerManager.reducerFactory` will hold this function! - it is immediately invoked in the constructor
   return (reducers: ActionReducerMap<T, V>, initialState?: InitialState<T>) => {
-    const reducer = reducerFactory(reducers); // `reducerFactory` = `combineReducer`
+    const reducer = reducerFactory(reducers);
     return (state: T | undefined, action: V) => {
-      // This function is the value resulted from `super(reducerFactory(reducers, initialState));` - `reducerFactory` belongs to `ReducerManager`
+      // This function is the value resulted from `super(reducerFactory(reducers, initialState));`(takes place inside `ReducerManager`'s constructor)
       state = state === undefined ? (initialState as T) : state;
       return reducer(state, action);
     };
@@ -347,7 +355,9 @@ export function createReducerFactory<T, V extends Action = Action>(
 }
 ```
 
-Remember that `reducerFactory` holds the `combineReducer`'s value. It is immediately invoked in the constructor: `super(reducerFactory(reducers, initialState));`
+<!-- Remember that `reducerFactory`(injected with `@Inject(_REDUCER_FACTORY)`) holds the `combineReducer`'s value. It is immediately invoked in the constructor: `super(reducerFactory(reducers, initialState));` -->
+
+Invoking `super(reducerFactory(reducers, initialState))` will **combine** all the reducers into **one object**, whose keys represent the store's slices and key corresponds to a reducer:
 
 ```ts
 export function combineReducers(
@@ -386,27 +396,33 @@ export function combineReducers(
 }
 ```
 
-Additionally, we can see in the above snippet why the **stored data** must be **immutable**. If a reducer would return the same reference of an object, but with a property changed, this would not be reflected into the UI as `nextStateForKey !== previousStateForKey` would fail.
+Additionally, we can see in the above snippet why the **stored data** must be **immutable**. If a reducer returned the same reference of an object, but with a property changed, this would not be reflected into the UI as `nextStateForKey !== previousStateForKey` would fail.
 
 The gist resides in this snippet:
 
 ```ts
 /* ... */
+// The below function is the result of 
+// `@Inject(REDUCER_FACTORY) private reducerFactory: ActionReducerFactory<any, any>`
 return (reducers: ActionReducerMap<T, V>, initialState?: InitialState<T>) => { // #Fn1
-  const reducer = reducerFactory(reducers);
+  const reducer = reducerFactory(reducers); // <-
   return (state: T | undefined, action: V) => { // #Fn2
     state = state === undefined ? (initialState as T) : state;
-    return reducer(state, action); // `reducer` = `combination`
+    // `reducer` = `combination` function; when called, will iterate over the existing reducers
+    // and will call them with the current `state` and `action`
+    return reducer(state, action); 
   };
 };
 ```
 
-(`reducerFactory` = `combineReducers`) will create an object of _sanitized_ reducers.
+_`super(reducerFactory(reducers, initialState))` will cause the **above** `reducerFactory` to be called, which will eventually combine all the reducers_.
 
-In `const reducer = reducerFactory(reducers);`, the `reducer` will act on behalf of `combination` function. When invoked, it will iterate over the reducers and invoke them with the given `state` and `action`.
+After `reducerFactory` is called
 
-The function in which `reducer` is invoked will be called every time an **action** is **dispatched**, meaning that the reducers will be combined(on `Fn1` call) once
-Of course, if other reducers are added later, the reducer object will be re-sanitized(`Fn1` called again).
+In `const reducer = reducerFactory(reducers)`, the `reducer` will act on behalf of `combination` function. When invoked, it will iterate over the reducers and invoke them with the given `state` and `action`.
+
+The function in which `reducer` is invoked will be called every time an **action** is **dispatched**, meaning that the reducers will be combined(on `Fn1` call) once.
+Of course, if other reducers are added/removed later, the reducer object will be re-created properly(`Fn1` called again).
 
 If you want to visualize the above process you can open this [ng-run](#https://ng-run.com/edit/ufX1KYcBMOmV0sp78k7A?open=app%2Fapp.module.ts) and follow these steps:
 
@@ -415,57 +431,13 @@ If you want to visualize the above process you can open this [ng-run](#https://n
 * refresh
 * keep an eye on the `Call Stack` tab
 
-* you might be missing the old class syntax that was used to define actions; with the new API, this is automatically handled for you;
-
-  ```ts
-  export interface On<S> {
-    reducer: ActionReducer<S>;
-    types: string[];
-  }
-
-  // Specialized Reducer that is aware of the Action type it needs to handle
-  export interface OnReducer<S, C extends ActionCreator[]> {
-    (state: S, action: ActionType<C[number]>): S;
-  }
-
-  export type ActionType<A> = A extends ActionCreator<infer T, infer C>
-    ? ReturnType<C> & { type: T }
-    : never;
-  ```
-
-  ```ts
-  interface Action {
-    readonly type: string;
-  }
-
-  interface A1 {
-    type: 'a1',
-    name: string;
-  }
-
-  interface A2 {
-    type: 'a2',
-    age: number;
-  }
-
-  type GetUnion<A extends Action[]> = A[number];
-
-  type Union = GetUnion<[A1, A2]>;
-
-  const o: Union = {
-    type: 'a1',
-    name: 'andrei'
-  }
-  ```
-
-
 ### `createReducer`
 
 It receives 2 arguments: the `initialState` and an indefinite number of `on` functions whose type will depend on the type of `initialState`.
 
-The `on` functions are an alternative for using the good old `switch` statement.
-An `on` function can receive multiple **action creators**(results of `createAction`(TODO:(link))) and the **actual reducer** as the last argument.  
-It will return an object `{ types: string[], reducer: ActionReducer<S> }`, where types is the type of each provided action creator and **reducer** is a **pure function** which handles state changes based on the action and has this signature: `(state: T | undefined, action: V): T;`.
+The `on` functions are an alternative for using the `switch` statement.
+An `on` function can receive multiple **action creators**(results of [`createAction`](#creating-actions)) and the **actual reducer** as the last argument.  
+It will return an object `{ types: string[], reducer: ActionReducer<S> }`, where `types` is the type of each provided action creator and **reducer** is a **pure function** which handles state changes based on the action and has this signature: `(state: T | undefined, action: V): T;`.
 
 ```ts
 export interface On<S> {
@@ -474,7 +446,7 @@ export interface On<S> {
 }
 
 export interface OnReducer<S, C extends ActionCreator[]> {
-  (state: S, action: ActionType<C[number]>): S; // `ActionType` - Will infer the return type of the action
+  (state: S, action: ActionType<C[number]>): S; // `ActionType` - Will infer the type of the action
 }
 
 export function on<C1 extends ActionCreator, S>(
@@ -495,8 +467,6 @@ export function on(
   return { reducer, types };
 }
 ```
-
-❓ multiple action creators - discriminated unions - better types
 
 The `createReducer` function will create a **private** `Map<string, ActionReducer<S, A>>` object, where the **key** is the `type` of the action, and the **value** is the **reducer**.
 It will also return a **function** whose **arguments** will be a given **state** and an **action**. Because it is a closure, it has access to the `Map` object.
@@ -569,16 +539,110 @@ will look like this:
 }
 ```
 
-❓ Where is the closure called from?
-❓ what happens when multiple actions are set to multiple reducers, in the same `createReducer()` ?
+The `createReducer`'s returned function
 
-### How are the types of the reducer inferred ?
+```ts
+return function(state: S = initialState, action: A): S {
+  const reducer = map.get(action.type);
+  return reducer ? reducer(state, action) : state;
+};
+```
 
-* `OnReducer`
-* depends on `ActionCreator`
+will be called from `combination` function's body:
 
+```ts
+return function combination(state, action) {
+  for (let i = 0; i < finalReducerKeys.length; i++) {
+    /* ... */
+    const reducer: any = finalReducers[key];
+    const nextStateForKey = reducer(previousStateForKey, action); // <- Here!
 
-❓ custom reducer factory
+    /* ... */
+  }
+  /* ... */
+};
+```
+
+The `on` function can _bind_ a reducer to multiple actions. Then, in the reducer, with the help of **discriminated unions**, we can perform the appropriate state change depending on action.
+
+```ts
+const a1 = createAction('a1', props<{ name: string }>());
+const a2 = createAction('a2', props<{ age: number }>());
+
+const reducer = createReducer(
+  null,
+  on(a1, a2, (state, action) => {
+    if (action.type === 'a1') {
+      action.name
+    } else {
+      action.age
+    }
+  }),
+)
+```
+
+Here's why this is possible:
+
+```ts
+export function on<C1 extends ActionCreator, C2 extends ActionCreator, S>(
+  creator1: C1,
+  creator2: C2,
+  reducer: OnReducer<S, [C1, C2]>
+): On<S>;
+
+// `C[number]` will result in a union
+export interface OnReducer<S, C extends ActionCreator[]> {
+  (state: S, action: ActionType<C[number]>): S;
+}
+```
+
+[TypeScript Playground](http://www.typescriptlang.org/play/#code/JYOwLgpgTgZghgYwgAgIILMA9iZBvAKGWSgjgBMcAbAT2TBoAcIAuZAZzClAHMBuAgF8CBUJFiIUqAIz4i9Jq2QByONOUAaeSDgBbJZ24h+QkWOjwkaAExziDZm1XXN8uDyUgArroBG0AWECBxQAcQgwAFUQbBAAHlRkCAAPSBBydjQMWIBtAF0APmQAXjQc7z9oPIFgxWRo2JLkcKiYnDicmQ0bQpqEHE5kLDYGnCbCe0UnNVdiHX1p9NJgWeQAejXkdyVpawBmZABaIugoLCghIA).
+
+Another great feature that `createReducer` comes with is **composability**. You can use the **same action** with **multiple reducers**. What this means is that an `n`th `on`'s reducer **state** which has an action `a` will be result of the `n-1`th `on`'s reducer:
+
+```ts
+export function createReducer<S, A extends Action = Action>(
+  initialState: S,
+  ...ons: On<S>[]
+): ActionReducer<S, A> {
+  const map = new Map<string, ActionReducer<S, A>>();
+  for (let on of ons) {
+    for (let type of on.types) {
+      if (map.has(type)) {
+        // Getting the previous reducer(`n-1`)
+        const existingReducer = map.get(type) as ActionReducer<S, A>;
+
+        // The new reducer's state will be the result of the previous reducer's result
+        // n = n(n-1(state, action),  action)
+        const newReducer: ActionReducer<S, A> = (state, action) =>
+          on.reducer(existingReducer(state, action), action);
+        map.set(type, newReducer);
+      } else { /* ... */ }
+    }
+  }
+
+  return function(state: S = initialState, action: A): S { /* ... */ };
+}
+```
+
+Here's an example:
+
+```ts
+const a1 = createAction('a1');
+const a2 = createAction('a2');
+
+const reducer = createReducer(
+  0,
+  on(a1, state => state + 2 /* reducer1 */),
+  on(a1, state => state ** 2 /* reducer2 */),
+  on(a1, state => state * 10 /* reducer3 */)
+);
+
+console.log(reducer(undefined, a1));
+
+// The above is similar to this:
+reducer3(reducer2(reducer1(0)));
+```
 
 ---
 
@@ -1943,31 +2007,6 @@ provide: _REDUCER_FACTORY,
 *  `strictActionSerializability || strictStateSerializability` - `runtime_checks`
 
 * you can set the initial state from the config: `{ provide: _INITIAL_STATE, useValue: config.initialState },` ❓
-
-* `reducers instanceof InjectionToken ? reducers : _INITIAL_REDUCERS,` - you can provide reducers outside the store module ❓
-
-* `on` with multiple `creators`(**actions**)
-
-* `createReduce(initState, on(a1, () => ...), on(a1, () => ...))`
-  ```ts
-  export function createReducer<S, A extends Action = Action>(
-    initialState: S,
-    ...ons: On<S>[]
-  ): ActionReducer<S, A> {
-    const map = new Map<string, ActionReducer<S, A>>();
-    for (let on of ons) {
-      for (let type of on.types) {
-        if (map.has(type)) {
-          const existingReducer = map.get(type) as ActionReducer<S, A>;
-          const newReducer: ActionReducer<S, A> = (state, action) =>
-            on.reducer(existingReducer(state, action), action);
-          map.set(type, newReducer);
-        } else {
-          map.set(type, on.reducer);
-        }
-      }
-    }
-  ```
 
 * you can provide an initial state 
 
