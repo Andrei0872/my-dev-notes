@@ -4,9 +4,9 @@
   - [Actions](#actions)
     - [Creating actions](#creating-actions)
     - [TypeScript's magic](#typescripts-magic)
-    - [`createAction` with only `type` parameter](#createaction-with-only-type-parameter)
-    - [`createAction` with props](#createaction-with-props)
-    - [`createAction` with a function](#createaction-with-a-function)
+      - [`createAction` with only `type` parameter](#createaction-with-only-type-parameter)
+      - [`createAction` with props](#createaction-with-props)
+      - [`createAction` with a function](#createaction-with-a-function)
   - [Reducers](#reducers)
     - [Providing reducers](#providing-reducers)
     - [How are reducers set up?](#how-are-reducers-set-up)
@@ -101,7 +101,7 @@ which implies that the function's body will have to contain a few **type guards*
 
 Let's examine each overload.
 
-### `createAction` with only `type` parameter
+#### `createAction` with only `type` parameter
 
 ```ts
 const action = createAction('[Entity] simple action');
@@ -138,7 +138,7 @@ export function createAction<T extends string, C extends Creator>(
 
 where `defineType` will attach the property `type` to the function(in this case `() => ({ type })`).
 
-### `createAction` with props
+#### `createAction` with props
 
 This approach can be used when you want to **dispatch** an **action** that contains some **data** which is **valuable** to the **reducer**(e.g `userActions.add({ name, age })`).
 
@@ -197,7 +197,7 @@ export function createAction<T extends string, C extends Creator>(
 }
 ```
 
-### `createAction` with a function
+#### `createAction` with a function
 
 This comes in handy when you want to **modify** the **data before** it reaches the **reducer**. Or you might simply want to **determine** the **action's data** based on some more **complicated logic**.
 
@@ -223,8 +223,11 @@ export function createAction<
 ): FunctionWithParametersType<P, R & TypedAction<T>> & TypedAction<T>;
 ```
 
-`Creator<P, R>` is simply a function takes up a parameter of type `P` and **returns** **an object** of type `R`. This will allow us to infer the `P` and `R`. `NotAllowedCheck<R>` makes sure that the `creator` is not an existing action or an array. It must be a function that receives some arguments and based on them, it returns an object that represents the **action's data**.
+`Creator<P, R>` is simply a function takes up a parameter of type `P` and **returns** **an object** of type `R`. This will allow us to infer the `P` and `R`. `NotAllowedCheck<R>` makes sure that the `creator` is **not** an **existing action** or an **array**. It must be a function that receives some arguments and based on them, it returns an object that represents the **action's data**.
 
+`FunctionWithParametersType<P, R & TypedAction<T>> & TypedAction<T>;` means that the return type must be a function whose arguments are of type `P`(inferred from `Creator<P, R>`), which returns an object of type `R`(also inferred from `Creator<P, R>`) and with a property `type`.
+
+This is what happens inside `createAction`:
 
 ```ts
 export function createAction<T extends string, C extends Creator>(
@@ -233,25 +236,15 @@ export function createAction<T extends string, C extends Creator>(
 ): ActionCreator<T> {
   if (typeof config === 'function') {
     return defineType(type, (...args: any[]) => ({
+      // `config(...args)` will return an object
       ...config(...args),
-      type,
+      type, // The `type` property is always returned
     }));
   }
-  const as = config ? config._as : 'empty';
-  switch (as) {
-    case 'empty':
-      return defineType(type, () => ({ type }));
-    case 'props':
-      return defineType(type, (props: object) => ({
-        ...props,
-        type,
-      }));
-    default:
-      throw new Error('Unexpected config.');
-  }
+
+  /* ... */
 }
 ```
-
 
 ---
 
