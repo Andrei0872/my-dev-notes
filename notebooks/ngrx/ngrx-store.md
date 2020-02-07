@@ -1547,10 +1547,10 @@ constructor(
 ```
 
 * `actions$`: a `BehaviorSubject` that will emit every time an action is dispatched(i.e: `store.dispatch(newAction())`)
-* `reducer$`: a `BehaviorSubject` whose values are functions that, when invoked, will iterate over all the registered reducers and will execute them with the **current state** and the **action** that cause the function's invocation
+* `reducer$`: a `BehaviorSubject` whose values are functions that, when invoked, will iterate over all the registered reducers and will execute them with the **current state** and the **action** that caused the function's invocation
 * `scannedActions`: used to inform other entities(e.g: `effects`) that some action occurred
 
-None of the above parameters have access modifiers, which indicates that most of the logic will happen inside the `constructor`:
+None of the above parameters have **access modifiers**, which indicates that most of the logic will happen inside the `constructor`:
 
 ```ts
 constructor (/* ... */) {
@@ -1590,7 +1590,7 @@ const withLatestReducer$: Observable<
   > = actionsOnQueue$.pipe(withLatestFrom(reducer$));
 ```
 
-Will make sure that although `actionsOnQueue$` emits, if `reducer$` didn't, no values will be pushed forwards in the stream. If both emitted, the values will be emitted only if the observable which emits again is `actionsOnQueue$`.
+Will make sure that although `actionsOnQueue$` emits, if `reducer$` didn't, no values will be pushed forwards into the stream. If both emitted, the values will be emitted only if the observable which emits again is `actionsOnQueue$`. This way, if reducers are added/removed later, each new action will be applied to the _most up to date_ reducers object.
 
 ```
 -A---A--A--A-----A--> actionsOnQueue$
