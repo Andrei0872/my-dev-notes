@@ -13,6 +13,8 @@
     - [`createReducer`](#createreducer)
   - [Store](#store)
     - [Selecting from the Store](#selecting-from-the-store)
+      - [Providing the **path** of the slice we're interested in with the help of a **sequence** of **string** values](#providing-the-path-of-the-slice-were-interested-in-with-the-help-of-a-sequence-of-string-values)
+      - [Provide a custom operator that will do the mapping](#provide-a-custom-operator-that-will-do-the-mapping)
       - [Using custom selectors](#using-custom-selectors)
       - [How does the memoization actually work ?](#how-does-the-memoization-actually-work)
   - [State](#state)
@@ -728,7 +730,7 @@ export class State<T> extends BehaviorSubject<any> implements OnDestroy {
 ```
 I'd see the `Store` class as some sort of middleman between the `Model`(the place where the data is actually stored) and the `Data Consumer`:
 
-`Data Consumer` -> `Model`: `Store.dispatch()` 
+`Data Consumer` -> `Model`: `Store.dispatch()`   
 `Model` -> `Data Consumer`: `Store.subscribe()`
 
 As a side note, `Store` can not only be used as an **observable**, but also as an **observer**.
@@ -747,7 +749,7 @@ complete() {
 }
 ```
 
-This might come handy when you can't know which action and when you'll want to dispatch.
+This might come in handy when you can't know which action and when you'll want to dispatch.
 
 ```ts
 const actions$ = of(FooActions.add({ age: 18, name: 'andrei' }));
@@ -757,7 +759,7 @@ actions$.subscribe(this.store)
 
 ### Selecting from the Store
 
-We can use `Store.select` method:
+We can use both `Store.select('path' | customSelector)`:
 
 ```ts
 export class Store<T> /* ... */ {
@@ -783,8 +785,8 @@ export function select<T, Props, K>(
   };
 }
 ```
-`Store.select` will return an **observable** whose emitted values depend on the arguments passed to the `select` function.
-The **select function** is exported for a reason. Find out why in [Using custom selectors](#using-custom-selectors).
+
+or `this.store.pipe(select('path') | select(customSelector))`. As you can see, both approaches will make use of the `select` function and will return an observable.
 
 Assuming you have have a state that complies with this interface:
 
@@ -800,7 +802,7 @@ interface Foo {
 interface User { name: string; age: number; }
 ```
 
-you'd inject the store like this: 
+you could inject the store like this: 
 
 ```ts
 export class SmartComponent {
@@ -808,9 +810,9 @@ export class SmartComponent {
 }
 ```
 
-There are a few ways to fetch data from the store. 
+There are a couple of ways to fetch data from the store. 
 
-1) Providing the **path** of the slice we're interested in with the help of a **sequence** of **string** values
+#### Providing the **path** of the slice we're interested in with the help of a **sequence** of **string** values
 
   ```ts
   this.store.select('foo', 'fooUsers', /* ... */)
@@ -860,8 +862,8 @@ There are a few ways to fetch data from the store.
   }
   ```
 
-2) Provide a custom function that will do the mapping
-  
+#### Provide a custom operator that will do the mapping
+
   ```ts
   export function select<T, Props, K>(
     mapFn: (state: T, props: Props) => K,
@@ -869,23 +871,33 @@ There are a few ways to fetch data from the store.
   ): (source$: Observable<T>) => Observable<K>;
   ```
 
-  This is similar to the previous approach, but instead of listing the properties, you provide a function and optionally another argument(`props`), based on which you'll do the mapping yourself. `props` may contain some data that is **not part of the store** and you can use it to alter the shape of the state.
+  This is similar to the previous approach, but instead of listing the properties, you provide a custom operator and optionally another argument(`props`), based on which you'll do the mapping yourself. `props` may contain some data that is **not part of the store** and you can use it to alter the shape of the state.
+  
+  Another great benefit of this approach is that it can be used in conjunction with custom selectors, provided by the `createSelector()` function(you find more about `createSelector` in the following section).
 
+  `createSelector` will return a `MemoizedSelector`/`MemoizedSelectorWithProps` which extends the base `Selector`.
+  
   ```ts
-  this.store.select(
-    (state, props) => {
-      return `${props.prefix}${state.foo.prop1}${props.suffix}` 
-    },
-    { suffix: '_____', prefix: '@@@@@@' }
-  )
-  .subscribe(console.log)
+  export function createSelector(
+    ...input: any[]
+  ): MemoizedSelector<any, any> | MemoizedSelectorWithProps<any, any, any> { /* ... */ }
+
+  export interface MemoizedSelector<
+    State,
+    Result,
+    ProjectorFn = DefaultProjectorFn<Result>
+  > extends Selector<State, Result> {
+    release(): void;
+    /* ... */
+  }
   ```
 
-  This is achieved with the `map` operator:
+  Put differently, it **returns** a **selector**(a function that accepts a state and returns something that depends on that state) or a **selector with props**(similar to a **selector**, but it can also receive some `props`).   
+  This is useful to know because when using a custom selector, the magic is achieved with the `map` operator:
 
   ```ts
   export function select<T, Props, K>(
-    pathOrMapFn: ((state: T, props?: Props) => any) | string,
+    pathOrMapFn: ((state: T, props?: Props) => any) | string, // <- Complies with `MemoizedSelector` | `MemoizedSelectorWithProps`
     propsOrPath?: Props | string,
     ...paths: string[]
   ) {
@@ -905,16 +917,34 @@ There are a few ways to fetch data from the store.
   }
   ```
 
-  Another great benefit of this approach is that it can be used in conjunction with custom selectors, provided by the `createSelector()` function.
+  An example could look as this:
 
   ```ts
-  interface UserState { users: { name: string, age: number; }[] };
-  interface AppSate { users: UserState; }
+  const state = {
+    todos: [
+      { id: 1, name: 't1', done: true },
+      { id: 2, name: 't2', done: true },
+      { id: 3, name: 't3', done: false },
+    ],
+    filterStatus: true,
+  };
+
+  const completedTodosSelector = createSelector(
+    (s: typeof state) => s.todos,
+    (s: typeof state) => s.filterStatus,
+    (todos, crtFilterStatus) => todos.filter(t => t.done === crtFilterStatus)
+  );
+
+  const store$ = of(state);
+
+  store$.pipe(
+    select(completedTodosSelector)
+  ).subscribe(console.log);
   ```
 
 #### Using custom selectors
 
-Instead of only selecting properties, sometimes you might want to have **more control** on the situation.
+Sometimes you might want to have **more control** on the situation.
 In this case, we can use the `createSelector` function which can take a bunch of **selectors** and lastly, a **projection function**.
 The **selectors** will allow us to **select** certain **slices** from the store, whereas the last provided function will give the shape of the emitted value(i.e: the state object), based on the existing selectors. It will then project the value into the stream so the subscribers can consume it.
 
@@ -935,7 +965,7 @@ export type SelectorWithProps<State, Props, Result> = (
 ) => Result;
 ```
 
-As you can notice, there is no hint that indicates that the above selector can be **memoized**.
+As you can notice, there is **no hint** that indicates that the above selector can be **memoized**.
 
 A memoized selector, which can be the result of `createSelector`,  looks like this:
 
@@ -1464,7 +1494,7 @@ Here's what happens after the selector is called with a `state`:
   // `projector`
   (status, actions) => actions.filter(a => a.status === status),
   ```
-  _Note: even though arrow functions do not have `this` available, `call()`, `bind()`, `apply()` can be used to pass arguments_
+  _Note: even though arrow functions do not have `this` nor `arguments` available, `call()`, `bind()`, `apply()` can be used to pass arguments_
 
 The flow would look like as follows:
 
@@ -2023,3 +2053,5 @@ if (isResultEqual(lastResult, newResult)) {
 * `createFeatureSelector`
 
 * add _Back to Contents_
+* solve TODOS
+* add ngrx/store v9 injection without type feature
