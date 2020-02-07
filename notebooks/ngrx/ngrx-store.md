@@ -1890,7 +1890,7 @@ Adding a feature module to a root module can be seen as adding a **decoupled sli
 
 Registering a feature can be achieved with: `Store.forFeature(featureName, reducer: ActionReducerMap | ActionReducer, config)`.
 
-where `reducer` is either an **object of reducers**(`ActionReducerMap`) or a function `ActionReducer`
+where `reducer` is either an **object of reducers**(`ActionReducerMap`) or a function `ActionReducer`.
 
 You can register **multiple** feature modules **at once**.
 
@@ -1956,7 +1956,7 @@ addFeatures(features: StoreFeature<any, any>[]) {
 }
 ```
 
-If it is an object of reducers(`{ feat: featReducer }`), it will follow the same steps as the ones described in [How are reducers set up?](#how-are-reducers-set-up). More concisely, the `awesome-feat`'s reducer will be a function that accepts `state` and `action` as arguments and, when invoked, will iterate over the feature's registered reducers(in this case `feat`) and will call their reducer(which was created by `createReducer`) with the given arguments. This is actually the `combination` function:
+If it is an object of reducers(`{ feat: featReducer }`), it will follow the same steps as the ones described in [How are reducers set up?](#how-are-reducers-set-up). More concisely, the `awesome-feat`'s reducer will be a function that accepts `state` and `action` as arguments and, when invoked, will iterate over the feature's registered reducers(in this case `feat`, which was created by `createReducer`) and will call them with the given arguments. This is actually the `combination` function:
 
 ```ts
 /* ... */
@@ -1978,7 +1978,7 @@ return function combination(state, action) {
 ```
 
 If instead the provided feature reducer is function(created by `createReducer`), it will simply invoke it with the `state` and `action` arguments. As with the other approach, the meta-reducer chain will still be created, but the way it is created it slightly different.  
-That's because when a **single function** is **provided**, it can't be something more than that, it can't be an object of reducers, so there is **no need** to create another function that, when called, will iterate over the object of reducers and invoke them(which is what happens when an object of reducers is provided).
+That's because when a **single function** is **provided**, it means it can't be something more than that, it can't be an object of reducers, so there is **no need** to create another function that, when called, will iterate over the object of reducers and invoke them(which is what happens when an object of reducers is provided).
 
 ```ts
 export function createFeatureReducerFactory<T, V extends Action = Action>(
@@ -2017,7 +2017,7 @@ updateReducers(featureKeys: string[]) {
 }
 ```
 
-`this.next(this.reducerFactory(this.reducers, this.initialState));` will make sure that whenever actions are dispatched, the reducer of each slice will be invoked(including the new slices added). This is how the store is kept update to date every time a new feature is added/removed.
+`this.next(this.reducerFactory(this.reducers, this.initialState))` will make sure that whenever actions are dispatched, the reducer of each slice will be invoked(including the new slices added). This is how the store is kept update to date every time a new feature is added/removed.
 
 ---
 
