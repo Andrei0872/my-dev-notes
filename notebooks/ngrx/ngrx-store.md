@@ -1751,7 +1751,7 @@ const myMetaReducer = (reducer) => (state, action) => {
   return result; // Return it so other meta-reducers can access the new produced state
 }
 
-rest.reduceRight((composed, fn) => fn(composed), last(arg));
+rest.reduceRight((composed, fn) => fn(composed), last(arg)); // <- `last(args)` will create the reducers object
 
                        |
                        |
@@ -1855,7 +1855,7 @@ For example, we can have something like this:
 
 ```typescript
 export const metaReducerWithDepFactory: (d: any) => MetaReducer = 
-  (logger: LogService) => reducer =>  (state, action) => {
+  (logger: LogService) => reducer => (state, action) => {
   console.log('meta reducer with dep!', logger, action)
 
   return reducer(state, action);
