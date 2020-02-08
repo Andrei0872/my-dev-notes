@@ -98,7 +98,7 @@ export function createAction<
 
 which implies that the function's body will have to contain a few **type guards** in order to get the types right.
 
-`ActionCreator<T, C>` represents a function of type `C` that has a **readonly property** `type` of type `T`. The `type` can also be used to discriminate unions(TODO(link from reducers! 😃)).
+`ActionCreator<T, C>` represents a function of type `C` that has a **readonly property** `type` of type `T`. The `type` can also be used to discriminate unions(An example can be found [here](#discriminate-01)).
 
 Let's examine each overload.
 
@@ -564,6 +564,8 @@ return function combination(state, action) {
   /* ... */
 };
 ```
+
+<div id="discriminate-01"></div>
 
 The `on` function can _bind_ a reducer to multiple actions. Then, in the reducer, with the help of **discriminated unions**, we can perform the appropriate state change depending on action.
 
@@ -2023,35 +2025,4 @@ updateReducers(featureKeys: string[]) {
 
 ## Questions
 
-* check `example-app`
-
-* what is `resultMemoize` ?
-
-* 
-```ts
-provide: _REDUCER_FACTORY,
-  useValue: config.reducerFactory
-    ? config.reducerFactory
-    : combineReducers,
-```
-*  `strictActionSerializability || strictStateSerializability` - `runtime_checks`
-
-* you can set the initial state from the config: `{ provide: _INITIAL_STATE, useValue: config.initialState },` ❓
-
-* you can provide an initial state 
-
-* `Store.addReducer` & `Store.removeReducer` ❗️
-
-❓ why do results need to be compared?
-
-```ts
-if (isResultEqual(lastResult, newResult)) {
-  return lastResult;
-}
-```
-
-* `createFeatureSelector`
-
 * add _Back to Contents_
-* solve TODOS
-* add ngrx/store v9 injection without type feature
