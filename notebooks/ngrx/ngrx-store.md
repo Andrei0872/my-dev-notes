@@ -25,7 +25,6 @@
       - [Injecting dependencies into a meta-reducer](#injecting-dependencies-into-a-meta-reducer)
   - [Using Features](#using-features)
     - [Registering feature modules](#registering-feature-modules)
-  - [Questions](#questions)
 
 ---
 
@@ -2020,9 +2019,3 @@ updateReducers(featureKeys: string[]) {
 ```
 
 `this.next(this.reducerFactory(this.reducers, this.initialState))` will make sure that whenever actions are dispatched, the reducer of each slice will be invoked(including the new slices added). This is how the store is kept update to date every time a new feature is added/removed.
-
----
-
-## Questions
-
-* add _Back to Contents_
