@@ -587,8 +587,10 @@ The `on` function can _bind_ a reducer to multiple actions. Then, in the reducer
 const a1 = createAction('a1', props<{ name: string }>());
 const a2 = createAction('a2', props<{ age: number }>());
 
+const initialState = /* ... */;
+
 const reducer = createReducer(
-  null,
+  initialState,
   on(a1, a2, (state, action) => {
     if (action.type === 'a1') {
       action.name
@@ -614,7 +616,17 @@ export interface OnReducer<S, C extends ActionCreator[]> {
 }
 ```
 
+Also, it is worth mentioning that the **entire State** type will be inferred from what is being passed as `initialState`:
+
+```ts
+export function createReducer<S, A extends Action = Action>(
+  initialState: S,
+  ...ons: On<S>[]
+): ActionReducer<S, A> { /* ... */ }
+```
+
 [TypeScript Playground](http://www.typescriptlang.org/play/#code/JYOwLgpgTgZghgYwgAgIILMA9iZBvAKGWSgjgBMcAbAT2TBoAcIAuZAZzClAHMBuAgF8CBUJFiIUqAIz4i9Jq2QByONOUAaeSDgBbJZ24h+QkWOjwkaAExziDZm1XXN8uDyUgArroBG0AWECBxQAcQgwAFUQbBAAHlRkCAAPSBBydjQMWIBtAF0APmQAXjQc7z9oPIFgxWRo2JLkcKiYnDicmQ0bQpqEHE5kLDYGnCbCe0UnNVdiHX1p9NJgWeQAejXkdyVpawBmZABaIugoLCghIA).
+
 
 Another great feature that `createReducer` comes with is **composability**. You can use the **same action** with **multiple reducers**. What this means is that an `n`th `on`'s reducer **state** which has an action `a` will be result of the `n-1`th `on`'s reducer that has the same action `a`:
 
@@ -834,7 +846,7 @@ There are a couple of ways to fetch data from the store.
     .subscribe(console.log)
   ```
 
-  This approach is **not** that error-prone as you might expect, and this is due to the multiple **overloads** the `select` function is filled up with.
+  The `select` function is filled up with multiple **overloads**:
   
   ```ts
   export function select<
