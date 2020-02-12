@@ -4,11 +4,14 @@
   - [Practices](#practices)
     - [Altering defaults values](#altering-defaults-values)
   - [Marble Testing](#marble-testing)
+    - [hot observables](#hot-observables)
+    - [cold observables](#cold-observables)
   - [Jasmine](#jasmine)
     - [Spies](#spies)
       - [`and.callThrough()`](#andcallthrough)
       - [`and.stub()`](#andstub)
       - [provide `originalFn` to `createSpy`](#provide-originalfn-to-createspy)
+  - [Questions](#questions)
 
 ## Practices
 
@@ -29,9 +32,12 @@ afterEach(() => {
 });
 ```
 
+---
+
 ## Marble Testing
 
-* hot observables
+### hot observables
+
   ```ts
   function testInitialState(feature?: string) {
       store = TestBed.get(Store);
@@ -43,7 +49,7 @@ afterEach(() => {
         a: { type: INCREMENT },
         b: { type: 'OTHER' },
         c: { type: RESET },
-        d: { type: 'OTHER' }, // reproduces https://github.com/ngrx/platform/issues/880 because state is falsey
+        d: { type: 'OTHER' },
         e: { type: INCREMENT },
         f: { type: INCREMENT },
         g: { type: 'OTHER' },
@@ -62,6 +68,31 @@ afterEach(() => {
       );
     }  
   ```
+
+### cold observables
+
+```ts
+const firstValue = { first: 'value' };
+const firstState = { [featureName]: firstValue };
+const secondValue = { secondValue: 'value' };
+const secondState = { [featureName]: secondValue };
+
+const state$ = cold('--a--a--a--b--', { a: firstState, b: secondState });
+const expected$ = cold('--a--------b--', {
+  a: firstValue,
+  b: secondValue,
+});
+
+// How are the marbles affected by the operators? :D  
+const featureState$ = state$.pipe(
+  map(featureSelector),
+  distinctUntilChanged()
+);
+
+expect(featureState$).toBeObservable(expected$);
+```
+
+---
 
 ## Jasmine
 
@@ -89,3 +120,9 @@ afterEach(() => {
 ```ts
 const projFn = jasmine.createSpy('name', () => { }).and.callThrough();
 ```
+
+---
+
+## Questions
+
+[Cold observables](#cold-observables)
