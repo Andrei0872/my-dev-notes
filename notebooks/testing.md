@@ -1,5 +1,34 @@
 # Testing Notebook
 
+- [Testing Notebook](#testing-notebook)
+  - [Practices](#practices)
+    - [Altering defaults values](#altering-defaults-values)
+  - [Marble Testing](#marble-testing)
+  - [Jasmine](#jasmine)
+    - [Spies](#spies)
+      - [`and.callThrough()`](#andcallthrough)
+      - [`and.stub()`](#andstub)
+      - [provide `originalFn` to `createSpy`](#provide-originalfn-to-createspy)
+
+## Practices
+
+### Altering defaults values
+
+```ts
+let originalTimeout: number;
+
+beforeEach(() => {
+  originalTimeout = jasmine.origTimeout;
+  // Alter the `original` value
+  jasmine.origTimeout = newValue;
+});
+
+afterEach(() => {
+  // Back to normal
+  jasmine.origTimeout = originalTimeout;
+});
+```
+
 ## Marble Testing
 
 * hot observables
@@ -33,3 +62,30 @@
       );
     }  
   ```
+
+## Jasmine
+
+### Spies
+
+* `spyInstance.calls.argsFor(specificSpyInvocationIdx)`
+
+#### `and.callThrough()`
+
+* unless you specify this, the **spied function** will be replaced by a stub(`function () {}`)
+* if specified, when you call the **spied function** it will actually call the original function(and will still keep track of its arguments):
+  ```ts
+  this.callThrough = function() {
+    plan = originalFn;
+    return getSpy();
+  };
+  ```
+
+#### `and.stub()`
+
+* tells the spy to use an _empty function_: `function () { }`
+
+#### provide `originalFn` to `createSpy`
+
+```ts
+const projFn = jasmine.createSpy('name', () => { }).and.callThrough();
+```
