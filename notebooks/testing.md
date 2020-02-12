@@ -11,6 +11,7 @@
       - [`and.callThrough()`](#andcallthrough)
       - [`and.stub()`](#andstub)
       - [provide `originalFn` to `createSpy`](#provide-originalfn-to-createspy)
+    - [`expect(spy1).toHaveBeenCalledBefore(spy2)`](#expectspy1tohavebeencalledbeforespy2)
   - [Questions](#questions)
 
 ## Practices
@@ -120,6 +121,11 @@ expect(featureState$).toBeObservable(expected$);
 ```ts
 const projFn = jasmine.createSpy('name', () => { }).and.callThrough();
 ```
+
+### `expect(spy1).toHaveBeenCalledBefore(spy2)`
+
+* try 😃
+* return type of `expect()` - make it heading
 
 ---
 
