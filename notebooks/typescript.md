@@ -19,6 +19,7 @@
       - [Generic Class](#generic-class)
     - [Subtypes](#subtypes)
       - [Type Constraints](#type-constraints)
+    - [Specifying the function's `this` type](#specifying-the-functions-this-type)
   - [Types](#types-1)
     - [Create a condition-based subset of types](#create-a-condition-based-subset-of-types)
     - [Type Assignments](#type-assignments)
@@ -253,6 +254,34 @@ foo2(fooObj);
 foo2(fooObjSubtype1);
 foo2(fooObjSubtype2);
 foo2(undefined); // ERROR
+```
+
+### Specifying the function's `this` type
+
+[TypeScript Playground](https://www.typescriptlang.org/play/#code/MYGwhgzhAEBCYCdoG8BQ1oHMEFMcBcAKAOzAFscAuaCfBAS2MwEoV0NpgB7YiLkHADoQXTIQAGACRwgR0ACTJSFAL4BCccwDc7FahXRUqUJBgAxLlzYZuvOgFdg+LgkIAzYtUL4AFvQjU8AgANNDKVDR0jCzQALwAfJEMTKxoHNAegsBgsiQ4AO5wiITMoQDkYMQAJrj0ZdrsGAD0TRnEhBXVtfVa0ACiAEoDAPID0AC00OK+-uLQZPa00ABGODQEuvpGbvbETvQ8GZYACojk3n4BRSFh5BG0yTFp0DMQgth4ROEN7Lj49ghiLcKDo9MYeEs3HEwgVoBYuO4TmcyNogA
+).
+
+```ts
+class Bar {
+  greet(name: string) {
+    console.log(`Hello ${name}!`);
+  }
+} 
+
+class Foo {
+  constructor(fn: (this: Bar, name: string) => string) {
+    fn.call(new Bar(), 'andrei');
+    // fn('andrei'); ERROR - `this` must be set
+  }
+}
+
+function fooParam(this: Bar, name: string) {
+  this.greet(name);
+
+  return name;
+}
+
+const f = new Foo(fooParam);
 ```
 
 ---
