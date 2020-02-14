@@ -24,6 +24,18 @@
   expect(crtData)./* ... */
   ```
 
+  ```ts
+  const s1 = createSelector(/* ... */);
+  const s2 = createSelector(/* ... */);
+  const s3 = createSelector(
+    s1,
+    s2,
+    (s1Result, s2Result) => { /* ... complicated logic here ... */ }
+  );
+
+  expect(s3.projetor(1, 2)).toBe(/* ... */)
+  ```
+
 ---
 
 ## Takeaways
