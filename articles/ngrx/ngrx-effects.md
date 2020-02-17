@@ -2,14 +2,20 @@
 
 - [@ngrx/effects](#ngrxeffects)
   - [Setting up the effects](#setting-up-the-effects)
+    - [EffectSources](#effectsources)
+  - [Creating an effect](#creating-an-effect)
+  - [Lifecycle](#lifecycle)
   - [`ofType`](#oftype)
   - [The `actions$` stream](#the-actions-stream)
+  - [Re-subscribing on error](#re-subscribing-on-error)
   - [Connecting `ngrx/effects` with `ngrx/store`](#connecting-ngrxeffects-with-ngrxstore)
   - [Questions](#questions)
 
 ## Setting up the effects
 
 * you can provide a custom error handler
+* show how to provide effects
+* explain how instances are created (the injected dependencies)
 
 ```ts
 @NgModule({})
@@ -39,6 +45,7 @@ export class EffectsRootModule {
   }
 }
 ```
+
 
 `@Optional() storeRootModule: StoreRootModule` and `@Optional() storeFeatureModule: StoreFeatureModule` will make sure that effects are initialized **after** the main store has been initialized. This is desirable as some effects classes might inject the `Store` entity and without proper initialization(i.e: reducers, action stream), it may lead to unexpected results. This _beforehand_ initialization includes:
 
@@ -353,7 +360,26 @@ this.stateSubscription = stateAndAction$.subscribe(({ state, action }) => {
 
 after which `ScannedActionsSubject` will emit the same action that will be _eventually intercepted_ by the effects.
 
+---
 
+## Re-subscribing on error
+
+* you can provide custom error handlers 
+* it has an attempt's limit
+* what's the diff ❓
+  ```ts
+  createEffect(
+    () => this.actions$.pipe(
+      exhaustMap(
+        userId => this.userService.fetchUser(userId).pipe(
+          // catchError()
+        )
+      )
+      /* catchError here */
+    )
+  )
+  ```
+* search the issue that cause the attempt's limit
 
 ---
 
