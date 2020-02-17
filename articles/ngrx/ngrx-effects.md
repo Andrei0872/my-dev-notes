@@ -47,6 +47,242 @@ export class EffectsRootModule {
 * the `Store` entity - the middleman between the data consumer(e.g: a smart component) and the model(the `State` entity)
 * the `ScannedActionsSubject` - the **stream** that the **effects (indirectly) subscribe** to; more on this in [The `actions$` stream](#the-actions-stream).
 
+
+`runner.start()` will create a **subscription** to a **stream** resulted from the **merging** of all **registered effects**(more on this in the upcoming section). In other words, all the effects(e.g: those created by `createEffect`) will be merged into one **single observable** whose **emitted** values will be **actions**. 
+
+```ts
+// EffectsRunner
+
+start() {
+  if (!this.effectsSubscription) {
+    this.effectsSubscription = this.effectSources
+      .toActions()
+      .subscribe(this.store);
+  }
+}
+```
+
+The stream's observer will be the `Store` entity, because it implements the `Observer` interface
+
+```ts
+export class Store<T = object> extends Observable<T>
+  implements Observer<Action> {
+
+    next(action: Action) {
+      this.actionsObserver.next(action);
+    }
+  }
+```
+
+meaning that any **action resulted** from the **effects** will be intercepted by the `Store` which will in turn propagate it further so state changes can occur.
+
+### EffectSources
+
+It is the place where all the **registered effects** will be **merged** into **one observable** whose emitted values(**actions**) will be intercepted by the `Store` entity, which is responsible for dispatching them, so that the app state can be updated.
+
+The _merging behavior_ can be achieved with `EffectSources.toActions()` from below:
+
+```ts
+export class EffectSources extends Subject<any> {
+  constructor(
+    /* ... */
+    private store: Store<any>,
+    /* ... */
+  ) {
+    super();
+  }
+
+  // Pushing an effect into the stream created by `toActions()`
+  addEffects(effectSourceInstance: any): void {
+    this.next(effectSourceInstance);
+  }
+
+  toActions(): Observable<Action> {
+    return this.pipe(
+      groupBy(getSourceForInstance),
+      mergeMap(source$ => {
+        return source$.pipe(
+          groupBy(effectsInstance),
+          tap(() => {
+            if (isOnInitEffects(source$.key)) {
+              this.store.dispatch(source$.key.ngrxOnInitEffects());
+            }
+          })
+        );
+      }),
+      mergeMap(source$ =>
+        source$.pipe(
+          exhaustMap(
+            resolveEffectSource(this.errorHandler, this.effectsErrorHandler)
+          ),
+          map(output => {
+            reportInvalidActions(output, this.errorHandler);
+            return output.notification;
+          }),
+          filter(
+            (notification): notification is Notification<Action> =>
+              notification.kind === 'N'
+          ),
+          dematerialize()
+        )
+      )
+    );
+  }
+}
+```
+
+Let's understand what it actually does by going through each line:
+
+* group the effects by their source(the instance's prototype)  
+  As you know, `groupBy` will return an observable for each **new key** found. Then, if a value whose key is not new arrives, `groupBy` will use an existing observable and will push this new value through it.  
+  The same thing happens here, the key is the class that created this current instance, meaning that if there are 3 **distinct** effect classes, `groupBy` will emit 3 observables.
+* group the instances(the effects) by their identifiers and call their `ngrxOnInitEffects` 
+  
+  ```ts
+  mergeMap(source$ => { // <- `source$` an observable that is resulted from `groupBy`
+    return source$.pipe(
+      groupBy(effectsInstance), // Group by identifier
+      tap(() => {
+        if (isOnInitEffects(source$.key)) { // Invoke the lifecycle
+          this.store.dispatch(source$.key.ngrxOnInitEffects());
+        }
+      })
+    );
+  }),
+  ```
+
+  `mergeMap` is used because the first `groupBy` may emit multiple observables and the expected behavior is to handle all of them. Now, if the same effect class is loaded multiple times, **only one instance** will be used because these classes, by default, have the same identifier: 
+  ```ts
+  function effectsInstance(sourceInstance: any) {
+    if (isOnIdentifyEffects(sourceInstance)) {
+      return sourceInstance.ngrxOnIdentifyEffects();
+    }
+
+    return '';
+  }
+  ```
+  This, alongside `groupBy(effectsInstance)` and eventually `exhaustMap`, will make sure that only the first instance is used.  
+  For example, if we have `EffectsModule.forRoot([A, A, A])` and they have the same identifier(e.g: `''`), the second `groupBy` will emit only **one observable** with **3 items**.
+
+  With the help of `exhaustMap`
+
+  ```ts
+  mergeMap(source$ =>
+    source$.pipe(
+      exhaustMap(/* ... */),
+    /* ... */
+    )
+  )
+  ```
+
+  only one item out of 3(the first `A`) will be taken into account.
+
+  Internally, `exhaustMap` uses a flag(`hasSubscription`) to check whether there is an active inner subscription going on. You can inspect the relevant code [here](https://github.com/ReactiveX/rxjs/blob/master/src/internal/operators/exhaustMap.ts#L105-L122).
+
+* merge all the effects into a single stream  
+  
+  ```ts
+  mergeMap(source$ =>
+    source$.pipe(
+      exhaustMap(
+        resolveEffectSource(this.errorHandler, this.effectsErrorHandler)
+      ),
+      /* ... */
+    )
+  )
+  ```
+
+  `resolveEffectSource` will merge all the existing properties(which are observables, possibly created by `createEffect()`) of the current instance:
+
+  ```ts
+    function resolveEffectSource(/* ... */): (sourceInstance: any) => Observable<EffectNotification> {
+    return sourceInstance => {
+      const mergedEffects$ = mergeEffects(
+        sourceInstance,
+        errorHandler,
+        effectsErrorHandler
+      );
+
+      /* ... */
+
+      return mergedEffects$;
+    };
+  }
+  ```
+
+  ```ts
+  export function mergeEffects(
+    sourceInstance: any,
+    globalErrorHandler: ErrorHandler,
+    effectsErrorHandler: EffectsErrorHandler
+  ): Observable<EffectNotification> {
+    const sourceName = getSourceForInstance(sourceInstance).constructor.name;
+
+    const observables$: Observable<any>[] = getSourceMetadata(sourceInstance).map(
+      ({
+        propertyName,
+        dispatch,
+        useEffectsErrorHandler,
+      }): Observable<EffectNotification> => {
+        const observable$: Observable<any> =
+          typeof sourceInstance[propertyName] === 'function'
+            ? sourceInstance[propertyName]()
+            : sourceInstance[propertyName];
+
+        // Whether it should re-subscribe if errors occur
+        const effectAction$ = useEffectsErrorHandler
+          ? effectsErrorHandler(observable$, globalErrorHandler)
+          : observable$;
+
+        // You might not want the `Store` to intercept the action
+        // and trigger state changes based on it
+        if (dispatch === false) {
+          return effectAction$.pipe(ignoreElements());
+        }
+
+        const materialized$ = effectAction$.pipe(materialize());
+
+        return materialized$.pipe(
+          map(
+            (notification: Notification<Action>): EffectNotification => ({
+              effect: sourceInstance[propertyName],
+              notification,
+              propertyName,
+              sourceName,
+              sourceInstance,
+            })
+          )
+        );
+      }
+    );
+
+    return merge(...observables$);
+  }
+  ```
+
+  _A smaller example that reproduces this operation can be found [here](https://stackblitz.com/edit/typescript-fv3us6?file=index.ts)_.
+  
+
+* image here
+
+---
+
+## Creating an effect
+
+* `createEffect()`
+* `getCreateEffectMetadata()`
+* TS magic! 😃
+  ```ts
+  C extends EffectConfig,
+  DT extends DispatchType<C>,
+  OT extends ObservableType<DT, OT>,
+  R extends Observable<OT> | ((...args: any[]) => Observable<OT>)
+  ```
+
+---
+
+## Lifecycle
+
 ---
 
 ## `ofType`
