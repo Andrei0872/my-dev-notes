@@ -9,6 +9,8 @@
 
 ## Setting up the effects
 
+* you can provide a custom error handler
+
 ```ts
 @NgModule({})
 export class EffectsRootModule {
