@@ -29,6 +29,7 @@
     - [Merge Types](#merge-types)
     - [Contextual typing](#contextual-typing)
     - [Generics](#generics)
+    - [Mapped tuples](#mapped-tuples)
     
 
 ## Knowledge
@@ -675,4 +676,50 @@ function fun<T extends string, F extends DefaultFn>(t: T, c: F) {
 const r = fun('[action]', (u: User) => u);
 r({ data: { name: 'a', age: 18 } });
 // r(); // ERROR
+```
+
+### Mapped tuples
+
+[TypeScript Playground](https://www.typescriptlang.org/play/?ssl=1&ssc=1&pln=39&pc=38#code/C4TwDgpgBAglC8UAUA7ArgWwEYQE5QB8oBnYXASxQHMBKAbQF0AoAYwHsVSoBDALlgRQ6ARgA0UAOTCATAGYJ4iXIkMA3EyahIUAEKC66bHnGkK1Naw5cs-PYhGLTK9ZvDQAwoIDiEYAFUUcg4AHhgAPldtABFvXwCglGCdCMjoH39AkIAVMMEsqAgAD2AIFAATYlhcXG4QYMoAMzwoP1yAfhaofhQIADc8dQB6QYR4MfGJyanpmYmNLTS4zJR3NgwMbNzEfKKS8sqYatrg1fWQxuaAJTD2qEuuqB7+3HUFqAA1bgAbNAgAeQapw2iRyeQKxVKFSgQPOKCa+GuUA6926fQGqSgWTQYC+ECybAACrg1uRiBBgqDtuC9lDDjU6jDEtwUCAbkioABvJhQIQAayglCgvIgIDYDUxDH4RJJZOCnx+-0Ba2BFLovIYNyYAF8Hk90UxKCVcA1uCwPMrsoJTJQqLkuTz2GcUNKwPwsuotRoWF9uMRKgAxNhsAUYHEQDClYCVRnBQw4XB27lQR3Al2CGSydQ8pPsThkNAsYBsXBIMBoLBfcgsR7cCP8a3UGicqCerUub2+yo6bj4cih3ERlBR6EWlCcnOjtOICRYHtQMDEsAAQgkWagE7zuALRfwpfLler3CoEG6mHjTY5Le1XqswB41X0PQA7lBA2wkBJmWVcBByBIaOIz66D2SDCAAHDQFhMMMUAAAa5iw3DALBUA4AAFtwvRBLgGLuMIsQZAkMYLGK94Jq8bjQtIeTYri+LShgpLkiR4o9uRQA)
+
+```ts
+type A = (number | string)[]
+const a: A = [1, '123', '23'];
+
+type B = [number, string];
+const b: B = [1, 'str'];
+
+type C = GetUnion<A>
+type D = GetUnion<B>
+
+type GetUnion<T> = T extends Array<infer U> ? U : never;
+// =========================================
+
+type GetUnionCommon<T> = T extends Array<Common<infer R>> ? R : never;
+type ValueOfCommon<T> = T extends Common<infer R> ? R : never;
+type TupleToPromise<T> = T extends Array<Common<any>> ? {
+  [k in keyof T]: Promise<ValueOfCommon<T[k]>>
+} : never;
+
+interface Common<T = string> {
+  commonProp: T;
+}
+
+class Foo implements Common<number> {
+  commonProp = 123;
+  
+  constructor(public name: string) { }
+};
+
+class Bar implements Common {
+  commonProp = 'bar prop!';
+  
+  constructor (public age: number) { }
+}
+
+const arr = [new Foo('andrei'), new Bar(18)];
+
+// `concat` behavior
+type C1 = GetUnionCommon<typeof arr>; // string | number
+type C2 = TupleToPromise<typeof arr>; // Promise<string | number>[]
 ```
