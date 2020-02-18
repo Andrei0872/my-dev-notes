@@ -250,15 +250,7 @@ Let's understand what it actually does by going through each line:
         const materialized$ = effectAction$.pipe(materialize());
 
         return materialized$.pipe(
-          map(
-            (notification: Notification<Action>): EffectNotification => ({
-              effect: sourceInstance[propertyName],
-              notification,
-              propertyName,
-              sourceName,
-              sourceInstance,
-            })
-          )
+          map(/* ... */)
         );
       }
     );
@@ -267,9 +259,11 @@ Let's understand what it actually does by going through each line:
   }
   ```
 
-  _A smaller example that reproduces this operation can be found [here](https://stackblitz.com/edit/typescript-fv3us6?file=index.ts)_.
-  
+  _A smaller example that reproduces the merging operation can be found [here](https://stackblitz.com/edit/typescript-fv3us6?file=index.ts)_.
 
+  What `const materialized$ = effectAction$.pipe(materialize())` does it to make sure that if the re-resubscription on error does **not** occur, it will **suppress** any incoming **errors**.
+  
+  
 * image here
 
 ---
@@ -364,6 +358,7 @@ after which `ScannedActionsSubject` will emit the same action that will be _even
 
 ## Re-subscribing on error
 
+* `{ resubscribeOnError: false }`
 * you can provide custom error handlers 
 * it has an attempt's limit
 * what's the diff ❓
@@ -380,6 +375,10 @@ after which `ScannedActionsSubject` will emit the same action that will be _even
   )
   ```
 * search the issue that cause the attempt's limit
+* show how the re-subscription happens
+* `export class ScannedActionsSubject extends Subject<Action> {}`
+  * when an error occurs, the observer will unsubscribe from the stream; if the subscription is retried, the observable returned from `catchError` can be that _just-unsubscribed_ observable. It's worth noting that `ScannedActionsSubject` extends `Subject`, meaning the new observers won't receive any of the previously emitted values.
+
 
 ---
 
