@@ -8,12 +8,12 @@
   - [`ofType`](#oftype)
   - [The `actions$` stream](#the-actions-stream)
   - [Re-subscribing on error](#re-subscribing-on-error)
+  - [Handling errors](#handling-errors)
   - [Connecting `ngrx/effects` with `ngrx/store`](#connecting-ngrxeffects-with-ngrxstore)
   - [Questions](#questions)
 
 ## Setting up the effects
 
-* you can provide a custom error handler
 * show how to provide effects
 * explain how instances are created (the injected dependencies)
 
@@ -108,20 +108,16 @@ export class EffectSources extends Subject<any> {
     return this.pipe(
       groupBy(getSourceForInstance),
       mergeMap(source$ => {
-        return source$.pipe(
-          groupBy(effectsInstance),
-          tap(() => {
-            if (isOnInitEffects(source$.key)) {
-              this.store.dispatch(source$.key.ngrxOnInitEffects());
-            }
-          })
-        );
+        return source$.pipe(groupBy(effectsInstance));
       }),
-      mergeMap(source$ =>
-        source$.pipe(
-          exhaustMap(
-            resolveEffectSource(this.errorHandler, this.effectsErrorHandler)
-          ),
+      mergeMap(source$ => {
+        const effect$ = source$.pipe(
+          exhaustMap(sourceInstance => {
+            return resolveEffectSource(
+              this.errorHandler,
+              this.effectsErrorHandler
+            )(sourceInstance);
+          }),
           map(output => {
             reportInvalidActions(output, this.errorHandler);
             return output.notification;
@@ -131,30 +127,33 @@ export class EffectSources extends Subject<any> {
               notification.kind === 'N'
           ),
           dematerialize()
-        )
-      )
+        );
+
+        // start the stream with an INIT action
+        // do this only for the first Effect instance
+        const init$ = source$.pipe(
+          take(1),
+          filter(isOnInitEffects),
+          map(instance => instance.ngrxOnInitEffects())
+        );
+
+        return merge(effect$, init$);
+      })
     );
   }
 }
 ```
 
-Let's understand what it actually does by going through each line:
+Let's understand what it actually does by going through significant block:
 
 * group the effects by their source(the instance's prototype)  
   As you know, `groupBy` will return an observable for each **new key** found. Then, if a value whose key is not new arrives, `groupBy` will use an existing observable and will push this new value through it.  
-  The same thing happens here, the key is the class that created this current instance, meaning that if there are 3 **distinct** effect classes, `groupBy` will emit 3 observables.
-* group the instances(the effects) by their identifiers and call their `ngrxOnInitEffects` 
+  The same thing happens here(`groupBy(getSourceForInstance)`), the key is the class that created this current instance, meaning that if there are 3 **distinct** effect classes, `groupBy` will emit 3 observables.
+* group the instances(the effects) by their identifiers
   
   ```ts
-  mergeMap(source$ => { // <- `source$` an observable that is resulted from `groupBy`
-    return source$.pipe(
-      groupBy(effectsInstance), // Group by identifier
-      tap(() => {
-        if (isOnInitEffects(source$.key)) { // Invoke the lifecycle
-          this.store.dispatch(source$.key.ngrxOnInitEffects());
-        }
-      })
-    );
+  mergeMap(source$ => { // <- `source$` an observable that is resulted from the previous `groupBy`
+    return source$.pipe(groupBy(effectsInstance));
   }),
   ```
 
@@ -174,11 +173,10 @@ Let's understand what it actually does by going through each line:
   With the help of `exhaustMap`
 
   ```ts
-  mergeMap(source$ =>
-    source$.pipe(
-      exhaustMap(/* ... */),
-    /* ... */
-    )
+  mergeMap(source$ => {
+      const effect$ = source$.pipe(
+        exhaustMap(sourceInstance => { /* ... */ }),
+    }
   )
   ```
 
@@ -189,13 +187,15 @@ Let's understand what it actually does by going through each line:
 * merge all the effects into a single stream  
   
   ```ts
-  mergeMap(source$ =>
-    source$.pipe(
-      exhaustMap(
-        resolveEffectSource(this.errorHandler, this.effectsErrorHandler)
-      ),
-      /* ... */
-    )
+  mergeMap(source$ => {
+    const effect$ = source$.pipe(
+      exhaustMap(sourceInstance => {
+        return resolveEffectSource(
+          this.errorHandler,
+          this.effectsErrorHandler
+      )(sourceInstance);
+    }),
+    /* ... */
   )
   ```
 
@@ -225,6 +225,7 @@ Let's understand what it actually does by going through each line:
   ): Observable<EffectNotification> {
     const sourceName = getSourceForInstance(sourceInstance).constructor.name;
 
+    // `getSourceMetadata(sourceInstance)` - getting all the effect class' properties
     const observables$: Observable<any>[] = getSourceMetadata(sourceInstance).map(
       ({
         propertyName,
@@ -263,8 +264,33 @@ Let's understand what it actually does by going through each line:
 
   What `const materialized$ = effectAction$.pipe(materialize())` does it to make sure that if the re-resubscription on error does **not** occur, it will **suppress** any incoming **errors**.
   
-  
-* image here
+  At this stage, after all the effect class' properties are merged into one observable, the `ngrxOnInitEffects` lifecycle will be called for each class:
+
+  ```ts
+   mergeMap(source$ => {
+      const effect$ = source$.pipe(
+        exhaustMap(/* ... */),
+        /* ... */
+      );
+
+      // `source$`'s value an effect class
+      const init$ = source$.pipe(
+        // Make sure the `exhaustMap`'s behavior is `replicated`
+        // as there is only one effect class per identifier!
+        take(1),  
+        filter(isOnInitEffects),
+        map(instance => instance.ngrxOnInitEffects())
+      );
+
+      return merge(effect$, init$);
+  })
+  ```
+
+The above process could be visualized as follows:
+
+<div style="text-align: center;">
+  <img src="https://raw.githubusercontent.com/Andrei0872/my-dev-notes/master/screenshots/articles/ngrx-effects/effects-set-up.png">
+</div>
 
 ---
 
@@ -359,6 +385,7 @@ after which `ScannedActionsSubject` will emit the same action that will be _even
 ## Re-subscribing on error
 
 * `{ resubscribeOnError: false }`
+* cover `materialize()` & `dematerialize()`
 * you can provide custom error handlers 
 * it has an attempt's limit
 * what's the diff ❓
@@ -379,6 +406,12 @@ after which `ScannedActionsSubject` will emit the same action that will be _even
 * `export class ScannedActionsSubject extends Subject<Action> {}`
   * when an error occurs, the observer will unsubscribe from the stream; if the subscription is retried, the observable returned from `catchError` can be that _just-unsubscribed_ observable. It's worth noting that `ScannedActionsSubject` extends `Subject`, meaning the new observers won't receive any of the previously emitted values.
 
+
+---
+
+## Handling errors
+
+* you can provide a custom error handler
 
 ---
 
