@@ -5,12 +5,11 @@
     - [Providing effects](#providing-effects)
     - [The effects stream](#the-effects-stream)
       - [EffectSources](#effectsources)
-  - [Creating an effect](#creating-an-effect)
+  - [Creating effects](#creating-effects)
   - [Lifecycle](#lifecycle)
   - [`ofType`](#oftype)
   - [The `actions$` stream](#the-actions-stream)
   - [Re-subscribing on error](#re-subscribing-on-error)
-  - [Handling errors](#handling-errors)
   - [Connecting `ngrx/effects` with `ngrx/store`](#connecting-ngrxeffects-with-ngrxstore)
   - [Questions](#questions)
 
@@ -392,10 +391,11 @@ The above process could be visualized as follows:
 
 ---
 
-## Creating an effect
+## Creating effects
 
 * `createEffect()`
 * `getCreateEffectMetadata()`
+* options: `useEffectsErrorHandler` & `dispatch`
 * TS magic! 😃
   ```ts
   C extends EffectConfig,
@@ -404,10 +404,126 @@ The above process could be visualized as follows:
   R extends Observable<OT> | ((...args: any[]) => Observable<OT>)
   ```
 
+Creating an **effect** can be achieved with the `createEffect()` function:
+
+```ts
+type DispatchType<T> = T extends { dispatch: infer U } ? U : true;
+type ObservableType<T, OriginalType> = T extends false ? OriginalType : Action;
+
+export function createEffect<
+  C extends EffectConfig,
+  DT extends DispatchType<C>,
+  OT extends ObservableType<DT, OT>,
+  R extends Observable<OT> | ((...args: any[]) => Observable<OT>)
+>(source: () => R, config?: Partial<C>): R & CreateEffectMetadata {
+  const effect = source();
+  const value: EffectConfig = {
+    ...DEFAULT_EFFECT_CONFIG,
+    ...config, // Overrides any defaults if values are provided
+  };
+  Object.defineProperty(effect, CREATE_EFFECT_METADATA_KEY, {
+    value,
+  });
+  return effect as typeof effect & CreateEffectMetadata;
+}
+```
+
+`createEffect()` will return an **observable** with a property `CREATE_EFFECT_METADATA_KEY` attached to it which will hold the configuration object for that particular effect. When the merging of the effect's class properties into one observable takes place, each observable(property of that effect class) will be slightly altered, depending on the configuration. This object can have 2 properties:
+
+* `dispatch: boolean` - whether the resulting action should be dispatched to the store;  
   ```ts
-  type DispatchType<T> = T extends { dispatch: infer U } ? U : true;
-  type ObservableType<T, OriginalType> = T extends false ? OriginalType : Action;
+  const observable$: Observable<any> =
+    typeof sourceInstance[propertyName] === 'function'
+      ? sourceInstance[propertyName]()
+      : sourceInstance[propertyName];
+
+  const effectAction$ = useEffectsErrorHandler
+    ? effectsErrorHandler(observable$, globalErrorHandler)
+    : observable$;
+
+  if (dispatch === false) {
+    return effectAction$.pipe(ignoreElements());
+  }
   ```
+
+  The `ignoreElements` operator will ignore everything, **except error** or **complete** notifications.
+
+* `useEffectsErrorHandler: boolean` - whether effect's errors(e.g: due to external API calls) should be handled;  
+  
+  ```ts
+  const observable$: Observable<any> =
+    typeof sourceInstance[propertyName] === 'function'
+      ? sourceInstance[propertyName]()
+      : sourceInstance[propertyName];
+
+  const effectAction$ = useEffectsErrorHandler
+    ? effectsErrorHandler(observable$, globalErrorHandler)
+    : observable$;
+  ```
+
+  There is a built-in error handler for effects:
+
+  ```ts
+  export function defaultEffectsErrorHandler<T extends Action>(
+    observable$: Observable<T>,
+    errorHandler: ErrorHandler,
+    retryAttemptLeft: number = MAX_NUMBER_OF_RETRY_ATTEMPTS
+  ): Observable<T> {
+    return observable$.pipe(
+      catchError(error => {
+        if (errorHandler) errorHandler.handleError(error);
+        if (retryAttemptLeft <= 1) {
+          return observable$; // last attempt
+        }
+        // Return observable that produces this particular effect
+        return defaultEffectsErrorHandler(
+          observable$,
+          errorHandler,
+          retryAttemptLeft - 1
+        );
+      })
+    );
+  }
+  ```
+
+  When an error occurs, the observable will be unsubscribed from. What `defaultEffectsErrorHandler` does is to allow us to re-subscribe to the _just-unsubscribed_ observable as long as the maximum number of allowed attempts is exceeded.
+
+  For instance, if you have this effect:
+  
+  ```ts
+  addUser$ = createEffect(
+    () => this.actions$.pipe(
+      ofType(UserAction.add),
+      exhaustMap(u => this.userService.add(u)),
+      map(/* Map to action */)
+    ),
+  )
+  ```
+
+  If an error occurs due to calling `userService.add()` and it is not handled anywhere, like:
+
+  ```ts
+  exhaustMap(u => this.userService.add(u).pipe(catchError(err => /* Action */))),
+
+  // Or
+
+  exhaustMap(u => this.userService.add(u)),
+  catchError(err => /* Action */)
+  ```
+
+  `addUser$` will unsubscribe from the `actions$` stream. `defaultEffectsErrorHandler` will simply re-subscribe to `actions$`, but there's another thing that's worth mentioning: the `actions$` stream is actually a `Subject` so we know for sure that when re-subscribed, we won't receive any of the previously emitted values, only the newer ones. _You can read more about the action stream [here](#the-actions-stream)_.
+
+  You can also provide custom error handlers for effects:
+
+  ```ts
+  {
+    provide: EFFECTS_ERROR_HANDLER,
+    useValue: yourErrorHandler,
+  },
+  ```
+
+  where `yourErrorHandler` should be a function that accepts an `observable$` and an `errHandler` object.
+
 
 ---
 
@@ -487,9 +603,6 @@ after which `ScannedActionsSubject` will emit the same action that will be _even
 
 ## Re-subscribing on error
 
-* `{ resubscribeOnError: false }`
-* cover `materialize()` & `dematerialize()`
-* you can provide custom error handlers 
 * it has an attempt's limit
 * what's the diff ❓
   ```ts
@@ -508,13 +621,6 @@ after which `ScannedActionsSubject` will emit the same action that will be _even
 * show how the re-subscription happens
 * `export class ScannedActionsSubject extends Subject<Action> {}`
   * when an error occurs, the observer will unsubscribe from the stream; if the subscription is retried, the observable returned from `catchError` can be that _just-unsubscribed_ observable. It's worth noting that `ScannedActionsSubject` extends `Subject`, meaning the new observers won't receive any of the previously emitted values.
-
-
----
-
-## Handling errors
-
-* you can provide a custom error handler
 
 ---
 
@@ -545,21 +651,3 @@ after which `ScannedActionsSubject` will emit the same action that will be _even
 
 * `export const rootEffectsInit = createAction(ROOT_EFFECTS_INIT);`
   * you can be informed when the effects have been initialized ? 
-
-* re-subscribe on error 😃
-  ```ts
-    function resubscribeInCaseOfError<T extends Action>(
-    observable$: Observable<T>,
-    errorHandler?: ErrorHandler
-  ): Observable<T> {
-    return observable$.pipe(
-      catchError(error => {
-        if (errorHandler) errorHandler.handleError(error);
-        // Return observable that produces this particular effect
-        return resubscribeInCaseOfError(observable$, errorHandler);
-      })
-    );
-  }
-  ```
-
-  the above is not recursion, meaning we won't get that stack-overflow error, because when an error occurs, the subscription is cancelled, but by returning `resubscribeInCaseOfError(observable$, errorHandler);` we re-subscribe to it! 
