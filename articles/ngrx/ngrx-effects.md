@@ -2,7 +2,9 @@
 
 - [@ngrx/effects](#ngrxeffects)
   - [Setting up the effects](#setting-up-the-effects)
-    - [EffectSources](#effectsources)
+    - [Providing effects](#providing-effects)
+    - [The effects stream](#the-effects-stream)
+      - [EffectSources](#effectsources)
   - [Creating an effect](#creating-an-effect)
   - [Lifecycle](#lifecycle)
   - [`ofType`](#oftype)
@@ -14,8 +16,104 @@
 
 ## Setting up the effects
 
-* show how to provide effects
-* explain how instances are created (the injected dependencies)
+### Providing effects
+
+We can use either `EffectsModule.forRoot([effectClass])` or `EffectsModule.forFeature([effectClass])`. The former should be used **only once** as it will instantiate other essential services such as `EffectsRunner` or `EffectSources`.   
+Once the effects(classes) are registered, in order to set them up, an observable will be created(with the help of `EffectSources`) an subscribed to(thanks to `EffectRunner`); we'll explore it in the next section.
+
+The observable's emitted values will be the instances of those registered classes:
+
+```ts
+// EffectsModule.forRoot(rootEffects)
+{
+  return {
+    ngModule: EffectsRootModule,
+    providers: [
+      {
+        // Make sure the `forRoot` static method is called only once
+        provide: _ROOT_EFFECTS_GUARD,
+        useFactory: _provideForRootGuard,
+        deps: [[EffectsRunner, new Optional(), new SkipSelf()]],
+      },
+      EffectsRunner,
+      EffectSources,
+      Actions,
+      rootEffects, // The array of classes(effects)
+      {
+        // Instantiate the classes
+        provide: ROOT_EFFECTS,
+        deps: rootEffects,
+        useFactory: createSourceInstances,
+      },
+    ],
+  };
+}
+ 
+export function createSourceInstances(...instances: any[]) {
+  return instances;
+}
+```
+
+In this case, `EffectsRootModule` will inject `ROOT_EFFECTS` which will contain the needed instances and will push them into the _effects stream_:
+
+```ts
+@NgModule({})
+export class EffectsRootModule {
+  constructor(
+    private sources: EffectSources,
+    runner: EffectsRunner,
+    store: Store<any>,
+    @Inject(ROOT_EFFECTS) rootEffects: any[],
+    /* ... */
+  ) {
+    // Subscribe to the `effects stream`
+    runner.start();
+
+    rootEffects.forEach(effectSourceInstance =>
+      // Push values into the stream
+      sources.addEffects(effectSourceInstance)
+    );
+
+    store.dispatch({ type: ROOT_EFFECTS_INIT });
+  }
+
+  addEffects(effectSourceInstance: any) {
+    this.sources.addEffects(effectSourceInstance);
+  }
+}
+```
+
+The `EffectsFeatureModule`(returned from `EffectsModule.forFeature()`) follows the same approach:
+
+```ts
+@NgModule({})
+export class EffectsFeatureModule {
+  constructor(
+    root: EffectsRootModule,
+    @Inject(FEATURE_EFFECTS) effectSourceGroups: any[][],
+    /* ... */
+  ) {
+    effectSourceGroups.forEach(group =>
+      group.forEach(effectSourceInstance =>
+        root.addEffects(effectSourceInstance)
+      )
+    );
+  }
+}
+```
+
+with a subtle difference, though. The `FEATURE_EFFECTS` is a `multi` provider token, which means that, when injected, it will contain an array of all provided values.
+
+So, if you have: 
+
+```ts
+EffectsModule.forFeature([E1, E2]),
+EffectsModule.forFeature([E3, E4])
+```
+
+`FEATURE_EFFECTS` will result in: `[[E1, E2], [E3, E4]]`.
+
+### The effects stream
 
 ```ts
 @NgModule({})
@@ -83,7 +181,7 @@ export class Store<T = object> extends Observable<T>
 
 meaning that any **action resulted** from the **effects** will be intercepted by the `Store` which will in turn propagate it further so state changes can occur.
 
-### EffectSources
+#### EffectSources
 
 It is the place where all the **registered effects** will be **merged** into **one observable** whose emitted values(**actions**) will be intercepted by the `Store` entity, which is responsible for dispatching them, so that the app state can be updated.
 
@@ -304,6 +402,11 @@ The above process could be visualized as follows:
   DT extends DispatchType<C>,
   OT extends ObservableType<DT, OT>,
   R extends Observable<OT> | ((...args: any[]) => Observable<OT>)
+  ```
+
+  ```ts
+  type DispatchType<T> = T extends { dispatch: infer U } ? U : true;
+  type ObservableType<T, OriginalType> = T extends false ? OriginalType : Action;
   ```
 
 ---
