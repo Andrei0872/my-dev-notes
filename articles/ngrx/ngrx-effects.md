@@ -6,10 +6,10 @@
     - [The effects stream](#the-effects-stream)
       - [EffectSources](#effectsources)
   - [Creating effects](#creating-effects)
-  - [Lifecycle](#lifecycle)
+    - [TypeScript's Magic](#typescripts-magic)
+  - [Lifecycles](#lifecycles)
   - [`ofType`](#oftype)
   - [The `actions$` stream](#the-actions-stream)
-  - [Re-subscribing on error](#re-subscribing-on-error)
   - [Connecting `ngrx/effects` with `ngrx/store`](#connecting-ngrxeffects-with-ngrxstore)
   - [Questions](#questions)
 
@@ -393,17 +393,6 @@ The above process could be visualized as follows:
 
 ## Creating effects
 
-* `createEffect()`
-* `getCreateEffectMetadata()`
-* options: `useEffectsErrorHandler` & `dispatch`
-* TS magic! 😃
-  ```ts
-  C extends EffectConfig,
-  DT extends DispatchType<C>,
-  OT extends ObservableType<DT, OT>,
-  R extends Observable<OT> | ((...args: any[]) => Observable<OT>)
-  ```
-
 Creating an **effect** can be achieved with the `createEffect()` function:
 
 ```ts
@@ -461,7 +450,7 @@ export function createEffect<
     : observable$;
   ```
 
-  There is a built-in error handler for effects:
+  `effectsErrorHandler` maps to a value provided by the `EFFECTS_ERROR_HANDLER`. By default, it maps to `defaultEffectsErrorHandler`(the built-in error handler for effects):
 
   ```ts
   export function defaultEffectsErrorHandler<T extends Action>(
@@ -486,7 +475,9 @@ export function createEffect<
   }
   ```
 
-  When an error occurs, the observable will be unsubscribed from. What `defaultEffectsErrorHandler` does is to allow us to re-subscribe to the _just-unsubscribed_ observable as long as the maximum number of allowed attempts is exceeded.
+  _If you'd like to know why there must a limit regarding the number of retries, [here's](https://github.com/ngrx/platform/issues/2303) the issue where this topic is addressed_.
+
+  When an error occurs, the observable will be unsubscribed from. What `defaultEffectsErrorHandler` does is to allow us to re-subscribe to the _just-unsubscribed_ observable as long as the maximum number of allowed attempts is not exceeded. 
 
   For instance, if you have this effect:
   
@@ -503,12 +494,8 @@ export function createEffect<
   If an error occurs due to calling `userService.add()` and it is not handled anywhere, like:
 
   ```ts
+  // `this.userService.add(u)` is a cold observable
   exhaustMap(u => this.userService.add(u).pipe(catchError(err => /* Action */))),
-
-  // Or
-
-  exhaustMap(u => this.userService.add(u)),
-  catchError(err => /* Action */)
   ```
 
   `addUser$` will unsubscribe from the `actions$` stream. `defaultEffectsErrorHandler` will simply re-subscribe to `actions$`, but there's another thing that's worth mentioning: the `actions$` stream is actually a `Subject` so we know for sure that when re-subscribed, we won't receive any of the previously emitted values, only the newer ones. _You can read more about the action stream [here](#the-actions-stream)_.
@@ -522,12 +509,69 @@ export function createEffect<
   },
   ```
 
-  where `yourErrorHandler` should be a function that accepts an `observable$` and an `errHandler` object.
+  where `yourErrorHandler` should be a function that accepts an `observable$`(the observable built on top of the `action$` observable) and an `errHandler` object.
 
+
+### TypeScript's Magic
+
+Consider this effect:
+
+```ts
+addUser$ = createEffect(
+  () => this.actions$.pipe(/* ... */),
+)
+```
+
+If you hover over `addUser$`, its type should be: `Observable<Action> & CreateEffectMetadata`. `CreateEffectMetadata` is a way to identify a property created by `createEffect()`. It is particularly useful when the properties are merged into one single observable.
+
+Before revealing why `Observable<Action>` is there, try writing the same effect, but this time specifying the `dispatch: false` in the config object:
+
+```ts
+addUser$ = createEffect(
+  () => of(1),
+  { dispatch: false }
+)
+```
+
+`addUser$`'s type will be `Observable<number> & CreateEffectMetadata`.
+
+But if we have:
+
+```ts
+addUser$ = createEffect(
+  () => of(1),
+  // { dispatch: false }
+)
+```
+
+we'd get: `Type 'number' is not assignable to type 'Action'`. What this means is the the `dispatch` property has an **influence** on the **effect's type**.
+
+Let's see how this can be achieved:
+
+```ts
+type DispatchType<T> = T extends { dispatch: infer U } ? U : true;
+type ObservableType<T, OriginalType> = T extends false ? OriginalType : Action;
+
+export function createEffect<
+  C extends EffectConfig, // { dispatch?: boolean, useEffectsErrorHandler?: boolean; }
+  DT extends DispatchType<C>, // U(undefined | boolean) || true
+  OT extends ObservableType<DT, OT>, // If `DT` is false(`dispatch` explicitly set to `false`), use the original type
+  R extends Observable<OT> | ((...args: any[]) => Observable<OT>) // Use `OT` to infer the Observable's type
+>(source: () => R, config?: Partial<C>) { }
+```
+
+With this in mind, in the second snippet we have(reading backwards):
+
+* `R` - `Observable<number>`
+* `OT` - initially is of type `number`
+* `DT` - `false` as `dispatch` is explicitly set to `false`
+* `OT extends ObservableType<DT, OT>` determines the _final type_ of `OT`: `false extends false ? number : Action` -> we're getting `number`
+
+In the third snippet, `OT extends ObservableType<DT, OT>` can be seen as `undefined extends false ? number : Action`. So, the `OT`'s type will be `Action`, and we're getting the error because `addUser$`'s type is `Observable<number>`, when it should've been `Observable<Action>`.
 
 ---
 
-## Lifecycle
+## Lifecycles
 
 ---
 
@@ -598,29 +642,6 @@ this.stateSubscription = stateAndAction$.subscribe(({ state, action }) => {
 ```
 
 after which `ScannedActionsSubject` will emit the same action that will be _eventually intercepted_ by the effects.
-
----
-
-## Re-subscribing on error
-
-* it has an attempt's limit
-* what's the diff ❓
-  ```ts
-  createEffect(
-    () => this.actions$.pipe(
-      exhaustMap(
-        userId => this.userService.fetchUser(userId).pipe(
-          // catchError()
-        )
-      )
-      /* catchError here */
-    )
-  )
-  ```
-* search the issue that cause the attempt's limit
-* show how the re-subscription happens
-* `export class ScannedActionsSubject extends Subject<Action> {}`
-  * when an error occurs, the observer will unsubscribe from the stream; if the subscription is retried, the observable returned from `catchError` can be that _just-unsubscribed_ observable. It's worth noting that `ScannedActionsSubject` extends `Subject`, meaning the new observers won't receive any of the previously emitted values.
 
 ---
 
