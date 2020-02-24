@@ -7,7 +7,6 @@
       - [EffectSources](#effectsources)
   - [Creating effects](#creating-effects)
     - [TypeScript's Magic](#typescripts-magic)
-  - [Lifecycles](#lifecycles)
   - [`ofType`](#oftype)
   - [The `actions$` stream](#the-actions-stream)
   - [Connecting `ngrx/effects` with `ngrx/store`](#connecting-ngrxeffects-with-ngrxstore)
@@ -254,7 +253,8 @@ Let's understand what it actually does by going through significant block:
   }),
   ```
 
-  `mergeMap` is used because the first `groupBy` may emit multiple observables and the expected behavior is to handle all of them. Now, if the same effect class is loaded multiple times, **only one instance** will be used because these classes, by default, have the same identifier: 
+  `mergeMap` is used because the first `groupBy` may emit multiple observables and the expected behavior is to handle all of them. Now, if the same effect class is loaded multiple times, **only one instance** will be used because these classes, by default, have the same identifier(and there can be only **one class** **per identifier**): 
+  
   ```ts
   function effectsInstance(sourceInstance: any) {
     if (isOnIdentifyEffects(sourceInstance)) {
@@ -264,6 +264,9 @@ Let's understand what it actually does by going through significant block:
     return '';
   }
   ```
+
+  With `ngrxOnIdentifyEffects`(required by the `OnIdentityEffects` interface), we can specify a unique identifier for the class that contains the effects.
+
   This, alongside `groupBy(effectsInstance)` and eventually `exhaustMap`, will make sure that only the first instance is used.  
   For example, if we have `EffectsModule.forRoot([A, A, A])` and they have the same identifier(e.g: `''`), the second `groupBy` will emit only **one observable** with **3 items**.
 
@@ -296,7 +299,7 @@ Let's understand what it actually does by going through significant block:
   )
   ```
 
-  `resolveEffectSource` will merge all the existing properties(which are observables, possibly created by `createEffect()`) of the current instance:
+  `resolveEffectSource` will merge all the existing properties(which are observables, possibly created by `createEffect()`) of the current instance and will eventually call the `ngrxOnRunEffects` lifecycle method(required by the `OnRunEffects` interface):
 
   ```ts
     function resolveEffectSource(/* ... */): (sourceInstance: any) => Observable<EffectNotification> {
@@ -307,12 +310,16 @@ Let's understand what it actually does by going through significant block:
         effectsErrorHandler
       );
 
-      /* ... */
+      if (isOnRunEffects(sourceInstance)) {
+        return sourceInstance.ngrxOnRunEffects(mergedEffects$);
+      }
 
       return mergedEffects$;
     };
   }
   ```
+
+  With `ngrxOnRunEffects` we can alter the **observable resulted** from **merging** all the **effects**(the instance's properties).
 
   ```ts
   export function mergeEffects(
@@ -361,7 +368,7 @@ Let's understand what it actually does by going through significant block:
 
   What `const materialized$ = effectAction$.pipe(materialize())` does it to make sure that if the re-resubscription on error does **not** occur, it will **suppress** any incoming **errors**.
   
-  At this stage, after all the effect class' properties are merged into one observable, the `ngrxOnInitEffects` lifecycle will be called for each class:
+  At this stage, after all the effect class' properties are merged into one observable, the `ngrxOnInitEffects` lifecycle method(required by the `OnInitEffects` interface) will be called for each class(if it exists) so that an **action** will be **dispatched** **immediately** and **once**:
 
   ```ts
    mergeMap(source$ => {
@@ -370,12 +377,13 @@ Let's understand what it actually does by going through significant block:
         /* ... */
       );
 
-      // `source$`'s value an effect class
+      // `source$`'s value is an effect class instance
       const init$ = source$.pipe(
-        // Make sure the `exhaustMap`'s behavior is `replicated`
+        // `take(1)` -> make sure the `exhaustMap`'s behavior is `replicated`
         // as there is only one effect class per identifier!
         take(1),  
         filter(isOnInitEffects),
+        // `instance.ngrxOnInitEffects()` -> Action
         map(instance => instance.ngrxOnInitEffects())
       );
 
@@ -571,10 +579,6 @@ In the third snippet, `OT extends ObservableType<DT, OT>` can be seen as `undefi
 
 ---
 
-## Lifecycles
-
----
-
 ## `ofType`
 
 ```ts
@@ -659,16 +663,9 @@ after which `ScannedActionsSubject` will emit the same action that will be _even
 * https://ngrx.io/guide/effects/lifecycle#identify-effects-uniquely
   * when would that be useful?
 
-* why sometimes unique effect classes are needed?
-  ```ts
-  function effectsInstance(sourceInstance: any) {
-    if (isOnIdentifyEffects(sourceInstance)) {
-      return sourceInstance.ngrxOnIdentifyEffects();
-    }
-
-    return '';
-  }
-  ```
-
 * `export const rootEffectsInit = createAction(ROOT_EFFECTS_INIT);`
   * you can be informed when the effects have been initialized ? 
+
+* worth reading
+  * https://github.com/ngrx/platform/pull/1822
+  * https://github.com/ngrx/platform/issues/1826
