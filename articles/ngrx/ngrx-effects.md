@@ -7,8 +7,8 @@
       - [EffectSources](#effectsources)
   - [Creating effects](#creating-effects)
     - [TypeScript's Magic](#typescripts-magic)
-  - [`ofType`](#oftype)
   - [The `actions$` stream](#the-actions-stream)
+    - [`ofType`](#oftype)
   - [Connecting `ngrx/effects` with `ngrx/store`](#connecting-ngrxeffects-with-ngrxstore)
   - [Questions](#questions)
 
@@ -579,27 +579,6 @@ In the third snippet, `OT extends ObservableType<DT, OT>` can be seen as `undefi
 
 ---
 
-## `ofType`
-
-```ts
-type A = { type: 'andrei' };
-type J = { type: 'john' };
-type JA = { type: 'jane' };
-
-type Names = { type: 'andrei' | 'john' | 'jane' };
-
-type JSub = J & { age: number };
-type ASub = A & { city: string };
-
-type R = Extract<ASub | JSub, A | JA | J>;
-type R2 = Extract<ASub | JSub, Names>;
-
-const o: R = { type: 'andrei', city: 'city', };
-const o2: R2 = { type: 'john', age: 18 };
-```
-
----
-
 ## The `actions$` stream
 
 ```ts
@@ -622,9 +601,8 @@ export class Actions<V = Action> extends Observable<V> {
 }
 ```
 
-* why does the `lift` method exist ❓
-
-`ScannedActionsSubject` comes from `@ngrx/store` and it is an observable that emits whenever actions are dispatched, but only after the state changes have been handled.  So, when an action is dispatched(`Store.dispatch()`), the `State` entity will first update the application state depending on that action and the current state
+`ScannedActionsSubject` comes from `@ngrx/store` and it is a `Subject`(thus, an `Observable`) that emits whenever actions are dispatched, but only **after** the **state changes** have been **handled**.
+So, when an action is dispatched(`Store.dispatch()`), the `State` entity will first update the application state depending on that action and the current state, with the help of the reducers and then it will push that `action` into an **actions stream**, created by `ScannedActionsSubject`. 
 
 ```ts
 // State
@@ -634,18 +612,115 @@ const stateAndAction$: Observable<{
   action?: Action;
 }> = withLatestReducer$.pipe(
   scan<[Action, ActionReducer<T, Action>], StateActionPair<T>>(
-    reduceState,
+    reduceState, // Handling state changes
     seed
   )
 );
 
 this.stateSubscription = stateAndAction$.subscribe(({ state, action }) => {
-  this.next(state);
+  this.next(state); // `state` -> the new state, after reducers have been invoked 
   scannedActions.next(action);
 });
 ```
 
-after which `ScannedActionsSubject` will emit the same action that will be _eventually intercepted_ by the effects.
+after `ScannedActionsSubject` emits, that same action will be _eventually intercepted_ by the effects.
+
+### `ofType`
+
+In order to determine which actions should trigger which effects, the `ofType` custom operator is used:
+
+```ts
+export function ofType(
+  ...allowedTypes: Array<string | ActionCreator<string, Creator>>
+): OperatorFunction<Action, Action> {
+  return filter((action: Action) =>
+    allowedTypes.some(typeOrActionCreator => {
+      if (typeof typeOrActionCreator === 'string') {
+        // Comparing the string to type
+        return typeOrActionCreator === action.type;
+      }
+
+      // We are filtering by ActionCreator
+      return typeOrActionCreator.type === action.type;
+    })
+  );
+}
+```
+
+As you can use, it internally uses the RxJs `filter` operator, whose predicate function's return value depends on whether the current emitted action is among the values provided to `ofType` or not.
+
+What's indeed fascinating here is how **TypeScript's power** is leveraged.
+
+When it comes to `ofType`'s type inference, there are 2 possibilities:
+
+* you can provide actions created by `createAction`, which comply with `ActionCreator` type;  
+  
+  ```ts
+  export type ActionCreator<
+    T extends string = string,
+    C extends Creator = Creator // `Creator` -> a function that returns an object
+  > = C & TypedAction<T>;
+  ```
+
+  By using `ofType(action1, action2, ...)`, its return type will be a union comprised of the return types of `action1` and `action2`:
+  
+  ```ts
+  export function ofType<
+    AC extends ActionCreator<string, Creator>[],
+    U extends Action = Action,
+    V = ReturnType<AC[number]>
+
+    // `U` - the type of the incoming observable
+    // `V` - the type of the returned observable
+  >(...allowedTypes: AC): OperatorFunction<U, V>;
+  ```
+
+  What we're particularly interested in is the `V = ReturnType<AC[number]>` part. `AC` is an array of `ActionCreator`(results of `createAction`).  
+  `AC[number]` will return a union of all the `AC`'s elements. For example:
+
+  ```ts
+  type Action<T extends string = string> = { readonly type: T; }
+
+  function createAction<P extends object, T extends string>(t: T, payload: P): P & Action<T> {
+    return {
+      ...payload,
+      type: t,
+    };
+  }
+
+  const actions = [createAction('type1', { name: 'andrei' }), createAction('type2', { age: 123 })];
+
+  // `(typeof actions)[number]` -> a union of types
+  const action: (typeof actions)[number] = {
+    // We can discriminate unions with the help of the `type` property
+    // because `createAction` returns an object with one `readonly` property,
+    // namely `type`
+    type: 'type2',
+    age: 123,
+    // name: '123' -> 🔥 error
+  }
+  ```
+
+  Similarly, the union resulted from `AC[number]` can be **discriminated** with the `type` property.
+
+  Next, we have `ReturnType<Union>`. which is the same as `ReturnType<Union_M1 | Union_M2 | ...>`. What it does it to determine the return type of the action, which is what will eventually come from the stream.
+
+```ts
+type A = { type: 'andrei' };
+type J = { type: 'john' };
+type JA = { type: 'jane' };
+
+type Names = { type: 'andrei' | 'john' | 'jane' };
+
+type JSub = J & { age: number };
+type ASub = A & { city: string };
+
+type R = Extract<ASub | JSub, A | JA | J>;
+type R2 = Extract<ASub | JSub, Names>;
+
+const o: R = { type: 'andrei', city: 'city', };
+const o2: R2 = { type: 'john', age: 18 };
+```
 
 ---
 
