@@ -30,6 +30,7 @@
     - [Contextual typing](#contextual-typing)
     - [Generics](#generics)
     - [Mapped tuples](#mapped-tuples)
+  - [Assertion Functions](#assertion-functions)
     
 
 ## Knowledge
@@ -723,3 +724,74 @@ const arr = [new Foo('andrei'), new Bar(18)];
 type C1 = GetUnionCommon<typeof arr>; // string | number
 type C2 = TupleToPromise<typeof arr>; // Promise<string | number>[]
 ```
+
+## Assertion Functions
+
+[TypeScript Playground](https://www.typescriptlang.org/play/#code/JYOwLgpgTgZghgYwgAgBIFcC2cTIN4BQyyIcmEAXMgM5hSgDmA3EcnA5SVgEbQsC+BAqEixEKAIIhg2ADb5WpclVr0QzVrIgNqVEDz4FBBGOhAIwwAPa441atDABJahmwgAFOipucyAD7IUjJwsgCUVHYOUGDUyOjIwHG+uITEwDDIHgDk7BDZibjoYQrExFAQYOhQICzExsRgABZQVgDuJBAdAKJQrVA5IFbITVg4AITZYQJCJmYW1rgcYN3gwJYAnh4RaGO4gcFypcgINrRsPnvIALz4bBxUAIwATADMADQkZJy5IAAmFWABX4LFYFSqNTYMwIpxA5wg4BuyGWq0sm22oIA9JjkABhPy8eIOP5sOJwZBgDYABxQDHQcCgfwIUUcLhSHgRYGmQk5ADolBAWHy8licSyYosaMAGKQIRBqEJTOZLDZEtQAMp0RgeXQ0LXqAJcTC8KA7OJJPVqBjHcHVXCUmlWTJxa6u5DZVSMbLQpULVXi5wa-UMHUqYOG-TG6A7ANxc1x8NpRKZDwOiBOmg3N0e4NTY7EbHIFwUqDoZobVjlSp2urIBoUlrtTo9PpWAbZIZgNiWxiTbnGX0q3AwKxWDxUsNWiMGU3HQsZLJJTVW8dhEpJwvEKm8sBWACqVJpUHxDgxrEL9fnKbTGapWduOateaTBZx293ABl2tATxAz6+6yEYgAxcZdtSpblzxxJxMjaFAKkQJoIBJZoLSpKwRE+dZkHIHA4gAAypfDkFMWQYGAWQtBQpCThsP51kWVh333Q8fzsP9+yAA).
+
+```ts
+interface Human {
+  name: string;
+  age: number;
+}
+
+interface Animal {
+  name: string;
+  legs: number;
+}
+
+function assertIsHuman(u: Human | Animal): asserts u is Human {
+  if ('age' in u) {
+    return;
+  }
+
+  throw new Error('no human!');
+}
+
+
+function getEntitiy(): Human | Animal {
+  const a: Human = { age: 123, name: 'andrei' };
+
+  return a;
+}
+
+const ent = getEntitiy();
+
+// Can be used as a type guard
+assertIsHuman(ent);
+
+ent.name;
+ent.age;
+
+// assertion signatures
+
+function isString(s: string | number): s is string {
+  return typeof s === 'string';
+}
+
+function assertIsString(s: string | number): asserts s is string {
+  if (typeof s === 'string') {
+    // Is truthy
+    return;
+  }
+
+  throw new Error('not a string!');
+}
+
+function foo(p: string | number) {
+  // if (isString(p)) {
+  //   p.toUpperCase();
+  // }
+
+  // if (typeof p === 'string') {
+    // p.toLowerCase();
+  // }
+
+  assertIsString(p);
+
+  // If we reached this point, it means `p` fulfilled the condition
+  p.toUpperCase();
+}
+```
+
+---
