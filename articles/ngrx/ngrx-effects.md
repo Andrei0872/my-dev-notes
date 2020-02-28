@@ -647,22 +647,22 @@ export function ofType(
 }
 ```
 
-As you can use, it internally uses the RxJs `filter` operator, whose predicate function's return value depends on whether the current emitted action is among the values provided to `ofType` or not.
+As you can see, it internally uses the RxJs `filter` operator, whose predicate function's return value depends on whether the current emitted action is among the values provided to `ofType` or not.
 
 What's indeed fascinating here is how **TypeScript's power** is leveraged.
 
 When it comes to `ofType`'s type inference, there are 2 possibilities:
 
-* you can provide actions created by `createAction`, which comply with `ActionCreator` type;  
+* you can provide actions created by `createAction`, which comply with the `ActionCreator` type;  
   
   ```ts
   export type ActionCreator<
     T extends string = string,
     C extends Creator = Creator // `Creator` -> a function that returns an object
-  > = C & TypedAction<T>;
+  > = C & TypedAction<T>; // A function that has a readonly property `type`, which also returns a function
   ```
 
-  By using `ofType(action1, action2, ...)`, its return type will be a union comprised of the return types of `action1` and `action2`:
+  By using `ofType(action1, action2, ...)`, its return type will be a union comprised of the return types of `action1`, `action2` and ... `actionN`:
   
   ```ts
   export function ofType<
@@ -703,24 +703,119 @@ When it comes to `ofType`'s type inference, there are 2 possibilities:
 
   Similarly, the union resulted from `AC[number]` can be **discriminated** with the `type` property.
 
-  Next, we have `ReturnType<Union>`. which is the same as `ReturnType<Union_M1 | Union_M2 | ...>`. What it does it to determine the return type of the action, which is what will eventually come from the stream.
+  Next, we have `ReturnType<Union>`. which is the same as `ReturnType<Union_M1 | Union_M2 | ...>`(where `Union_Mn` represents the `n-th` member of the union). What it does it to determine the return type of the action, which is what will eventually come from the stream.
 
-```ts
-type A = { type: 'andrei' };
-type J = { type: 'john' };
-type JA = { type: 'jane' };
+* you can provide **strings** that **represent** actual **action types**;  
+  
+  However, since all that `ofType` is getting is a list of **strings**, in order to infer the right types, you must **manually specify** a **union of types** that are expected to match the provided string types.
 
-type Names = { type: 'andrei' | 'john' | 'jane' };
+  Let's take a look at one of the overloads of `Observable.pipe`:
 
-type JSub = J & { age: number };
-type ASub = A & { city: string };
+  ```ts
+  export class Observable<T> implements Subscribable<T> {
+    /* ... */
+    
+    pipe<A, B>(op1: OperatorFunction<T, A>, op2: OperatorFunction<A, B>): Observable<B>;
+    
+    /* ... */
+  }
+  ```
 
-type R = Extract<ASub | JSub, A | JA | J>;
-type R2 = Extract<ASub | JSub, Names>;
+  where `OperatorFunction<T,A>` specifies the type of a function that **receives** an **observable** as a parameter and **returns** another **observable**:
 
-const o: R = { type: 'andrei', city: 'city', };
-const o2: R2 = { type: 'john', age: 18 };
-```
+  ```ts
+  export interface UnaryFunction<T, R> { (source: T): R; }
+  export interface OperatorFunction<T, R> extends UnaryFunction<Observable<T>, Observable<R>> {}
+  ```
+
+  So, from the above snippets we can notice that the first operator in the `pipe` function will be a function whose single parameter's type will be an observable of type `T`(where `T` is the type parameter for `Observable`).
+
+  With this in mind, let's take a look at the `Actions` class, which provides a stream of actions depending on which the effects will act:
+
+  ```ts
+  @Injectable()
+  export class Actions<V = Action> extends Observable<V> {
+    constructor(@Inject(ScannedActionsSubject) source?: Observable<V>) { }
+  }
+  ```
+
+  Interesting, so `Actions<V = Action>` is also an `Observable<V>`, which means that the parameter's type of first operator in the `pipe` will be of type `V`.
+
+  Let's also have a look at the other `ofType`'s overloads:
+
+  ```ts
+    export function ofType<
+    E extends Extract<U, { type: T1 }>,
+    AC extends ActionCreator<string, Creator>,
+    T1 extends string | AC,
+    U extends Action = Action,
+    V = T1 extends string ? E : ReturnType<Extract<T1, AC>>
+  >(t1: T1): OperatorFunction<U, V>;
+  ```
+
+  Please disregard what's between `<>` for a moment in order to heed the `ofType`'s return type, along with the type of the first operator in `pipe`:
+
+  ```ts
+  ofType(): OperatorFunction<U, V> --- pipe<A>(op1: OperatorFunction<T, A>)
+  ```
+
+  What we can deduce from where is that the `U` type parameter of `ofType` will be `T`, namely, `V`(from `Actions<V extends Action> extends Observable<V>`).
+
+  This is why you'll have to provide a union of actions when you inject the `Actions` observable in your effects class, otherwise it would be impossible to infer the return types of the actions the effect is interested in. By providing this union, we can now let TypeScript play its role.
+
+  ```ts
+    export function ofType<
+    E extends Extract<U, { type: T1 }>,
+    AC extends ActionCreator<string, Creator>,
+    T1 extends string | AC,
+    U extends Action = Action,
+    V = T1 extends string ? E : ReturnType<Extract<T1, AC>>
+  >(t1: T1): OperatorFunction<U, V>;
+  ```
+
+  So, we've established that `U` will be the `V` type(`V` of the `Actions<V>`), which, when injected, it will equal to the provided union of actions.   
+  `E` will be the **extracted action**, based on the **singleton type**. As we know, an action(created by `createAction`) is a function that has a readonly property called `type`. This will allow us to infer the real action(which is part of the union `V` of `Actions<V>`), because every action extends `<{ type: aSingletonType }>`.  
+  Finally, the return type will be `V`(`V` of `ofType`), whose value is based on a binary decision:
+* `E`(the inferred action), because `T1` is a **singleton type** which will allow TypeScript to infer the actual action; 
+  
+  Here's an example that mimics this behavior:
+
+  ```ts
+  // Can be thought of as actions
+  type A = { type: 'andrei' };
+  type J = { type: 'john' };
+  type JA = { type: 'jane' };
+
+  // E extends Extract<U, { type: 'andrei' | 'john' | 'jane' }>,
+  type Names = { type: 'andrei' | 'john' | 'jane' };
+
+  // === `createAction('john', props<{ age: number }>())`
+  type JSub = J & { age: number };
+  // === `createAction('john', props<{ city: string }>())`
+  type ASub = A & { city: string };
+
+  type R = Extract<ASub | JSub, A | JA | J>;
+  type R2 = Extract<ASub | JSub, Names>;
+
+  // After choosing the value of the `type` property
+  // the unions will be discriminated
+  const o: R = { type: 'andrei', city: 'city', };
+  const o2: R2 = { type: 'john', age: 18 };
+  ```
+
+  [TypeScript Playground](https://www.typescriptlang.org/play/#code/PTAEGEEMDtQIwKagC4AsD2BXA5q5p0AzUSAZxIGNkBLdaUgKGQE8AHJAQVAF5QBvFGwQAuUAHIYAEwBOCamNABfANxMhoAFI9+g9qLEArdKmgKVa9pq68BLPeIMwEZ1QxCgAoqAQAPZAmhJcg8-aUgqAB4AVQAaHTsRcSlZeVAAHwdjU3SHJzMAPhiLJAA5SABbBHIbXUSJQJSFDMMsptzoZyVXd25e0AADCllIfw4qWmgAChaTMTjWaXRWUgiBSGxE6ExyxGklfMmASkP+4s0AZUw4bS0AMh11ze3drrcwXt5B4dHxummjWbzRbLVagCjUFiiUjIaTUaDYfZHE5nDiXa68Lj3ATgyGgaGw+GvM4AJW0IRh4WQEVRVxyGjRcS4GQ0TM0+VUCVAxIATGTQpTqWi6QzQGVKqR2Qw3qAOIR-HsKBh0KQ4Qi0EgAG6QAA2mCQRBQqCQ-QS-VACyWCGkLGl6tAmGgE3IAHdqNrtfAkJJqKQhtRynCRghJAwKHRoQRRKSagl9Mk5HMwRDmPoccxE+Yw-R8OhuVHeTGhPoAaY4o9RABGAAcXSAA).
+
+  It should be pointed out that in this case `E` is the value of the function(the action resulted from `createAction`) and **not** its return value. This is taken care of by this overload:
+
+  ```ts
+  export function ofType<
+    AC extends ActionCreator<string, Creator>[],
+    U extends Action = Action,
+    V = ReturnType<AC[number]>
+  >(...allowedTypes: AC): OperatorFunction<U, V>;
+  ```
+
+* `ReturnType<Extract<T1, AC>>`, because the value of `T1` type is not a **string subtype**, it must be an **action creator**, so we only want to get its return type
 
 ---
 
@@ -744,3 +839,7 @@ const o2: R2 = { type: 'john', age: 18 };
 * worth reading
   * https://github.com/ngrx/platform/pull/1822
   * https://github.com/ngrx/platform/issues/1826
+
+* diagrams
+  * setting up effects
+  * connecting `ngrx/effects` with `ngrx/store`
