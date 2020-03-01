@@ -30,6 +30,7 @@
     - [Contextual typing](#contextual-typing)
     - [Generics](#generics)
     - [Mapped tuples](#mapped-tuples)
+    - [Opaque types](#opaque-types)
   - [Assertion Functions](#assertion-functions)
     
 
@@ -724,6 +725,45 @@ const arr = [new Foo('andrei'), new Bar(18)];
 type C1 = GetUnionCommon<typeof arr>; // string | number
 type C2 = TupleToPromise<typeof arr>; // Promise<string | number>[]
 ```
+
+### Opaque types
+
+* `opaque` - cannot be seen through
+* types that you want to hide some parts of the implementation from
+* **cannot directly** modify the type's values, can only use what's being made visible by the API that provides that type
+* a type that is **only exposed**, **never concretely defined**
+* **compatible** only when **explicitly declared/created**, which means that they can also be **statically validated**
+
+```ts
+type Email = string & { _: 'Email' };
+type Username = string;
+
+function getDetails (u: Username, e: Email) {
+  return `${u}, ${e}`;
+}
+
+const username = 'andrei';
+const email = 'foo@bar.com';
+
+function assertEmailIsValid(e: string): asserts e is Email {
+  if (!e.includes('@')) {
+      throw new Error('invalid email!');
+  }
+}
+
+assertEmailIsValid(email);
+
+// Due to `& { _: 'Email' }`
+// `username` will have a squiggle
+// getDetails(email, username);
+
+// Works fine, as `email` is explicitly validated above
+getDetails(username, email);
+```
+
+[TypeScript Playground](https://www.typescriptlang.org/play/?ssl=24&ssc=29&pln=1&pc=1#code/C4TwDgpgBAogtgQwJYBsoF4oGdgCckB2A5lAGRQDeUA+gFxQDk8yKDUAvgNwBQokUAVSwRcBBHGiYc+Yj24AzAK4EAxsCQB7AlCIRgAET0ssUABSL6QkWIkAaKBHrNUASkrconqLj2LRUAAMAEgpFdnsQiHYAnnZubhUtHChFYVFxSUYEAgATHyQGHkSCZIhEVAxGeQ0NAAEAIwRcADpEuEL4pVV1LSgELDTgZxQASSwANQQUJBzTR2w8QiIXen7Bk2gkE2H3LygkeTMAQghmwhUURRyILFMGWoYXNwoPPa9gAAtcDQB3KAIIH8YLhvrg7oQAG5TGYOcooI6PHh7OJxeJrERDOFjSbTWZlFguOQAeiJUH0imgwA0gXIVDojGGbGi3BJgVS1gyASgP1QaA+CAh0AQ2AAjookEQiCgICzSboDEZULd8ah7Oz0hJCfF5YZgMZzGkbBB7CqUFqWQAqKC8cDQHZSRayG38KwazLSJZyLpqTTaHWKlAmcyWQ0ZE1OOHPV6eHzAPzaYKhcJQSLRWLcC1E2VQACySAAHhAcikwFBPtAwE0MsARFANLhrrh7PVFMAoAAVADKUByGhu-w0bbaYBQyAI2f6ZdtJia0HqIB7EHkCEUKDbATw2SwlZ8BGAAWzEmySzL-LbBygACYp5AZz4FrhFGo-FMUAuZhA90gVFN7OWF7OUDDggwD1KgMqsgEwxcugsGeAErpGlyk4BB6xAwXBqGOkQB6sv6epKnMcJqqGmo8EAA).
+
+---
 
 ## Assertion Functions
 

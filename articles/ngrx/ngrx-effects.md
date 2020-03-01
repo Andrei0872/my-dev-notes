@@ -366,7 +366,7 @@ Let's understand what it actually does by going through significant block:
 
   _A smaller example that reproduces the merging operation can be found [here](https://stackblitz.com/edit/typescript-fv3us6?file=index.ts)_.
 
-  What `const materialized$ = effectAction$.pipe(materialize())` does it to make sure that if the re-resubscription on error does **not** occur, it will **suppress** any incoming **errors**.
+  What `const materialized$ = effectAction$.pipe(materialize())` does it to make sure that if the re-resubscription on error does **not** occur, it will **suppress** any incoming **errors**, meaning that the stream of all the merged effects won't be broken.(TODO: `merge(obs$, obsThatErrors$)`)
   
   At this stage, after all the effect class' properties are merged into one observable, the `ngrxOnInitEffects` lifecycle method(required by the `OnInitEffects` interface) will be called for each class(if it exists) so that an **action** will be **dispatched** **immediately** and **once**:
 
@@ -843,3 +843,5 @@ When it comes to `ofType`'s type inference, there are 2 possibilities:
 * diagrams
   * setting up effects
   * connecting `ngrx/effects` with `ngrx/store`
+
+* why `materialize()` & `dematerialize()`
