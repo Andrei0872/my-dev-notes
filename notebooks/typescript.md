@@ -32,6 +32,9 @@
     - [Mapped tuples](#mapped-tuples)
     - [Opaque types](#opaque-types)
   - [Assertion Functions](#assertion-functions)
+  - [Structural and Nominal typing](#structural-and-nominal-typing)
+    - [Structural typing](#structural-typing)
+    - [Nominal typing](#nominal-typing)
     
 
 ## Knowledge
@@ -733,6 +736,7 @@ type C2 = TupleToPromise<typeof arr>; // Promise<string | number>[]
 * **cannot directly** modify the type's values, can only use what's being made visible by the API that provides that type
 * a type that is **only exposed**, **never concretely defined**
 * **compatible** only when **explicitly declared/created**, which means that they can also be **statically validated**
+* **similar** to **nominal types**
 
 ```ts
 type Email = string & { _: 'Email' };
@@ -747,7 +751,7 @@ const email = 'foo@bar.com';
 
 function assertEmailIsValid(e: string): asserts e is Email {
   if (!e.includes('@')) {
-      throw new Error('invalid email!');
+    throw new Error('invalid email!');
   }
 }
 
@@ -768,6 +772,8 @@ getDetails(username, email);
 ## Assertion Functions
 
 [TypeScript Playground](https://www.typescriptlang.org/play/#code/JYOwLgpgTgZghgYwgAgBIFcC2cTIN4BQyyIcmEAXMgM5hSgDmA3EcnA5SVgEbQsC+BAqEixEKAIIhg2ADb5WpclVr0QzVrIgNqVEDz4FBBGOhAIwwAPa441atDABJahmwgAFOipucyAD7IUjJwsgCUVHYOUGDUyOjIwHG+uITEwDDIHgDk7BDZibjoYQrExFAQYOhQICzExsRgABZQVgDuJBAdAKJQrVA5IFbITVg4AITZYQJCJmYW1rgcYN3gwJYAnh4RaGO4gcFypcgINrRsPnvIALz4bBxUAIwATADMADQkZJy5IAAmFWABX4LFYFSqNTYMwIpxA5wg4BuyGWq0sm22oIA9JjkABhPy8eIOP5sOJwZBgDYABxQDHQcCgfwIUUcLhSHgRYGmQk5ADolBAWHy8licSyYosaMAGKQIRBqEJTOZLDZEtQAMp0RgeXQ0LXqAJcTC8KA7OJJPVqBjHcHVXCUmlWTJxa6u5DZVSMbLQpULVXi5wa-UMHUqYOG-TG6A7ANxc1x8NpRKZDwOiBOmg3N0e4NTY7EbHIFwUqDoZobVjlSp2urIBoUlrtTo9PpWAbZIZgNiWxiTbnGX0q3AwKxWDxUsNWiMGU3HQsZLJJTVW8dhEpJwvEKm8sBWACqVJpUHxDgxrEL9fnKbTGapWduOateaTBZx293ABl2tATxAz6+6yEYgAxcZdtSpblzxxJxMjaFAKkQJoIBJZoLSpKwRE+dZkHIHA4gAAypfDkFMWQYGAWQtBQpCThsP51kWVh333Q8fzsP9+yAA).
+
+* as opposed to **type predicates**, which return `true` or `false`, an assertion function either returns **void** or **throws an error**
 
 ```ts
 interface Human {
@@ -832,6 +838,73 @@ function foo(p: string | number) {
   // If we reached this point, it means `p` fulfilled the condition
   p.toUpperCase();
 }
+```
+
+---
+
+## Structural and Nominal typing
+
+### Structural typing
+
+* 2 **different types**, with the **same shape** are **compatible**(they have the same structure)
+
+  ```ts
+    interface User {
+      name: string;
+      city: string;
+  }
+
+  interface Employee {
+      name: string;
+      city: string;
+  }
+
+  const u: User = { city: 'u_city', name: 'u_name' };
+  // Works fine
+  const e: Employee = u;
+  ```
+
+
+### Nominal typing
+
+* 2 **different types** are **not** **compatible**(they have different names)
+* might be useful when you want fo share a function that should receive an argument of a concrete type;  
+  
+  ```ts
+  type Branded<T, K> = T & { __brand__: K };
+
+  type User = { name: string, age: number };
+
+  type TaggedUser = Branded<User, 'USER'>;
+  
+  function createUser(u: User) {
+    return u as TaggedUser;
+  }
+
+  // Make sure it receives an object of `TaggedUser`
+  // not just another object that follows this structure: { name: string, age: number }
+  function addUser(u: TaggedUser) { /* ... */ }
+
+  const user = createUser({ name: 'andrei', age: 18 });
+
+  // addUser({ name: 'andrei', age: 18 }); // ERROR
+  addUser(user); // OK
+  ```
+
+* **branding** - making **types** of the **same shape** **incompatible**; it adds **uniqueness** to a type
+
+```ts
+// `Branded` is just a type -> there will be no runtime cost, as it will not be
+// present in the output code
+type Branded<T, K> = T & { __brand__: K };
+
+type Apple = { isRotten: boolean };
+
+type RedApple = Branded<Apple, 'red'>;
+type GreenApple = Branded<Apple, 'green'>;
+
+const r: RedApple = { isRotten: false } as RedApple;
+const g: GreenApple = r; // ERROR
 ```
 
 ---
