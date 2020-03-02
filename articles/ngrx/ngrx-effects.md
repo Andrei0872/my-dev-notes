@@ -12,10 +12,6 @@
   - [Connecting `ngrx/effects` with `ngrx/store`](#connecting-ngrxeffects-with-ngrxstore)
   - [Questions](#questions)
 
-_TODO: in case of publishing, link to the article as if was already posted_
-
-In order to get the most out of this article, I'd strongly recommend reading [A good title for `ngrx/store` article](correct-link)
-
 ## Setting up the effects
 
 ### Providing effects
@@ -847,26 +843,113 @@ When it comes to `ofType`'s type inference, there are 2 possibilities:
 
 ## Connecting `ngrx/effects` with `ngrx/store`
 
-_TODO: in case of publishing, link to the article as if was already posted_
+> _TODO: in case of publishing, link to the article(ngrx/store) as if was already posted_
 
-Armed with the knowledge from this article and from [A good title for `ngrx/store` article](correct-link), we can now visualize what's happening behind the scenes:
+_Note: Although I'd recommend reading first [Understanding the magic behind @ngrx/store
+](https://github.com/Andrei0872/my-dev-notes/blob/master/articles/ngrx/ngrx-store.md), you'll find a TLDR under the diagram._
+
+Armed with the knowledge from this article and from [Understanding the magic behind @ngrx/store]([correct-link](https://github.com/Andrei0872/my-dev-notes/blob/master/articles/ngrx/ngrx-store.md)), we can now visualize what's happening behind the scenes:
 
 <div style="text-align: center;">
   <img src="https://raw.githubusercontent.com/Andrei0872/my-dev-notes/master/screenshots/articles/ngrx-effects/ngrx-flow.gif">
 </div>
 
+1. `Store.dispatch()`  
+  It signals that an **event** that requires **state changes** is sent from the UI(e.g a smart component). `Store.dispatch()` will push the action(event) into an actions stream(which is different from the one that belongs to the `effects`):
+  
+    ```ts
+    // Store
+    dispatch(action) {
+      this.actionsObserver.next(action);
+    }
+    ```
+
+    What's also worth mentioning here is that the `Store` class is an **observable** and its source is the `State`, which is also an observable, more precisely, a `BehaviorSubject`:
+
+    ```ts
+    // Store
+    constructor(
+      state$: StateObservable, // The `State` class
+      private actionsObserver: ActionsSubject,
+    ) {
+      super();
+
+      this.source = state$;
+    }    
+    ```
+
+    This is useful because components from the **UI layer** can simply subscribe to the `Store` class in order to be updated when state changes occur.
+
+2. Intercept the action in the `State` class
+
+    ```ts
+    // State
+    constructor(
+      actions$: ActionsSubject, // Receive the actions dispatched from `Store`
+      reducer$: ReducerObservable,
+      scannedActions: ScannedActionsSubject, // The `actions stream` that belong to effects
+      @Inject(INITIAL_STATE) initialState: any
+    ) {
+      const actionsOnQueue$: Observable<Action> = actions$.pipe(
+        observeOn(queueScheduler)
+      );
+      const withLatestReducer$: Observable<
+        [Action, ActionReducer<any, Action>]
+      > = actionsOnQueue$.pipe(withLatestFrom(reducer$));
+
+      const seed: StateActionPair<T> = { state: initialState };
+      const stateAndAction$: Observable<{
+        state: any;
+        action?: Action;
+      }> = withLatestReducer$.pipe(
+        scan<[Action, ActionReducer<T, Action>], StateActionPair<T>>(
+          // a)
+          reduceState, // Invoke the reducers -> the result will be a new state
+          // =====
+          seed
+        )
+      );
+
+      this.stateSubscription = stateAndAction$.subscribe(({ state, action }) => {
+        // b)
+        this.next(state); // Send the new state to the data consumer(e.g: a smart component)
+        // =====
+
+        // c)
+        scannedActions.next(action); // Notify effects that an action ocurred
+        // =====
+      });
+    }
+    ``` 
+
+  * `a)`: call the **reducers** with the current action and the current state, resulting a new state
+  * `b)` send the **new state** to the **data consumers**;  
+    Remember that `State` is the source of `Store`, meaning that `this.next(state);` will make `state` accessible in the `Store` class, which can be subscribed to: `Store.select()` or `Store.pipe(select())`
+  * `c)`: after state changes have been handled and sent to the data consumers, send the action to the effects;  
+  If the action is intercepted by any of the registered effects, a **new action** will arise which will in turn be intercepted by the `Store()`, causing the steps `2 ... 2.c)` to be repeated:
+
+    ```ts
+    this.effectSources
+      .toActions() // The action resulted from all the merged effects 
+      .subscribe(this.store);
+    ```
+
+    This is possibile because the `Store` can act as a subscriber as well: 
+
+    ```ts
+    // Store
+    next(action: Action) {
+      this.actionsObserver.next(action);
+    }
+    ```
+    
+
 ---
 
 ## Questions
 
-* what happens if an action is registered in both a reducer and an effect
-
 * worth reading
   * https://github.com/ngrx/platform/pull/1822
   * https://github.com/ngrx/platform/issues/1826
-
-* diagrams
-  * setting up effects
-  * connecting `ngrx/effects` with `ngrx/store`
 
 * solve **TODOS**
