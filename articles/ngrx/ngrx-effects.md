@@ -12,6 +12,10 @@
   - [Connecting `ngrx/effects` with `ngrx/store`](#connecting-ngrxeffects-with-ngrxstore)
   - [Questions](#questions)
 
+_TODO: in case of publishing, link to the article as if was already posted_
+
+In order to get the most out of this article, I'd strongly recommend reading [A good title for `ngrx/store` article](correct-link)
+
 ## Setting up the effects
 
 ### Providing effects
@@ -843,20 +847,19 @@ When it comes to `ofType`'s type inference, there are 2 possibilities:
 
 ## Connecting `ngrx/effects` with `ngrx/store`
 
+_TODO: in case of publishing, link to the article as if was already posted_
+
+Armed with the knowledge from this article and from [A good title for `ngrx/store` article](correct-link), we can now visualize what's happening behind the scenes:
+
+<div style="text-align: center;">
+  <img src="https://raw.githubusercontent.com/Andrei0872/my-dev-notes/master/screenshots/articles/ngrx-effects/ngrx-flow.gif">
+</div>
+
 ---
 
 ## Questions
 
 * what happens if an action is registered in both a reducer and an effect
-
-* https://ngrx.io/guide/effects/lifecycle#resubscribe-on-error
-  * how is the source effect automatically unsubscribed ? 😃
-
-* https://ngrx.io/guide/effects/lifecycle#identify-effects-uniquely
-  * when would that be useful?
-
-* `export const rootEffectsInit = createAction(ROOT_EFFECTS_INIT);`
-  * you can be informed when the effects have been initialized ? 
 
 * worth reading
   * https://github.com/ngrx/platform/pull/1822
