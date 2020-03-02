@@ -10,7 +10,6 @@
   - [The `actions$` stream](#the-actions-stream)
     - [`ofType`](#oftype)
   - [Connecting `ngrx/effects` with `ngrx/store`](#connecting-ngrxeffects-with-ngrxstore)
-  - [Questions](#questions)
 
 ## Setting up the effects
 
@@ -386,7 +385,7 @@ Let's understand what it actually does by going through each  significant block:
 
   _A smaller example that reproduces the merging operation can be found [here](https://stackblitz.com/edit/typescript-fv3us6?file=index.ts)_.
 
-  What `const materialized$ = effectAction$.pipe(materialize())` does it to make sure that if the re-resubscription on error does **not** occur, it will **suppress** any incoming **errors**, meaning that the stream of all the merged effects won't be broken.(TODO: `merge(obs$, obsThatErrors$)`)
+  What `const materialized$ = effectAction$.pipe(materialize())` does it to make sure that if the re-resubscription on error does **not** occur, it will **suppress** any incoming **errors**, meaning that the stream of all the merged effects won't be broken.
   
   At this stage, after all the effect class' properties are merged into one observable, the `ngrxOnInitEffects` lifecycle method(required by the `OnInitEffects` interface) will be called for each class(if it exists) so that an **action** will be **dispatched** **immediately** and **once**:
 
@@ -533,12 +532,25 @@ export function createEffect<
   ```ts
   {
     provide: EFFECTS_ERROR_HANDLER,
-    useValue: yourErrorHandler,
+    useValue: customErrHandler,
   },
+
+  function customErrHandler (obs$, handler) {
+    return obs$.pipe(
+      catchError((err, caught$) => {
+        console.log('caught!')
+        
+        // Only re-subscribe once
+        // return obs$;
+
+        // Re-subscribe every time an error occurs
+        return caught$;
+      }),
+    )
+  }
   ```
 
-  where `yourErrorHandler` should be a function that accepts an `observable$`(the observable built on top of the `action$` observable) and an `errHandler` object.
-  TODO: try it! 😃
+  where `customErrHandler` should be a function that accepts an `observable$`(the observable built on top of the `action$` observable) and an `errHandler` object.
 
 ### TypeScript's Magic
 
@@ -934,7 +946,7 @@ Armed with the knowledge from this article and from [Understanding the magic beh
       .subscribe(this.store);
     ```
 
-    This is possibile because the `Store` can act as a subscriber as well: 
+    This is possible because the `Store` can act as a subscriber as well: 
 
     ```ts
     // Store
@@ -942,14 +954,3 @@ Armed with the knowledge from this article and from [Understanding the magic beh
       this.actionsObserver.next(action);
     }
     ```
-    
-
----
-
-## Questions
-
-* worth reading
-  * https://github.com/ngrx/platform/pull/1822
-  * https://github.com/ngrx/platform/issues/1826
-
-* solve **TODOS**
