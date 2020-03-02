@@ -158,15 +158,15 @@ export class EffectsRootModule {
 ```
 
 
-`@Optional() storeRootModule: StoreRootModule` and `@Optional() storeFeatureModule: StoreFeatureModule` will make sure that effects are initialized **after** the main store has been initialized. This is desirable as some effects classes might inject the `Store` entity and without proper initialization(i.e: reducers, action stream), it may lead to unexpected results. This _beforehand_ initialization includes:
+`@Optional() storeRootModule: StoreRootModule` and `@Optional() storeFeatureModule: StoreFeatureModule` will make sure that effects are initialized **after** the store(the results of `StoreModule.forRoot()` and eventually `StoreModule.forFeature()`) has been initialized. This is desirable as some effects classes might inject the `Store` entity(i.e: effect classes, action stream) and without proper initialization, it may lead to unexpected results. This _beforehand_ initialization includes:
 
-* the creation of the **reducers object**: all the registered reducers, those from **feature modules** as well, will be merged into one big object that will be the shape of the app
-* the `State` entity - where the app information is kept, also where the place actions _meet_ reducers, resulting in reducers being invoked, which may cause state changes
-* the `Store` entity - the middleman between the data consumer(e.g: a smart component) and the model(the `State` entity)
+* the creation of the **reducers object**: all the registered reducers, those from **feature modules** as well, will be merged into one big object that will represent the shape of the app
+* the `State` entity - where the app information is kept, also where the place actions _meet_ reducers, meaning it's where reducers being invoked, which may cause state changes
+* the `Store` entity - the _middleman_ between the data consumer(e.g: a smart component) and the model(the `State` entity)
 * the `ScannedActionsSubject` - the **stream** that the **effects (indirectly) subscribe** to; more on this in [The `actions$` stream](#the-actions-stream).
 
 
-`runner.start()` will create a **subscription** to a **stream** resulted from the **merging** of all **registered effects**(more on this in the upcoming section). In other words, all the effects(e.g: those created by `createEffect`) will be merged into one **single observable** whose **emitted** values will be **actions**. 
+`runner.start()` will create a **subscription** to a **stream** resulted from the **merging** of all **registered effects**(more on this in the upcoming section). In other words, all the effects(e.g: those created by `createEffect` for example) will be merged into one **single observable** whose **emitted** values will be **actions**. 
 
 ```ts
 // EffectsRunner
@@ -255,10 +255,10 @@ export class EffectSources extends Subject<any> {
 }
 ```
 
-Let's understand what it actually does by going through significant block:
+Let's understand what it actually does by going through each  significant block:
 
-* group the effects by their source(the instance's prototype)  
-  As you know, `groupBy` will return an observable for each **new key** found. Then, if a value whose key is not new arrives, `groupBy` will use an existing observable and will push this new value through it.  
+* group the effects by their source(the instance's prototype, the class which created the instance)  
+  As you know, `groupBy` will return an **observable** for each **new key** found. Then, if a value whose key is not new arrives, `groupBy` will use an existing observable and will push this new value through it.  
   The same thing happens here(`groupBy(getSourceForInstance)`), the key is the class that created this current instance, meaning that if there are 3 **distinct** effect classes, `groupBy` will emit 3 observables.
 * group the instances(the effects) by their identifiers
   
@@ -291,17 +291,22 @@ Let's understand what it actually does by going through significant block:
   mergeMap(source$ => {
       const effect$ = source$.pipe(
         exhaustMap(sourceInstance => { /* ... */ }),
+      )
+      /* ... */
     }
   )
   ```
 
   only one item out of 3(the first `A`) will be taken into account.
 
-  Internally, `exhaustMap` uses a flag(`hasSubscription`) to check whether there is an active inner subscription going on. You can inspect the relevant code [here](https://github.com/ReactiveX/rxjs/blob/master/src/internal/operators/exhaustMap.ts#L105-L122).
+  Internally, `exhaustMap` uses a flag(`hasSubscription`) to check whether there is an active inner subscription going on or not. You can inspect the relevant code [here](https://github.com/ReactiveX/rxjs/blob/master/src/internal/operators/exhaustMap.ts#L105-L122).
 
 * merge all the effects into a single stream  
   
   ```ts
+  // `mergeMap` - for each emitted observable(emitted by `groupBy`)
+  // perform the same logic: merge all the effects(class properties)
+  // into one single observable
   mergeMap(source$ => {
     const effect$ = source$.pipe(
       exhaustMap(sourceInstance => {
@@ -440,7 +445,7 @@ export function createEffect<
 }
 ```
 
-`createEffect()` will return an **observable** with a property `CREATE_EFFECT_METADATA_KEY` attached to it which will hold the configuration object for that particular effect. When the merging of the effect's class properties into one observable takes place, each observable(property of that effect class) will be slightly altered, depending on the configuration. This object can have 2 properties:
+`createEffect()` will return an **observable** with a property `CREATE_EFFECT_METADATA_KEY` attached to it which will hold the **configuration object** for that particular effect. When the merging of the effect's class properties into one observable takes place, each observable(property of that effect class) will be slightly altered, depending on the configuration. This object can have 2 properties:
 
 * `dispatch: boolean` - whether the resulting action should be dispatched to the store;  
   ```ts
@@ -533,7 +538,7 @@ export function createEffect<
   ```
 
   where `yourErrorHandler` should be a function that accepts an `observable$`(the observable built on top of the `action$` observable) and an `errHandler` object.
-
+  TODO: try it! 😃
 
 ### TypeScript's Magic
 
@@ -617,7 +622,7 @@ export class Actions<V = Action> extends Observable<V> {
 ```
 
 `ScannedActionsSubject` comes from `@ngrx/store` and it is a `Subject`(thus, an `Observable`) that emits whenever actions are dispatched, but only **after** the **state changes** have been **handled**.
-So, when an action is dispatched(`Store.dispatch()`), the `State` entity will first update the application state depending on that action and the current state, with the help of the reducers and then it will push that `action` into an **actions stream**, created by `ScannedActionsSubject`. 
+So, when an action is dispatched(`Store.dispatch()`), the `State` entity will first update the application state depending on that action and the current state with the help of the reducers, then it will push that `action` into an **actions stream**, created by `ScannedActionsSubject`. 
 
 ```ts
 // State
@@ -638,7 +643,7 @@ this.stateSubscription = stateAndAction$.subscribe(({ state, action }) => {
 });
 ```
 
-after `ScannedActionsSubject` emits, that same action will be _eventually intercepted_ by the effects.
+after `ScannedActionsSubject` emits, that same action will _eventually_ be _intercepted_ by the effects.
 
 ### `ofType`
 
@@ -668,7 +673,7 @@ What's indeed fascinating here is how **TypeScript's power** is leveraged.
 
 When it comes to `ofType`'s type inference, there are 2 possibilities:
 
-* you can provide actions created by `createAction`, which comply with the `ActionCreator` type;  
+* you can provide actions created by `createAction()`, which complies with the `ActionCreator` type;  
   
   ```ts
   export type ActionCreator<
@@ -712,17 +717,17 @@ When it comes to `ofType`'s type inference, there are 2 possibilities:
     // namely `type`
     type: 'type2',
     age: 123,
-    // name: '123' -> 🔥 error
+    // name: 'John' -> 🔥 error
   }
   ```
 
   Similarly, the union resulted from `AC[number]` can be **discriminated** with the `type` property.
 
-  Next, we have `ReturnType<Union>`. which is the same as `ReturnType<Union_M1 | Union_M2 | ...>`(where `Union_Mn` represents the `n-th` member of the union). What it does it to determine the return type of the action, which is what will eventually come from the stream.
+  Next, we have `ReturnType<Union>`. which is the same as `ReturnType<Union_M1 | Union_M2 | ...>`(where `Union_Mn` represents the `n-th` **member** of the union). What it does it to determine the return type of the action, which is what will eventually come from the stream.
 
 * you can provide **strings** that **represent** actual **action types**;  
   
-  However, since all that `ofType` is getting is a list of **strings**, in order to infer the right types, you must **manually specify** a **union of types** that are expected to match the provided string types.
+  However, since all that `ofType` is getting is a list of **strings**, in order to infer the right types, you must **manually specify** a **union of types** that are expected to match the provided action types.
 
   Let's take a look at one of the overloads of `Observable.pipe`:
 
@@ -754,7 +759,7 @@ When it comes to `ofType`'s type inference, there are 2 possibilities:
   }
   ```
 
-  Interesting, so `Actions<V = Action>` is also an `Observable<V>`, which means that the parameter's type of first operator in the `pipe` will be of type `V`.
+  Interesting, so `Actions<V = Action>` is also an `Observable<V>`, which means that the parameter's type of first operator(function) in the `pipe` will be of type `V`.
 
   Let's also have a look at the other `ofType`'s overloads:
 
@@ -768,7 +773,7 @@ When it comes to `ofType`'s type inference, there are 2 possibilities:
   >(t1: T1): OperatorFunction<U, V>;
   ```
 
-  Please disregard what's between `<>` for a moment in order to heed the `ofType`'s return type, along with the type of the first operator in `pipe`:
+  Please disregard what's between `<>` for a moment in order to heed the `ofType`'s return type, along with the type of the first operator in `Observable.pipe`:
 
   ```ts
   ofType(): OperatorFunction<U, V> --- pipe<A>(op1: OperatorFunction<T, A>)
@@ -789,48 +794,50 @@ When it comes to `ofType`'s type inference, there are 2 possibilities:
   ```
 
   So, we've established that `U` will be the `V` type(`V` of the `Actions<V>`), which, when injected, it will equal to the provided union of actions.   
-  `E` will be the **extracted action**, based on the **singleton type**. As we know, an action(created by `createAction`) is a function that has a readonly property called `type`. This will allow us to infer the real action(which is part of the union `V` of `Actions<V>`), because every action extends `<{ type: aSingletonType }>`.  
+  `E` will be the **extracted action**, based on the **singleton type**(the `type` property). As we know, an action(created by `createAction`) is a function that has a readonly property called `type`. This will allow us to infer the real action(which is part of the union `V` of the injected `Actions<V>`), because every action extends `<{ type: aSingletonType }>`.  
   Finally, the return type will be `V`(`V` of `ofType`), whose value is based on a binary decision:
-* `E`(the inferred action), because `T1` is a **singleton type** which will allow TypeScript to infer the actual action; 
-  
-  Here's an example that mimics this behavior:
+  * `E`(the inferred action), because `T1` is a **singleton type** which will allow TypeScript to infer the actual action; 
+    
+    Here's an example that mimics this behavior:
 
-  ```ts
-  // Can be thought of as actions
-  type A = { type: 'andrei' };
-  type J = { type: 'john' };
-  type JA = { type: 'jane' };
+    ```ts
+    // Can be thought of as actions
+    type A = { type: 'andrei' };
+    type J = { type: 'john' };
+    type JA = { type: 'jane' };
 
-  // E extends Extract<U, { type: 'andrei' | 'john' | 'jane' }>,
-  type Names = { type: 'andrei' | 'john' | 'jane' };
+    // E extends Extract<U, { type: 'andrei' | 'john' | 'jane' }>,
+    type Names = { type: 'andrei' | 'john' | 'jane' };
 
-  // === `createAction('john', props<{ age: number }>())`
-  type JSub = J & { age: number };
-  // === `createAction('john', props<{ city: string }>())`
-  type ASub = A & { city: string };
+    // === `createAction('john', props<{ age: number }>())`
+    type JSub = J & { age: number };
+    // === `createAction('john', props<{ city: string }>())`
+    type ASub = A & { city: string };
 
-  type R = Extract<ASub | JSub, A | JA | J>;
-  type R2 = Extract<ASub | JSub, Names>;
+    type R = Extract<ASub | JSub, A | JA | J>;
+    type R2 = Extract<ASub | JSub, Names>;
 
-  // After choosing the value of the `type` property
-  // the unions will be discriminated
-  const o: R = { type: 'andrei', city: 'city', };
-  const o2: R2 = { type: 'john', age: 18 };
-  ```
+    // After choosing the value of the `type` property
+    // the unions will be discriminated
+    const o: R = { type: 'andrei', city: 'city', };
+    const o2: R2 = { type: 'john', age: 18 };
+    ```
 
-  [TypeScript Playground](https://www.typescriptlang.org/play/#code/PTAEGEEMDtQIwKagC4AsD2BXA5q5p0AzUSAZxIGNkBLdaUgKGQE8AHJAQVAF5QBvFGwQAuUAHIYAEwBOCamNABfANxMhoAFI9+g9qLEArdKmgKVa9pq68BLPeIMwEZ1QxCgAoqAQAPZAmhJcg8-aUgqAB4AVQAaHTsRcSlZeVAAHwdjU3SHJzMAPhiLJAA5SABbBHIbXUSJQJSFDMMsptzoZyVXd25e0AADCllIfw4qWmgAChaTMTjWaXRWUgiBSGxE6ExyxGklfMmASkP+4s0AZUw4bS0AMh11ze3drrcwXt5B4dHxummjWbzRbLVagCjUFiiUjIaTUaDYfZHE5nDiXa68Lj3ATgyGgaGw+GvM4AJW0IRh4WQEVRVxyGjRcS4GQ0TM0+VUCVAxIATGTQpTqWi6QzQGVKqR2Qw3qAOIR-HsKBh0KQ4Qi0EgAG6QAA2mCQRBQqCQ-QS-VACyWCGkLGl6tAmGgE3IAHdqNrtfAkJJqKQhtRynCRghJAwKHRoQRRKSagl9Mk5HMwRDmPoccxE+Yw-R8OhuVHeTGhPoAaY4o9RABGAAcXSAA).
+    [TypeScript Playground](https://www.typescriptlang.org/play/#code/PTAEGEEMDtQIwKagC4AsD2BXA5q5p0AzUSAZxIGNkBLdaUgKGQE8AHJAQVAF5QBvFGwQAuUAHIYAEwBOCamNABfANxMhoAFI9+g9qLEArdKmgKVa9pq68BLPeIMwEZ1QxCgAoqAQAPZAmhJcg8-aUgqAB4AVQAaHTsRcSlZeVAAHwdjU3SHJzMAPhiLJAA5SABbBHIbXUSJQJSFDMMsptzoZyVXd25e0AADCllIfw4qWmgAChaTMTjWaXRWUgiBSGxE6ExyxGklfMmASkP+4s0AZUw4bS0AMh11ze3drrcwXt5B4dHxummjWbzRbLVagCjUFiiUjIaTUaDYfZHE5nDiXa68Lj3ATgyGgaGw+GvM4AJW0IRh4WQEVRVxyGjRcS4GQ0TM0+VUCVAxIATGTQpTqWi6QzQGVKqR2Qw3qAOIR-HsKBh0KQ4Qi0EgAG6QAA2mCQRBQqCQ-QS-VACyWCGkLGl6tAmGgE3IAHdqNrtfAkJJqKQhtRynCRghJAwKHRoQRRKSagl9Mk5HMwRDmPoccxE+Yw-R8OhuVHeTGhPoAaY4o9RABGAAcXSAA).
 
-  It should be pointed out that in this case `E` is the value of the function(the action resulted from `createAction`) and **not** its return value. This is taken care of by this overload:
+    It should be pointed out that in this case `E` is the value of the function(the action resulted from `createAction`) and **not** its return value. This is taken care of by this overload:
 
-  ```ts
-  export function ofType<
-    AC extends ActionCreator<string, Creator>[],
-    U extends Action = Action,
-    V = ReturnType<AC[number]>
-  >(...allowedTypes: AC): OperatorFunction<U, V>;
-  ```
+    ```ts
+    export function ofType<
+      AC extends ActionCreator<string, Creator>[],
+      U extends Action = Action,
+      V = ReturnType<AC[number]>
+    >(...allowedTypes: AC): OperatorFunction<U, V>;
+    ```
 
-* `ReturnType<Extract<T1, AC>>`, because the value of `T1` type is not a **string subtype**, it must be an **action creator**, so we only want to get its return type
+    After successfully inferring the types, `E` will be an `ActionCreator`.
+
+  * `ReturnType<Extract<T1, AC>>`, because the value of `T1` type is not a **string subtype**, it must be an **action creator**, so we only want to get its return type
 
 ---
 
@@ -859,4 +866,4 @@ When it comes to `ofType`'s type inference, there are 2 possibilities:
   * setting up effects
   * connecting `ngrx/effects` with `ngrx/store`
 
-* why `materialize()` & `dematerialize()`
+* solve **TODOS**
