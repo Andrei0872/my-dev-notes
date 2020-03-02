@@ -10,6 +10,7 @@
   - [The `actions$` stream](#the-actions-stream)
     - [`ofType`](#oftype)
   - [Connecting `ngrx/effects` with `ngrx/store`](#connecting-ngrxeffects-with-ngrxstore)
+  - [Conclusion](#conclusion)
 
 ## Setting up the effects
 
@@ -954,3 +955,9 @@ Armed with the knowledge from this article and from [Understanding the magic beh
       this.actionsObserver.next(action);
     }
     ```
+
+## Conclusion
+
+I hope this article was able to emphasize how many interesting techniques put up this great library and also explain how its building blocks communicate with each other.
+
+Thanks for reading!
