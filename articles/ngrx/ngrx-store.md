@@ -1701,7 +1701,7 @@ export class StoreModule {
 
 `_RESOLVED_META_REDUCERS` when injected in `createReducerFactory`, it will be an array resulted from merging the built-in meta-reducers with the custom ones.
 
-There are 2 built-in meta-reducers: `immutabilityCheckMetaReducer` and `serializationCheckMetaReducer`.
+There are 3 built-in meta-reducers: `immutabilityCheckMetaReducer`, `serializationCheckMetaReducer` and `inNgZoneAssertMetaReducer`.
 
 `createReducerFactory` will return a function that will be called with 2 arguments: `reducers` and `initialState`. At the beginning, when the app is barely loaded, the function will be called with the arguments provided in `StoreModule.forRoot({ reducers, }, { initialState })`. When called, it will **create a chain**(_sort of linked list_) **of meta-reducers**, whose **extremity** is going to be the **reducer**. This way, each meta-reducer can add behavior before and after the reducer's invocation.  
 The reason it returns that function is that `createReducerFactory` will be called when `REDUCER_FACTORY` is injected in `ReducerManager` class. `ReducerManager` will keep reducers up to date when features are added/removed. So, for instance, when a feature comes with its reducer, `ReducerManager` will combine the existing reducer with the new one
