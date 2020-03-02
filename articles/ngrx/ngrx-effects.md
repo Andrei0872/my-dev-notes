@@ -1,6 +1,6 @@
-# @ngrx/effects
+# Understanding the magic behind @ngrx/effects
 
-- [@ngrx/effects](#ngrxeffects)
+- [Understanding the magic behind @ngrx/effects](#understanding-the-magic-behind-ngrxeffects)
   - [Setting up the effects](#setting-up-the-effects)
     - [Providing effects](#providing-effects)
     - [The effects stream](#the-effects-stream)
