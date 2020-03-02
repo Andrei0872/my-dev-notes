@@ -4,7 +4,7 @@
   - [Setting up the effects](#setting-up-the-effects)
     - [Providing effects](#providing-effects)
     - [The effects stream](#the-effects-stream)
-      - [EffectSources](#effectsources)
+    - [EffectSources](#effectsources)
   - [Creating effects](#creating-effects)
     - [TypeScript's Magic](#typescripts-magic)
   - [The `actions$` stream](#the-actions-stream)
@@ -17,9 +17,9 @@
 ### Providing effects
 
 We can use either `EffectsModule.forRoot([effectClass])` or `EffectsModule.forFeature([effectClass])`. The former should be used **only once** as it will instantiate other essential services such as `EffectsRunner` or `EffectSources`.   
-Once the effects(classes) are registered, in order to set them up, an observable will be created(with the help of `EffectSources`) an subscribed to(thanks to `EffectRunner`); we'll explore it in the next section.
+Once the effects(classes) are registered, in order to set them up, an observable will be created(with the help of `EffectSources`) and subscribed to(thanks to `EffectRunner`); we'll explore it in the next section.
 
-The observable's emitted values will be the instances of those registered classes:
+The observable's emitted values will be the **instances** of those registered classes:
 
 ```ts
 // EffectsModule.forRoot(rootEffects)
@@ -39,6 +39,8 @@ The observable's emitted values will be the instances of those registered classe
       rootEffects, // The array of classes(effects)
       {
         // Instantiate the classes
+        // by providing `rootEffects`(the registered classes)
+        // as dependencies
         provide: ROOT_EFFECTS,
         deps: rootEffects,
         useFactory: createSourceInstances,
@@ -46,7 +48,8 @@ The observable's emitted values will be the instances of those registered classe
     ],
   };
 }
- 
+
+// Here the instances are created
 export function createSourceInstances(...instances: any[]) {
   return instances;
 }
@@ -65,6 +68,7 @@ export class EffectsRootModule {
     /* ... */
   ) {
     // Subscribe to the `effects stream`
+    // The `observer` is the Store entity 
     runner.start();
 
     rootEffects.forEach(effectSourceInstance =>
@@ -81,12 +85,23 @@ export class EffectsRootModule {
 }
 ```
 
-The `EffectsFeatureModule`(returned from `EffectsModule.forFeature()`) follows the same approach:
+As a side note, you can be perform specific state changes when the root effects are initialized by registering the `rootEffectsInit` action in a reducer:
+
+```ts
+createReducer(
+  initialState,
+  on(rootEffectsInit, (s, a) = {/* ... */})
+)
+```
+
+The `EffectsFeatureModule`(returned from `EffectsModule.forFeature()`) follows a similar approach, except that it will only push the effects instances into the stream:
 
 ```ts
 @NgModule({})
 export class EffectsFeatureModule {
   constructor(
+    // Make sure the essential services(EffectsRunner, EffectSources)
+    // are initialized first
     root: EffectsRootModule,
     @Inject(FEATURE_EFFECTS) effectSourceGroups: any[][],
     /* ... */
@@ -100,9 +115,9 @@ export class EffectsFeatureModule {
 }
 ```
 
-with a subtle difference, though. The `FEATURE_EFFECTS` is a `multi` provider token, which means that, when injected, it will contain an array of all provided values.
+There is also another small difference. The `FEATURE_EFFECTS` is a `multi` provider token, which means that, when injected, it will contain an array of all provided values.
 
-So, if you have: 
+So, if you have:
 
 ```ts
 EffectsModule.forFeature([E1, E2]),
@@ -179,7 +194,7 @@ export class Store<T = object> extends Observable<T>
 
 meaning that any **action resulted** from the **effects** will be intercepted by the `Store` which will in turn propagate it further so state changes can occur.
 
-#### EffectSources
+### EffectSources
 
 It is the place where all the **registered effects** will be **merged** into **one observable** whose emitted values(**actions**) will be intercepted by the `Store` entity, which is responsible for dispatching them, so that the app state can be updated.
 
@@ -394,7 +409,7 @@ Let's understand what it actually does by going through significant block:
 The above process could be visualized as follows:
 
 <div style="text-align: center;">
-  <img src="https://raw.githubusercontent.com/Andrei0872/my-dev-notes/master/screenshots/articles/ngrx-effects/effects-set-up.png">
+  <img src="https://raw.githubusercontent.com/Andrei0872/my-dev-notes/master/screenshots/articles/ngrx-effects/effects-setup.gif">
 </div>
 
 ---
