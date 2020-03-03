@@ -12,6 +12,16 @@
   - [Connecting `ngrx/effects` with `ngrx/store`](#connecting-ngrxeffects-with-ngrxstore)
   - [Conclusion](#conclusion)
 
+## Introduction
+
+NgRx's underlying mechanisms are something definitely worth exploring. By the end of this article you'll hopefully understand not only how `ngrx/effects` package works under the hood, but also how `ngrx/store` and `ngrx/effects` work together.
+
+One of the most fascinating discoveries was the way **actions** are handled in this whole process. As you may know, an action is a constituent of a **reducer**, as well as of an **effect**. NgRx ensures that actions are first handled by the reducers, after which they will eventually be intercepted by the effects.
+
+Let's dive in and reveal some interesting facts!
+
+---
+
 ## Setting up the effects
 
 ### Providing effects
