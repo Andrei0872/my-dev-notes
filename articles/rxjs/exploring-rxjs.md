@@ -60,7 +60,8 @@ constructor(subscribe?: (this: Observable<T>, subscriber: Subscriber<T>) => Tear
 * read the docs
 * can be thought of an of an **orchestrator** of the received notifications;  
   An `Observable` is a **data producer**, it's in charge for emitting notifications(values, errors or complete notifications).
-  A `Subscriber` can be seen as a middleman that sits between the **producer**(`Observable`) and the **consumer**(the provided callbacks or object), that's because it decides not only which notifications to propagate, but also **when**(TODO: maybe explain the `closed` property). For example, if the consumers does not to receive data anymore, the `Subscriber` is responsible for making sure that if the observable emits again, the data won't arrive to the consumer.
+  A `Subscriber` can be seen as a middleman that sits between the **producer**(`Observable`) and the **consumer**(the provided callbacks or object), that's because it decides not only which notifications to propagate, but also **when**(TODO: maybe explain the `closed` property; there is also `isStopped`; what's the diff❓). 
+  For example, if the consumers does not to receive data anymore, the `Subscriber` is responsible for making sure that if the observable emits again, the data won't arrive to the consumer.
 * extends `Subscription`, which owns the logic that is related to registering observers and unsubscribing from data producers;
   this is very important, because a `Subscriber` _starts_ the unsubscribing process(which is handled with the help of `Subscription`), process which is based on the value received from the `Observable`. For example, if it receives an **error notification** during the `nextCb` or an error is thrown, the subscriber will unsubscribe from the source. Apart from it, it also sends the notification to the observers(data consumers).
 
@@ -72,6 +73,8 @@ constructor(subscribe?: (this: Observable<T>, subscriber: Subscriber<T>) => Tear
   * 1 to 3 callbacks: `nextCb`, `errorCb`, `completeCb`; one callback can be omitted with `null`
   * nothing or a falsy value -> defaults to an **empty observer**
   * ❓ an existing `Subscriber` instance -> when using pipeable operators
+
+* `isStopped` in `SafeSubscriber` ❓
 
 ```
   Data Producer
@@ -89,12 +92,145 @@ SafeSubscriber.next(v) (2)
 ```
 ---
 
-### Subscription
+## Subscription
+
+* try ! 😃
+  
+  ```ts
+  const s = new Subscription();
+  
+  // `$src.subscribe()` - will return a `Subscriber`, which internally extends `Subscription`
+  s.add($src.subscribe())
+
+  // When doing s.unsubscribe()
+  // It will loop through the registered teardown functions and will invoke them
+  // For each inner subscriptions(which have the `_unsubscribe` fn set to the provided teardown function), including this `parent subscription`
+  // will `null out` the internal `subscriptions` array(there teardown function are added), 
+  // the parent(or parents) and the teardown functions
+
+
+  this.closed = true;
+  this._parentOrParents = null;
+  this._subscriptions = null;
+  ```
 
 * `unsubscribe()` method
   * not interested anymore in receiving `Observable`'s notifications
   * the `Observable` will stop working(producing anything)
 * `L: 142`: `subscription === this` ❓
+
+* when does this happen ❓
+  
+  ```ts
+  // Subscription.unsubscribe();
+
+  // null out _subscriptions first so any child subscriptions that attempt
+  // to remove themselves from this subscription will noop
+  this._subscriptions = null;
+  ```
+
+### `Subscription.add(teardown)`  
+
+#### Determining the type of the teardown, an inner `Subscription` instance will be created for it
+
+_if `typeof teardown === object'`_
+
+```ts
+// `subscription === this` - prevents from adding the same reference to the teardown list
+// `subscription.closed` - cannot add an already unsubscribed subscription; this is also the case for the `Subscription.EMPTY`, which is used when no teardown function is provided
+if (subscription === this || subscription.closed || typeof subscription.unsubscribe !== 'function') {
+  return subscription;
+} else if (this.closed) { // ❓
+  subscription.unsubscribe();
+  return subscription;
+} else if (!(subscription instanceof Subscription)) { // ❓
+  const tmp = subscription;
+  subscription = new Subscription();
+  subscription._subscriptions = [tmp];
+}
+```
+
+#### Setting the parent of the newly-created inner `Subscription`  
+
+```ts
+let { _parentOrParents } = subscription;
+if (_parentOrParents === null) {
+  // A common case for this would be when an inner subscription is created from just: `(new Observable(() => {})).subscribe(observer)`
+  subscription._parentOrParents = this;
+} else if (_parentOrParents instanceof Subscription) { // ❓
+  if (_parentOrParents === this) {
+    // The `subscription` already has `this` as a parent.
+    return subscription;
+  }
+  // If there's already one parent, but not multiple, allocate an
+  // Array to store the rest of the parent Subscriptions.
+  subscription._parentOrParents = [_parentOrParents, this];
+} else if (_parentOrParents.indexOf(this) === -1) { // ❓
+  // Only add `this` to the _parentOrParents list if it's not already there.
+  _parentOrParents.push(this);
+} else { // ❓
+  // The `subscription` already has `this` as a parent.
+  return subscription;
+}
+```
+
+#### Adding the inner `Subscription` to the array of subscriptions maintained by the `parent Subscription`
+
+```ts
+const subscriptions = this._subscriptions;
+if (subscriptions === null) {
+  this._subscriptions = [subscription];
+} else {
+  subscriptions.push(subscription);
+}
+```
+
+### `Subscription.unsubscribe()`
+
+Will dispose resources that depend on the subscription(e.g: `HttpClientModule`).
+
+#### Make sure the inner subscription is removed from the `parent Subscription`'s list of inner subscribers
+
+❗️ - answer to why this is possible
+```ts
+// #example1
+const src$ = new Observable();
+
+const positives$ = src$.pipe(filter(v => v > 0));
+
+// positives$ - will have 2 inner subscriptions 😃
+const squared$ = positives$.pipe(map(v => v ** 2));
+const doubled$ = positives$.pipe(map(v => v * 2));
+```
+
+❓
+```ts
+let { _parentOrParents, _unsubscribe, _subscriptions } = (<any> this);
+
+// Won't be able to be re-unsubscribed
+this.closed = true;
+// Get rid of the reference hold to the parents as they are temporarily kept in the `_parentOrParents` variable
+this._parentOrParents = null;
+
+// Make sure all the inner subscriptions are removed from the parent
+// An inner subscription might have multiple inner subscriptions, which can also have inner subscriptions an so forth...
+// As with `_parentOrParents`, `_subscriptions` are kept in an ephemeral variable
+this._subscriptions = null; 
+
+// If the unsubscription process started from the **main source** and this happens in the context of an inner subscription,
+// `_parentOrParents._subscriptions` will be null, because, the parent subscription, before looping through inner ones,
+// it emptied the child `subscriptions`, meaning that the current child subscription's single responsibility is to manage its child subscriptions
+// If the unsubscription process **did not** start from the **main source**(`#example1`), `_parentOrParents._subscriptions` will **not** be null
+// as the child `Subscription.unsubscribe()` method was not called from the parent(case which is described before), but it called directly
+if (_parentOrParents instanceof Subscription) {
+  _parentOrParents.remove(this);
+} else if (_parentOrParents !== null) {
+  for (let index = 0; index < _parentOrParents.length; ++index) {
+    const parent = _parentOrParents[index];
+    parent.remove(this);
+  }
+}
+```
 
 ---
 
