@@ -237,7 +237,68 @@ if (_parentOrParents instanceof Subscription) {
 
 ---
 
-## mergeMap or any(❓) higher-order mapping operator
+## higher-order mapping operator
+
+* TODO: illustrate when the outer unsubscribes, but the inner does not(yet)
+
+* you can access the **outer index** in your **projection function**
+  ```ts
+  constructor(/* ... */ private project: (value: T, index: number) => ObservableInput<R> /* ... */) { }
+  ```
+
+  ```ts
+  protected _tryNext(value: T) {
+    let result: ObservableInput<R>;
+    const index = this.index++;
+    try {
+      result = this.project(value, index); // Creates the inner observable
+    } catch (err) {
+      this.destination.error(err);
+      return;
+    }
+    this.active++;
+    this._innerSub(result, value, index); // Subscribe to this newly created observable and notify this outer subscriber(`mergeMap`) when it emits notifications
+  }
+  ```
+
+  ```ts
+  const s = of(1, 2, 3)
+  .pipe(
+    mergeMap((v, outerIdx) => (console.log('outer idx', outerIdx), of(v + 1)))
+  )
+  .subscribe(console.log)
+  ```
+
+* inner observable
+  * every time a value is intercepted by the outer subscriber(`{ExhaustMap, MergeMap, SwitchMap, ConcatMap}Subscriber`), an inner observable will be created; the outer obs will be notified of all the inner one's values(`next`, `error`, `complete`), and, depending on the value, it will act accordingly
+  * an `InnerSubscriber` will intercept all the values from the inner observable and will inform the parent
+
+* the project function
+  * it is **not mandatory** to return an `observable`;
+    it can return either a **promise**, an **array** or an **iterable**
+    ```ts
+    export type ObservableInput<T> = SubscribableOrPromise<T> | ArrayLike<T> | Iterable<T>;
+
+    export function mergeMap<T, O extends ObservableInput<any>>(project: (value: T, index: number) => O, concurrent?: number): OperatorFunction<T, ObservedValueOf<O>>;
+    ```
+
+    ```ts
+    function * generate (multiplier) {
+      yield * [1, 2, 3, 4].map(v => v * multiplier);
+
+      return 19;
+    }
+
+    of(1, 2, 3)
+      .pipe(
+        mergeMap(v => generate(v))
+      )
+    .subscribe(console.log)
+    ```
+
+---
+
+## mergeMap
 
 * `_complete()`
   * notification emitted by the the **outer observable**
@@ -280,60 +341,16 @@ if (_parentOrParents instanceof Subscription) {
     ```
   * when one inner observable **completes** and the buffer is not empty, it will take the oldest buffered value and will create an inner observable out of it(by using the the **projection function**)
 
-* you can access the **outer index** in your **projection function**
-  ```ts
-  constructor(/* ... */ private project: (value: T, index: number) => ObservableInput<R> /* ... */) { }
-  ```
 
-  ```ts
-  protected _tryNext(value: T) {
-    let result: ObservableInput<R>;
-    const index = this.index++;
-    try {
-      result = this.project(value, index); // Creates the inner observable
-    } catch (err) {
-      this.destination.error(err);
-      return;
-    }
-    this.active++;
-    this._innerSub(result, value, index); // Subscribe to this newly created observable and notify this outer subscriber(`mergeMap`) when it emits notifications
-  }
-  ```
+Note: `concatMap` is `mergeMap` with `concurrent` set to `1`: `mergeMap(projectionFn, 1)`
 
-  ```ts
-  const s = of(1, 2, 3)
-  .pipe(
-    mergeMap((v, outerIdx) => (console.log('outer idx', outerIdx), of(v + 1)))
-  )
-  .subscribe(console.log)
-  ```
+---
 
-* inner observable
-  * every time a value is intercepted by the `MergeMapSubscriber`, an inner observable will be created; the outer obs will be notified of all the inner one's values(`next`, `error`, `complete`), and, depending on the value, it will act accordingly
-  * an `InnerSubscriber` will intercept all the values from the inner observable and will inform the parent
+## exhaustMap
 
-* the project function
-  * it is **not mandatory** to return an `observable`;
-    it can return either a **promise**, an **array** or an **iterable**
-    ```ts
-    export type ObservableInput<T> = SubscribableOrPromise<T> | ArrayLike<T> | Iterable<T>;
+--
 
-    export function mergeMap<T, O extends ObservableInput<any>>(project: (value: T, index: number) => O, concurrent?: number): OperatorFunction<T, ObservedValueOf<O>>;
-    ```
-
-    ```ts
-    function * generate (multiplier) {
-      yield * [1, 2, 3, 4].map(v => v * multiplier);
-
-      return 19;
-    }
-
-    of(1, 2, 3)
-      .pipe(
-        mergeMap(v => generate(v))
-      )
-    .subscribe(console.log)
-    ```
+## switchMap
 
 ---
 
