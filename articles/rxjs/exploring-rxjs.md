@@ -1,5 +1,10 @@
 # Exploring RxJs
 
+* `MonoTypeOperatorFunction` 
+  * the return type is not different from the input type; e.g: `filter`, `delay`
+* `OperatorFunctions`
+  * the return type might differ from the input type; e.g: `map`, `pluck`
+
 ## Observable
 
 * implements `Subscribable` -> meaning it can be subscribed to
@@ -187,7 +192,7 @@ if (subscriptions === null) {
 
 ### `Subscription.unsubscribe()`
 
-Will dispose resources that depend on the subscription(e.g: `HttpClientModule`).
+Will dispose resources that held by the subscription(e.g: `HttpClientModule`).
 
 #### Make sure the inner subscription is removed from the `parent Subscription`'s list of inner subscribers
 
@@ -201,8 +206,8 @@ const positives$ = src$.pipe(filter(v => v > 0));
 // positives$ - will have 2 inner subscriptions 😃
 const squared$ = positives$.pipe(map(v => v ** 2));
 const doubled$ = positives$.pipe(map(v => v * 2));
-```
 
+```
 ❓
 ```ts
 let { _parentOrParents, _unsubscribe, _subscriptions } = (<any> this);
@@ -219,9 +224,7 @@ this._subscriptions = null;
 
 // If the unsubscription process started from the **main source** and this happens in the context of an inner subscription,
 // `_parentOrParents._subscriptions` will be null, because, the parent subscription, before looping through inner ones,
-// it emptied the child `subscriptions`, meaning that the current child subscription's single responsibility is to manage its child subscriptions
-// If the unsubscription process **did not** start from the **main source**(`#example1`), `_parentOrParents._subscriptions` will **not** be null
-// as the child `Subscription.unsubscribe()` method was not called from the parent(case which is described before), but it called directly
+// it emptied the child `subscriptions`, meaning that the current child subscription's single responsibility is to manage its child subscriptions(if any)
 if (_parentOrParents instanceof Subscription) {
   _parentOrParents.remove(this);
 } else if (_parentOrParents !== null) {
@@ -234,7 +237,113 @@ if (_parentOrParents instanceof Subscription) {
 
 ---
 
+## mergeMap or any(❓) higher-order mapping operator
+
+* `_complete()`
+  * notification emitted by the the **outer observable**
+* `notifyComplete()`
+  * emitted by the **inner observable**
+
+* the **inner** observable is added to the `_subscriptions` arr of outer(`mergeMap`)'s `destination`; the **inner completes**, it will automatically remove itself from `_subscriptions`
+  * this is desired because if the **outer subscriber**(`mergeMap`) completes and there are still active inner observables, then the outer one can be unsubscribed from, because if the source completed, there is no way this `mergeMap` subscriber will receive notifications; this does **not** mean that the inner observables must complete, because, apart from their creation, they're independent from the outer observable, which indicates that they should be kept _alive_, until all of them complete, which will in turn make the entire stream complete, thus unsubscribed.
+
+  * if the source completed, but there are pending inner observables that have not completed yet, the complete notification won't pe propagated to the `mergeMap`'s `destination`;  
+  also, if there are any buffered observables(in case `concurrent` is set), the complete notification won't be sent further until the buffer is empty
+
+  ```ts
+  // This is how OuterSubscriber(`mergeMap`) will be notified when one of its inner observables will complete
+  notifyComplete(innerSub: Subscription): void {
+    const buffer = this.buffer;
+    this.remove(innerSub);
+    this.active--;
+    if (buffer.length > 0) {
+      this._next(buffer.shift()); // Create an inner obs. out of the oldest buffered value
+    } else if (this.active === 0 && this.hasCompleted) {
+      // If there are no more active inner observables and the buffer is empty,
+      // it means the whole stream can complete
+      this.destination.complete();
+    }
+  }
+  ```
+
+* `concurrent` 
+  * how many _active_ **inner observables** it should handle at once;
+  * the exceeding ones will be buffered;
+    ```ts
+    _next(value: T): void {
+      if (this.active < this.concurrent) {
+        this._tryNext(value); // Create inner observable
+      } else {
+        this.buffer.push(value);
+      }
+    }
+    ```
+  * when one inner observable **completes** and the buffer is not empty, it will take the oldest buffered value and will create an inner observable out of it(by using the the **projection function**)
+
+* you can access the **outer index** in your **projection function**
+  ```ts
+  constructor(/* ... */ private project: (value: T, index: number) => ObservableInput<R> /* ... */) { }
+  ```
+
+  ```ts
+  protected _tryNext(value: T) {
+    let result: ObservableInput<R>;
+    const index = this.index++;
+    try {
+      result = this.project(value, index); // Creates the inner observable
+    } catch (err) {
+      this.destination.error(err);
+      return;
+    }
+    this.active++;
+    this._innerSub(result, value, index); // Subscribe to this newly created observable and notify this outer subscriber(`mergeMap`) when it emits notifications
+  }
+  ```
+
+  ```ts
+  const s = of(1, 2, 3)
+  .pipe(
+    mergeMap((v, outerIdx) => (console.log('outer idx', outerIdx), of(v + 1)))
+  )
+  .subscribe(console.log)
+  ```
+
+* inner observable
+  * every time a value is intercepted by the `MergeMapSubscriber`, an inner observable will be created; the outer obs will be notified of all the inner one's values(`next`, `error`, `complete`), and, depending on the value, it will act accordingly
+  * an `InnerSubscriber` will intercept all the values from the inner observable and will inform the parent
+
+* the project function
+  * it is **not mandatory** to return an `observable`;
+    it can return either a **promise**, an **array** or an **iterable**
+    ```ts
+    export type ObservableInput<T> = SubscribableOrPromise<T> | ArrayLike<T> | Iterable<T>;
+
+    export function mergeMap<T, O extends ObservableInput<any>>(project: (value: T, index: number) => O, concurrent?: number): OperatorFunction<T, ObservedValueOf<O>>;
+    ```
+
+    ```ts
+    function * generate (multiplier) {
+      yield * [1, 2, 3, 4].map(v => v * multiplier);
+
+      return 19;
+    }
+
+    of(1, 2, 3)
+      .pipe(
+        mergeMap(v => generate(v))
+      )
+    .subscribe(console.log)
+    ```
+
+---
+
 ## Questions
+
+* how does the chain behave on
+  * `error`
+  * `complete`
+
+* multiple `_parentOrParents` ? 
 
 * ```ts
   constructor (work: (this: AType, smthElse: any)) { } 
@@ -262,6 +371,52 @@ if (_parentOrParents instanceof Subscription) {
 ---
 
 ## To Do
+
+* to mention 😃
+  ```ts
+  src$.pipe(
+    switchMap(v => of(v).pipe(filter(v => v > 0)))
+  )
+  ```
+  
+  and
+
+  ```ts
+  src$.pipe(
+    switchMap(v => of(v)),
+    filter(v => v > 0)
+  )
+  ```
+
+
+* illustrate/explain `Observable.subscribe()`
+* illustrate/explain `Observable.pipe(operators).subscribe()`
+
+* find cases for 🤔
+  
+  ```ts
+  // Subscription.unsubscribe()
+  if (_parentOrParents instanceof Subscription) {
+    _parentOrParents.remove(this);
+  } else if (_parentOrParents !== null) {
+    for (let index = 0; index < _parentOrParents.length; ++index) {
+      const parent = _parentOrParents[index];
+      parent.remove(this);
+    }
+  }
+  ```
+
+  ```ts
+  // Subscription.add()
+  else if (this.closed) {
+    subscription.unsubscribe();
+    return subscription;
+  } else if (!(subscription instanceof Subscription)) {
+    const tmp = subscription;
+    subscription = new Subscription();
+    subscription._subscriptions = [tmp];
+  }
+  ```
 
 * explore `docs_app`
 * read `docs` 😃
