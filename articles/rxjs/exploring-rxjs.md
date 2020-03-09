@@ -237,9 +237,15 @@ if (_parentOrParents instanceof Subscription) {
 
 ---
 
-## higher-order mapping operator
+## higher-order mapping operators
 
 * TODO: illustrate when the outer unsubscribes, but the inner does not(yet)
+
+TODO: illustrate 😃
+* `_complete()`
+  * notification emitted by the the **outer observable**
+* `notifyComplete()`
+  * emitted by the **inner observable**
 
 * the **inner** observable is added to the `_subscriptions` arr of outer subscriber's `destination`; when the **inner completes**, it will automatically remove itself from `_subscriptions`
   * this is desired because if the **outer subscriber** completes and there are still **active inner observables**, then the outer one can be unsubscribed from, because if the source completed, there is no way this outer subscriber will receive any other notifications from the source;  
@@ -301,14 +307,7 @@ if (_parentOrParents instanceof Subscription) {
     .subscribe(console.log)
     ```
 
----
-
-## mergeMap
-
-* `_complete()`
-  * notification emitted by the the **outer observable**
-* `notifyComplete()`
-  * emitted by the **inner observable**
+### mergeMap
 
 * if the source completed, but there are pending inner observables that have not completed yet, the complete notification won't pe propagated to the `mergeMap`'s `destination`;  
   also, if there are any buffered observables(in case `concurrent` is set), the complete notification won't be sent further until the buffer is empty
@@ -346,13 +345,36 @@ if (_parentOrParents instanceof Subscription) {
 
 Note: `concatMap` is `mergeMap` with `concurrent` set to `1`: `mergeMap(projectionFn, 1)`
 
----
+### exhaustMap
 
-## exhaustMap
+* if there's an **active inner observable**, any subsequent value received by the outer subscriber(`ExhaustMapSubscriber`) will be ignored
+  ```ts
+  _next(value: T): void {
+    if (!this.hasSubscription) {
+      this.tryNext(value); // Creates inner observable based on `value`
+    }
+  }
+  ```
 
---
+* `this.hasSubscription`, which indicates whether there is an active inner observable or not, will be set to `false` when the **current** inner observable completes:
 
-## switchMap
+  ```ts
+  // `notifyComplete` - when the inner observable emits
+  notifyComplete(innerSub: Subscription): void {
+    destination.remove(innerSub);
+    const destination = this.destination as Subscription;
+
+    this.hasSubscription = false;
+    if (this.hasCompleted) {
+      // If the source completed, send the `complete` notification further in the stream
+      this.destination.complete();
+    }
+  }
+  ```
+
+* there can only be a single active inner observable
+
+### switchMap
 
 * if there's an **active inner observable** and a new value(`next()`) is received by the **outer subscriber**(`SwitchMapSubscriber`), the active observable will be unsubscribed and a new inner observable will be created by applying the supplied **projection function** on the just arrived value.
   ```ts
@@ -398,7 +420,7 @@ Note: `concatMap` is `mergeMap` with `concurrent` set to `1`: `mergeMap(projecti
     }
   }
   ``` 
-* there can only be a single action inner observable
+* there can only be a single active inner observable
 
 ---
 
