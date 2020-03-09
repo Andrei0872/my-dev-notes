@@ -241,6 +241,11 @@ if (_parentOrParents instanceof Subscription) {
 
 * TODO: illustrate when the outer unsubscribes, but the inner does not(yet)
 
+* the **inner** observable is added to the `_subscriptions` arr of outer subscriber's `destination`; when the **inner completes**, it will automatically remove itself from `_subscriptions`
+  * this is desired because if the **outer subscriber** completes and there are still **active inner observables**, then the outer one can be unsubscribed from, because if the source completed, there is no way this outer subscriber will receive any other notifications from the source;  
+  this does **not** mean that the inner observables must complete, because, apart from their creation, they're **independent from** the **outer observable**, which indicates that they should be kept _alive_, until all of them complete, which will in turn make the entire stream complete, thus unsubscribed.
+
+
 * you can access the **outer index** in your **projection function**
   ```ts
   constructor(/* ... */ private project: (value: T, index: number) => ObservableInput<R> /* ... */) { }
@@ -305,10 +310,7 @@ if (_parentOrParents instanceof Subscription) {
 * `notifyComplete()`
   * emitted by the **inner observable**
 
-* the **inner** observable is added to the `_subscriptions` arr of outer(`mergeMap`)'s `destination`; the **inner completes**, it will automatically remove itself from `_subscriptions`
-  * this is desired because if the **outer subscriber**(`mergeMap`) completes and there are still active inner observables, then the outer one can be unsubscribed from, because if the source completed, there is no way this `mergeMap` subscriber will receive notifications; this does **not** mean that the inner observables must complete, because, apart from their creation, they're independent from the outer observable, which indicates that they should be kept _alive_, until all of them complete, which will in turn make the entire stream complete, thus unsubscribed.
-
-  * if the source completed, but there are pending inner observables that have not completed yet, the complete notification won't pe propagated to the `mergeMap`'s `destination`;  
+* if the source completed, but there are pending inner observables that have not completed yet, the complete notification won't pe propagated to the `mergeMap`'s `destination`;  
   also, if there are any buffered observables(in case `concurrent` is set), the complete notification won't be sent further until the buffer is empty
 
   ```ts
@@ -352,6 +354,52 @@ Note: `concatMap` is `mergeMap` with `concurrent` set to `1`: `mergeMap(projecti
 
 ## switchMap
 
+* if there's an **active inner observable** and a new value(`next()`) is received by the **outer subscriber**(`SwitchMapSubscriber`), the active observable will be unsubscribed and a new inner observable will be created by applying the supplied **projection function** on the just arrived value.
+  ```ts
+  _next(value: T) {
+    let result: ObservableInput<R>;
+    const index = this.index++;
+    try {
+      result = this.project(value, index); // Create a new inner observable from the newly arrived value
+    } catch (error) {
+      this.destination.error(error);
+      return;
+    }
+    this._innerSub(result, value, index);
+  }
+
+  _innerSub(result: ObservableInput<R>, value: T, index: number) {
+    const innerSubscription = this.innerSubscription;
+    if (innerSubscription) { // Unsubscribe from the inner observable
+      innerSubscription.unsubscribe();
+    }
+    // `innerSubscriber` - will inform the parent subscriber(`SwitchMapSubscriber`) about notifications that take place in the inner observable
+    const innerSubscriber = new InnerSubscriber(this, value, index);
+    const destination = this.destination as Subscription;
+    destination.add(innerSubscriber);
+    this.innerSubscription = subscribeToResult(this, result, undefined, undefined, innerSubscriber);
+    if (this.innerSubscription !== innerSubscriber) {
+      destination.add(this.innerSubscription);
+    }
+  }
+  ``` 
+
+* the **inner observable** becomes **inactive** when it **completes**
+  ```ts
+  // `notifyComplete` - invoked when the inner observable completes
+  notifyComplete(innerSub: Subscription): void {
+    const destination = this.destination as Subscription;
+    destination.remove(innerSub);
+    this.innerSubscription = null!;
+    
+    // `isStopped` - whether the outer subscriber unsubscribed(e.g: because its source completed)
+    if (this.isStopped) {
+      super._complete(); // Send the complete the notification to the next parent subscribers(that did not complete due do this inner observable)
+    }
+  }
+  ``` 
+* there can only be a single action inner observable
+
 ---
 
 ## Questions
@@ -385,6 +433,12 @@ Note: `concatMap` is `mergeMap` with `concurrent` set to `1`: `mergeMap(projecti
 
 * how are promises converted to observables ?
 
+* making an observable multicast with the help of a subject ?
+
+* in NgRx: `this.source = aSubjectInstance`
+
+* what are notifications(`Notification`)
+
 ---
 
 ## To Do
@@ -408,6 +462,7 @@ Note: `concatMap` is `mergeMap` with `concurrent` set to `1`: `mergeMap(projecti
 
 * illustrate/explain `Observable.subscribe()`
 * illustrate/explain `Observable.pipe(operators).subscribe()`
+* illustrate/explain `Observable.pipe(operators, mergeMap(), switchMap()).subscribe()`
 
 * find cases for 🤔
   
@@ -437,3 +492,10 @@ Note: `concatMap` is `mergeMap` with `concurrent` set to `1`: `mergeMap(projecti
 
 * explore `docs_app`
 * read `docs` 😃
+* read `doc` :)
+
+--- 
+
+## Ideas
+
+* when creating diagrams: `code` |-> `diagram`
