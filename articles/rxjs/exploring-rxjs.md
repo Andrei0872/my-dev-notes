@@ -46,6 +46,18 @@ constructor(subscribe?: (this: Observable<T>, subscriber: Subscriber<T>) => Tear
 
 ## Subscriber
 
+```ts
+protected _complete () {
+  // Send the complete notification to destination(subscriber ancestors)
+  // which may unsubscribe, which may cause this current subscriber to become `closed`(`this.closed = true`)
+  // because the next line `this.unsubscribe()` is reached.
+  this.destination.complete();
+
+  // When this(read above) is not the case, this subscriber is unsubscribed anyway, as well as its child `subscriptions` 
+  this.unsubscribe();
+}
+```
+
 * **teardown**: a function that allows you free up resources after they are no longer needed(e.g: in the `HttpClientModule`, when the pending request is aborted)
   * you can create such **teardown function** by providing a function that also returns a function to the `Observable` constructor
   
@@ -424,6 +436,35 @@ Note: `concatMap` is `mergeMap` with `concurrent` set to `1`: `mergeMap(projecti
 
 ---
 
+## Scheduler
+
+* an orchestrator of `actions`(tasks)
+
+### Action
+
+* an action can be **rescheduled** from the **scheduled callback**; this is how the iteration behavior is achieved
+* can be rescheduled with a different delay time ❓
+* you can stop an action from rescheduling itself by doing: `this.schedule(state, null)`
+  ```ts
+  recycleAsyncId(scheduler: AsyncScheduler, id: any, delay: number | null = 0): any {
+    // If this action is rescheduled with the same delay time, don't clear the interval id.
+    if (delay !== null && this.delay === delay && this.pending === false) {
+      return id;
+    }
+    // Otherwise, if the action's delay time is different from the current delay,
+    // or the action has been rescheduled before it's executed, clear the interval id
+    clearInterval(id);
+    return undefined;
+  }
+  ``` 
+* can an `Action` be rescheduled before it's executed ❓
+
+### AsyncScheduler
+
+* it uses `setInterval`
+
+---
+
 ## Questions
 
 * how does the chain behave on
@@ -464,6 +505,90 @@ Note: `concatMap` is `mergeMap` with `concurrent` set to `1`: `mergeMap(projecti
 ---
 
 ## To Do
+
+* to try :)
+  ```ts
+  export function scheduleArray<T>(input: ArrayLike<T>, scheduler: SchedulerLike) {
+    return new Observable<T>(subscriber => {
+      const sub = new Subscription();
+      let i = 0;
+      sub.add(scheduler.schedule(function () {
+        if (i === input.length) {
+          subscriber.complete();
+          return;
+        }
+        subscriber.next(input[i++]);
+        //! ❓ when might `subscriber.closed` be `true`
+        // Maybe when one ancestor(destination subscriber) unsubscribed(e.g: `take(n)`)
+        // and this was the `n-th` notification
+        if (!subscriber.closed) {
+          sub.add(this.schedule());
+        }
+      }));
+      return sub;
+    });
+  }
+  ```
+
+
+  ```ts
+  public flush(action: AsyncAction<any>): void {
+    // ❓ how can there be multiple actions
+    const {actions} = this;
+
+    //! ❓ when will this be actived?
+    // Maybe when the action is first scheduled for a delayX
+    // then, in the scheduled callback, the action is rescheduled with a delayY, where delayY < delayX
+    if (this.active) {
+      actions.push(action);
+      return;
+    }
+
+    let error: any;
+    this.active = true;
+
+    do {
+      if (error = action.execute(action.state, action.delay)) {
+        break;
+      }
+    } while (action = actions.shift()!); // exhaust the scheduler queue
+
+    this.active = false;
+
+    if (error) {
+      while (action = actions.shift()!) {
+        action.unsubscribe();
+      }
+      throw error;
+    }
+  }
+  ```
+  
+  ```ts
+  _unsubscribe() {
+
+    const id = this.id;
+    const scheduler = this.scheduler;
+    const actions = scheduler.actions;
+    const index = actions.indexOf(this);
+
+    this.work  = null!;
+    this.state = null!;
+    this.pending = false;
+    this.scheduler = null!;
+
+    // ❓ when will this be the case ?
+    if (index !== -1) {
+      actions.splice(index, 1);
+    }
+
+    if (id != null) {
+      this.id = this.recycleAsyncId(scheduler, id, null);
+    }
+
+    this.delay = null!;
+  }
+  ```
 
 * to mention 😃
   ```ts
