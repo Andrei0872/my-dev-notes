@@ -502,6 +502,81 @@ new Observable(s => {
 
 ---
 
+## delayWhen
+
+* the waiting period is determined by an **inner observable**
+  * when it emits/completes, it will then send the value received by the outer subscriber further in the stream
+  * the inner observable can depend on the `outerValue` or/and the `outerIndex`
+
+  For each `outerValue`(value intercepted by the outer subscriber), an **inner observable** will be **created**. An `Inner Subscriber` instance will inform the outer subscriber about the inner observable's notifications. This means that there is a `1:1` relationship between an outer value and its inner observable.
+
+  ```ts
+  _next(value: T): void {
+    const index = this.index++;
+    try {
+      // Create the inner observable based on the value and the current index
+      const delayNotifier = this.delayDurationSelector(value, index);
+      if (delayNotifier) {
+        // Subscribing to this inner obs and storing the subscription so when we can know when to send the outer value
+        this.tryDelay(delayNotifier, value);
+      }
+    } catch (err) {
+      this.destination.error(err);
+    }
+  }
+  ```
+
+  ```ts
+  tryDelay(delayNotifier: Observable<any>, value: T): void {
+    // Create the subscription
+    const notifierSubscription = subscribeToResult(this, delayNotifier, value);
+
+    if (notifierSubscription && !notifierSubscription.closed) {
+      const destination = this.destination as Subscription;
+      destination.add(notifierSubscription);
+      // Store the subscription in order to identify the outer value
+      this.delayNotifierSubscriptions.push(notifierSubscription);
+    }
+  }
+  ```
+
+  The inner subscribers will be kept into an array so that when an inner observable emits, the outer value from which it was created can be sent further in the stream and the inner subscriber can unsubscribe.
+
+  ```ts
+  // `notifyNext` - called when the inner obs. emits a value(`next()`)
+  notifyNext(outerValue: T, innerValue: any,
+            outerIndex: number, innerIndex: number,
+            innerSub: InnerSubscriber<T, R>): void {
+    // The inner obs. emitted, so send the outer value(the value which was used when creating the inner obs.) to the parent subscriber
+    this.destination.next(outerValue);
+    // No need to keep track of it anymore
+    this.removeSubscription(innerSub);
+    
+    // If there are no more active subscriptions and the `complete` notification was sent from the source(child subscriber)
+    // then the complete notification can be sent farther
+    this.tryComplete();
+  }
+  ```
+
+* if the **source completes** and there are **active inner observables**, the `DelayWhenSubscriber` will wait until there are no more active inner subscriptions, then it will complete
+* can be thought of as a `mergeMap`, but instead of mapping to the value resulted from the inner observable, it will use the outer value instead
+
+TODO:
+* by providing another observable to the `delayWhen` operator, `subscriptionDelay`, you can decide when the `DelayWhenSubscriber` should subscribe to the source
+  * when `subscriptionDelay` emits once/completes, the `DelayWhenSubscriber` will subscribe to the source
+
+---
+
+## Inner Subscriber and Outer Subscriber
+
+* `Inner Subscriber`
+  * designed in a way to be able to send to the **outer subscriber** all the needed information:
+    * `outerIndex`, `outerValue` - the value & its index of received by the **outer** subscriber
+    * `innerIndex`, `innerValue` - the value & its index of received by the **inner** subscriber(e.g: `exhaustMap`, `mergeMap` etc, where the value of the inner obs. will be sent to the data consumer)
+    * `innerSub` - the `Inner Subscriber` **instance** that is in charge of informing the outer(e.g: `delayWhen`, when the inner obs emits, the `outerValue` that created the `innerSub` should be sent to the data consumer)
+
+---
+
 ## Questions
 
 * how does the chain behave on
