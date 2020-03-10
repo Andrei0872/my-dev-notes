@@ -439,29 +439,66 @@ Note: `concatMap` is `mergeMap` with `concurrent` set to `1`: `mergeMap(projecti
 ## Scheduler
 
 * an orchestrator of `actions`(tasks)
+* it has a `flush` method, with the help of which an `action` can be **executed**
+* however, an `Action` _decides_ when it's going to executed by the scheduler
 
 ### Action
 
-* an action can be **rescheduled** from the **scheduled callback**; this is how the iteration behavior is achieved
-* can be rescheduled with a different delay time ❓
-* you can stop an action from rescheduling itself by doing: `this.schedule(state, null)`
-  ```ts
-  recycleAsyncId(scheduler: AsyncScheduler, id: any, delay: number | null = 0): any {
-    // If this action is rescheduled with the same delay time, don't clear the interval id.
-    if (delay !== null && this.delay === delay && this.pending === false) {
-      return id;
-    }
-    // Otherwise, if the action's delay time is different from the current delay,
-    // or the action has been rescheduled before it's executed, clear the interval id
-    clearInterval(id);
-    return undefined;
-  }
-  ``` 
-* can an `Action` be rescheduled before it's executed ❓
+* an action can be **rescheduled** from the **scheduled callback**; this is how the iteration behavior is achieved;
+  * additionally, every iteration can _prepare_ a new state that will be available for the **next iteration**, similar to how `Array.prototype.reduce()` works
+* can be rescheduled with a different delay time
+* can an `Action` be rescheduled before it's executed ❓ (yes)
 
 ### AsyncScheduler
 
 * it uses `setInterval`
+
+---
+
+## delay
+
+_Prerequisite: `Scheduler`_
+
+```ts
+// The `queue` will not be drained after the first time the action is run
+new Observable(s => {
+  s.next(1);
+  s.next(2);
+
+  setTimeout(() => {
+    s.next(3);
+  }, 300);
+})
+  .pipe(
+    delay(1000)
+  ).subscribe(console.log)****
+```
+
+* it uses `AsyncScheduler` by default
+* can receive 2 arguments
+  * a number that represents the `milliseconds` that need to pass before a value it emitted by this subscriber
+  * a `Date` object that represents the moment when the value should be emitted to the parent subscribers;
+    internally, it will determine the number of milliseconds between the `Date` provided and current date(`Date.now()`)
+    ```ts
+    const absoluteDelay = isDate(delay);
+    // scheduler.now() - Date.now()
+    const delayFor = absoluteDelay ? (+delay - scheduler.now()) : Math.abs(<number>delay);
+    ``` 
+
+* when it receives a value at a moment `X`
+  * if the subscriber is `inactive`(there is no **scheduled** `action`), it will **schedule** a **new action** for the `Scheduler` that will be run in `delayMs`
+  * if the subscriber is `active`(an `action` has already been scheduled), it will be simply added to the queue
+  * in both cases, an object will be created from this value; this object indicates the **time** when the **value** **should be emitted**
+    ```ts
+    // `scheduler.now() + this.delay` - when the value should be emitted to the next subscriber in the chain(also known as `destination`)
+    const message = new DelayMessage(scheduler.now() + this.delay, notification);
+    this.queue.push(message);
+    ```
+* when a **scheduled action** is run
+  * it will shift elements one by one from the `queue` and will send the notification to the parent subscribers accordingly;
+    and element can shifted from the `queue` if its time when it should be emitted is less the current time (`Date.now`)
+  * if the queue **is not** empty, it will reschedule this action after the delay resulted from `queue[0].time - Date.now()`, where `queue[0].time` is the time when that item should be emitted
+  * if the queue **is** empty, meaning that there will not be any rescheduled action, the subscriber(`DelaySubscriber`) will become `inactive`
 
 ---
 
@@ -640,6 +677,8 @@ Note: `concatMap` is `mergeMap` with `concurrent` set to `1`: `mergeMap(projecti
 * explore `docs_app`
 * read `docs` 😃
 * read `doc` :)
+
+* cover `error` & `complete` cases
 
 --- 
 
