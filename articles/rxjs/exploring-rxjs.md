@@ -7,6 +7,9 @@
 
 ## Observable
 
+* section: `Recreating observables and subscribers chains` 😃
+* show why it is unsubscribed when an error/complete notification occurs
+
 * implements `Subscribable` -> meaning it can be subscribed to
 * `Observe.subscribe()` ->  decides when the `Observable` should become **active**
 
@@ -251,7 +254,9 @@ if (_parentOrParents instanceof Subscription) {
 
 ## higher-order mapping operators
 
-* TODO: illustrate when the outer unsubscribes, but the inner does not(yet)
+* TODO: 
+  * illustrate when the outer unsubscribes, but the inner does not(yet)
+  * re-create! (a node from a linked list that acts a tail for another linked list)
 
 TODO: illustrate 😃
 * `_complete()`
@@ -586,6 +591,83 @@ new Observable(s => {
 
   * when `subscriptionDelay` emits once/completes, the `DelayWhenSubscriber` will subscribe to the `SubscriptionDelayObservable`'s (thus, will **activate** the stream) & `subscriptionDelay` will be unsubscribed
   * if `subscriptionDelay` errors, it will be unsubscribed and the error notification will be sent to the parent subscriber
+
+---
+
+## audit
+
+_maybe highlight the diff between `audit` & `throttle`_
+
+* holds a single **inner observable** whose **subscriber**(also called inner subscriber) will inform the parent(the outer subscriber) about the _inner_ notifications
+  * if it errors, the error notification will be sent further in the stream
+* when the outer subscriber(`AuditSubscriber`) receives a value:
+  * if the inner observable is **inactive**
+    * the outer subscriber will store the value in a single place
+    * the inner observable will become active
+  
+  ```ts
+  _next(value: T): void {
+    // Store the value
+    this.value = value;
+    this.hasValue = true;
+    if (!this.throttled) { // If the inner obs. is inactive
+      let duration;
+      try {
+        const { durationSelector } = this;
+        duration = durationSelector(value); // Create the inner obs based on the provided function
+      } catch (err) {
+        return this.destination.error(err);
+      }
+      // Subscribe to the inner observable
+      const innerSubscription = subscribeToResult(this, duration);
+      if (!innerSubscription || innerSubscription.closed) {
+        // `innerSubscription.closed` might be true if everything happens in the same tick
+        // For example, you might have `audit(() => of(1))`
+        // This `if` block will be reached after the inner observable had emitted & completed
+        this.clearThrottle();
+      } else {
+        // Store the inner subscriber
+        this.add(this.throttled = innerSubscription);
+      }
+    }
+  }
+  ```
+
+  * while the inner observable is **active**(did not emitted a value/completed)
+    * keep storing the value in that place
+    ```ts
+    _next(value: T): void {
+      // Store the value in the same place
+      this.value = value;
+      this.hasValue = true;
+      
+      // `!this.throttled` - would hold the active inner subscriber
+      if (!this.throttled) {}
+    }  
+    ```
+  * if the inner observable **becomes inactive**(it emitted/completed)
+    * the outer observable will send the **latest stored value**
+  
+  ```ts
+  // Called when the inner obs emits/completes
+  clearThrottle() {
+    const { value, hasValue, throttled } = this;
+    if (throttled) {
+      this.remove(throttled);
+      this.throttled = null;
+      throttled.unsubscribe();
+    }
+    // Send the latests store value(if any)
+    if (hasValue) {
+      this.value = null;
+      this.hasValue = false;
+      this.destination.next(value);
+    }
+  }
+  ``` 
+* if the source completes, the outer subscriber will not wait for the inner one to emit/complete, it will send the complete notification to the parent subscriber; thus, the inner observable will be unsubscribed 
+
+TODO: mention `auditTime`
 
 ---
 
