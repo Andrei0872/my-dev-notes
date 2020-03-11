@@ -528,7 +528,7 @@ new Observable(s => {
 
   ```ts
   tryDelay(delayNotifier: Observable<any>, value: T): void {
-    // Create the subscription
+    // Create the inner subscription
     const notifierSubscription = subscribeToResult(this, delayNotifier, value);
 
     if (notifierSubscription && !notifierSubscription.closed) {
@@ -540,7 +540,7 @@ new Observable(s => {
   }
   ```
 
-  The inner subscribers will be kept into an array so that when an inner observable emits, the outer value from which it was created can be sent further in the stream and the inner subscriber can unsubscribe.
+  The **inner subscribers** will be kept into an array so that when an inner observable emits/completes, the outer value from which it was created can be sent further in the stream and the inner subscriber can unsubscribe.
 
   ```ts
   // `notifyNext` - called when the inner obs. emits a value(`next()`)
@@ -556,14 +556,36 @@ new Observable(s => {
     // then the complete notification can be sent farther
     this.tryComplete();
   }
+
+  // `notifyComplete` - called when the inner obs. completes
+  notifyComplete(innerSub: InnerSubscriber<T, R>): void {
+    const value = this.removeSubscription(innerSub);
+    if (value) {
+      this.destination.next(value);
+    }
+    this.tryComplete();
+  }
   ```
 
-* if the **source completes** and there are **active inner observables**, the `DelayWhenSubscriber` will wait until there are no more active inner subscriptions, then it will complete
-* can be thought of as a `mergeMap`, but instead of mapping to the value resulted from the inner observable, it will use the outer value instead
+* if the **source completes** and there are **active inner observables**, the `DelayWhenSubscriber` will wait until there are no more active inner subscriptions, then it will complete;  
+  Put differently, this is the condition that has to be met in order to propagate the complete notifications to the parent subscribers:
+  
+  ```ts
+  tryComplete(): void {
+    // `this.completed` - true when the source completes
+    // an inner subscriber is removed from `delayNotifierSubscriptions` when its inner obs either completes or emits a value
+    if (this.completed && this.delayNotifierSubscriptions.length === 0) {
+      this.destination.complete();
+    }
+  }
+  ```
+* can be thought of as a `mergeMap`, but instead of mapping to the value resulted from the inner observable, it will use the **outer value** instead
 
-TODO:
-* by providing another observable to the `delayWhen` operator, `subscriptionDelay`, you can decide when the `DelayWhenSubscriber` should subscribe to the source
-  * when `subscriptionDelay` emits once/completes, the `DelayWhenSubscriber` will subscribe to the source
+* by providing another observable to the `delayWhen` operator, `subscriptionDelay`, you can **delay** the **subscription moment**
+  [StackBlitz](https://stackblitz.com/edit/rxjs-delaywhen-subscription-delay?file=index.ts).
+
+  * when `subscriptionDelay` emits once/completes, the `DelayWhenSubscriber` will subscribe to the `SubscriptionDelayObservable`'s (thus, will **activate** the stream) & `subscriptionDelay` will be unsubscribed
+  * if `subscriptionDelay` errors, it will be unsubscribed and the error notification will be sent to the parent subscriber
 
 ---
 
@@ -722,6 +744,7 @@ TODO:
 * illustrate/explain `Observable.subscribe()`
 * illustrate/explain `Observable.pipe(operators).subscribe()`
 * illustrate/explain `Observable.pipe(operators, mergeMap(), switchMap()).subscribe()`
+* illustrate/explain `Scheduler`
 
 * find cases for 🤔
   
