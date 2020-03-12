@@ -665,9 +665,22 @@ _maybe highlight the diff between `audit` & `throttle`_
     }
   }
   ``` 
-* if the source completes, the outer subscriber will not wait for the inner one to emit/complete, it will send the complete notification to the parent subscriber; thus, the inner observable will be unsubscribed 
+* if the **source completes**, the outer subscriber(`AuditSubscriber`) will not wait for the inner one to emit/complete, it will send the complete notification to the parent subscriber; thus, the inner observable will be unsubscribed 
 
-TODO: mention `auditTime`
+Note: `auditTime(ms)` is defined as: `audit(() => timer(ms))`
+
+```ts
+merge(
+  of(1),
+  of(2),
+  of(3).pipe(delay(400)),
+  of(4).pipe(delay(901)),
+  of(5).pipe(delay(600)),
+  of(6).pipe(delay(1200)),
+)
+  .pipe(auditTime(300))
+  .subscribe(console.log) // 2 5
+```
 
 ---
 
