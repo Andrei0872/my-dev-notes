@@ -684,6 +684,39 @@ merge(
 
 ---
 
+## timer
+
+`timer(dueTime, period | scheduler, scheduler)`
+
+_Prerequisite: `Scheduler`_
+
+* can accept a `Date` object or a number(milliseconds) as a parameter
+  ```ts
+  const due = isNumeric(dueTime)
+      ? (dueTime as number)
+      : (+dueTime - scheduler!.now()); // scheduler.now() = Date.now()
+  ``` 
+
+* it schedules an action to take place in `dueTime` milliseconds(0 by default) and then, if `period` is specified, the action will reschedule itself at intervals determined by `period`
+  ```ts
+  // These are set when the action was scheduled for the first time
+  const { index, period, subscriber } = state;
+  subscriber.next(index);
+
+  if (subscriber.closed) {
+    // If the subscriber has been unsubscribed after the previous value has been emitted 
+    return;
+  } else if (period === -1) {
+    // Do not reschedule the action!
+    return subscriber.complete();
+  }
+
+  state.index = index + 1;
+  this.schedule(state, period);
+  ```
+
+---
+
 ## Inner Subscriber and Outer Subscriber
 
 * `Inner Subscriber`
