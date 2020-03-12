@@ -717,6 +717,48 @@ _Prerequisite: `Scheduler`_
 
 ---
 
+## throttle
+
+* comes with 2 options: `{ leading: boolean, trailing: boolean }`; defaults to: `{ leading: true; trailing: false; }`
+* can hold a single inner observable, created with the help of the outer value and the `durationSelector`(which creates the inner observable)
+* when a value comes in
+  * if the inner obs is **inactive**(is not subscribed to)
+    * if `leading = true` 
+      * sent the value to the parent subscriber; it will emit values to the next subscriber **only when** the **inner obs** is **inactive**
+      * this is akin to saying: only one value per finished subscription; TODO: diagram
+      * subscribe to the inner observable that was created with the help of this newly arrived value
+  * if the inner obs is **active**
+    * it will store the received value in a single variable until the inner obs emits/completes
+      when this happens, if `trailing = true`; the last stored value will be sent to the next subscriber in the chain and will create _re-activate_ the inner observable, based on the last stored value; TODO: diagram
+
+* TODO: show diagram of what happens when both are set to true
+
+* if the source completes, the inner observable will complete as well
+
+```ts
+merge(
+  of(1),
+  of(2),
+  of(3).pipe(delay(400)),
+  of(4).pipe(delay(900)),
+  of(5).pipe(delay(600)),
+  // of(6).pipe(delay(1200)),
+  new Observable(s => { setTimeout(() => {s.next(6); s.complete()}, 1200); return function callOnUnsub() { } })
+)
+  .pipe(
+    throttle((v) => of(v * 10).pipe(delay(300)), { leading: true, trailing: true })
+  )
+  .subscribe(console.log)
+
+  /* 
+  leading: true -> 1 3 4
+  trailing: true -> 2 5 4
+  both: true ->  1 2 5 4 
+   */
+```
+
+---
+
 ## Inner Subscriber and Outer Subscriber
 
 * `Inner Subscriber`
