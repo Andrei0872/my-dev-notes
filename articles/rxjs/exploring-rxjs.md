@@ -757,6 +757,13 @@ merge(
    */
 ```
 
+* `throttle` vs `audit` 
+  * `audit` will subscribe to the inner obs. as soon as the first outer value comes in and will keep on storing the **last** received value until the inner obs. emits/completes
+    when this happens, it will emit the stored value to the next subscriber in the chain
+  * `throttle`: every time an outer value is sent to the next subscriber(a.k.a destination), the inner obs will be subscribed(if not already subscribed); if it's already subscribed, it will keep on storing the incoming values
+    * if `leading = true` - it will send the value further in the chain and will subscribe to the inner observable
+    * if `trailing = true` - it will send the value after the inner obs. emits/completes, after which it will re-create & subscribe to the inner obs, based on the emitted value
+
 ---
 
 ## Inner Subscriber and Outer Subscriber
