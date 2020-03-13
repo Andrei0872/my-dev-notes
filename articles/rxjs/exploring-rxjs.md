@@ -1055,3 +1055,5 @@ merge(
 ## Ideas
 
 * when creating diagrams: `code` |-> `diagram`
+
+* put operators like `throttle` & `throttleTime` or `debounce` & `debounceTime` in the same section as the difference between `a` and `aTime` is that one makes use of an inner obs and other of a scheduled action
