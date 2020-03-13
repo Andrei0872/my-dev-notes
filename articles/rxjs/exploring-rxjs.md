@@ -831,6 +831,14 @@ merge(
 
 ---
 
+## debounceTime
+
+* internally maintains an `Action` that is scheduled every time an outer value is intercepted; if there is an already scheduled action when such value arrives, it will be cancelled, allowing a new one to be scheduled
+* when an action's callback is invoked(meaning that the scheduled action wasn't cancelled in the meanwhile), it will **send** the last received **value** to the **destination subscriber** and will **NOT** reschedule the action
+* if the source completes, before the action is cancelled, the last stored value will be sent and then the complete notification
+
+---
+
 ## Inner Subscriber and Outer Subscriber
 
 * `Inner Subscriber`
@@ -842,6 +850,25 @@ merge(
 ---
 
 ## Questions
+
+* what does it mean ? `debounceTime`
+  ```ts
+  debouncedNext(): void {
+    this.clearDebounce();
+
+    if (this.hasValue) {
+      const { lastValue } = this;
+      // This must be done *before* passing the value
+      // along to the destination because it's possible for
+      // the value to synchronously re-enter this operator
+      // recursively when scheduled with things like
+      // VirtualScheduler/TestScheduler.
+      this.lastValue = null;
+      this.hasValue = false;
+      this.destination.next(lastValue);
+    }
+  }
+  ``` 
 
 * why `complete/error` will reach `SafeSubscriber` and will null out its references, whereas `unsubscribe()` will not 🤔 ❓
 
