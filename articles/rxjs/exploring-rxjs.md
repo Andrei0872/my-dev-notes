@@ -802,6 +802,35 @@ _Eventually, show the diff between `throttleTime(300) and throttle(() => timer(3
 
 ---
 
+## debounce
+
+* holds only one inner observable
+  * when an outer value comes in
+    * it will be stored
+    * it will unsubscribe from the current inner observable(if it has been subscribed already) and will create another one based on the newly arrived value;  
+      this is how `switchMap` is sort of imitated
+  * when the inner obs emits/completes, it will pass the stored value along
+* can be thought of as `switchMap`, but instead of passing along the inner value, the **outer value** will be used
+* similar to saying: _emit this just arrived value **no other values**  until the inner observable emits/completes_
+* if the source completes, the **stored value** and the **complete notification** will be handed over to the **destination** subscriber; 
+
+```ts
+merge(
+  of(1),
+  of(2),
+  of(3).pipe(delay(400)),
+  of(4).pipe(delay(900)),
+  of(5).pipe(delay(600)),
+  new Observable(s => { setTimeout(() => {s.next(6); s.complete()}, 1200); return function callOnUnsub() { } })
+)
+  .pipe(
+    debounce(v => timer(300))
+  )
+  .subscribe(console.log) // 2 6
+```
+
+---
+
 ## Inner Subscriber and Outer Subscriber
 
 * `Inner Subscriber`
@@ -960,6 +989,7 @@ _Eventually, show the diff between `throttleTime(300) and throttle(() => timer(3
 * illustrate/explain `Observable.pipe(operators).subscribe()`
 * illustrate/explain `Observable.pipe(operators, mergeMap(), switchMap()).subscribe()`
 * illustrate/explain `Scheduler`
+* illustrate/explain `unsubscribe()` - the chain 😃
 
 * find cases for 🤔
   
