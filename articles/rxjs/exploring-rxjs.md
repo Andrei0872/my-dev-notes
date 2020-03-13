@@ -766,6 +766,42 @@ merge(
 
 ---
 
+## throttleTime
+
+* just as `throttle` holds a single inner observable based on which it decides **when** to send the values to the stream, `throttleTime` makes use of an `Action`, which can be scheduled with the help of a `scheduler`(`AsyncScheduler` by default)
+
+* if the source completes and if `trailing = true`, apart from sending the **complete notification** to the **next subscriber** in chain, it will also send the **stored value**, as opposed to `throttle` whose inner observable will complete as well, without allowing it to further send the stored value
+
+* the **action** will be **scheduled** only when a **new outer value** comes in and an action is **not already scheduled**
+  * when a new outer value comes, if `leading = true`, that value will be sent over to the next subscriber
+
+* if the **scheduled action** finishes its work, it will send the stored value to the destination subscriber if `trailing = true` and **will not reschedule** another action, in contrast with how `throttle` works(it will subscribe to a newly created inner obs, which depends on the last stored value); an action is scheduled if a new value comes in an there is no action scheduled yet
+
+```ts
+merge(
+  of(1),
+  of(2),
+  of(3).pipe(delay(400)),
+  of(4).pipe(delay(900)),
+  of(5).pipe(delay(600)),
+  new Observable(s => { setTimeout(() => {s.next(6); s.complete()}, 1200); return function callOnUnsub() { } })
+)
+  .pipe(
+    throttleTime(300, undefined, { leading: false, trailing: true, })
+  )
+  .subscribe(console.log)
+
+  /* 
+  leading: true -> 1 3 4
+  trailing: true -> 2 5 6
+  both: true ->  1 2 3 5 4 6
+   */
+```
+
+_Eventually, show the diff between `throttleTime(300) and throttle(() => timer(300))` using the above example_
+
+---
+
 ## Inner Subscriber and Outer Subscriber
 
 * `Inner Subscriber`
@@ -777,6 +813,8 @@ merge(
 ---
 
 ## Questions
+
+* why `complete/error` will reach `SafeSubscriber` and will null out its references, whereas `unsubscribe()` will not 🤔 ❓
 
 * how does the chain behave on
   * `error`
