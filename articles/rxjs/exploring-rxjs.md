@@ -264,6 +264,9 @@ TODO: illustrate 😃
 * `notifyComplete()`
   * emitted by the **inner observable**
 
+* the inner obs' destination is the `{...}Subscriber`'s destination
+  * because if a complete notification comes in, the higher order subscriber will be unsubscribed(its descendant subscribers will be unsubscribed), but the inner obs will not not, as they have to first complete/emit in order to pass along the complete notification, which will possibly cause the entire subscribers chain(parent subscribers) to be unsubscribed
+
 * the **inner** observable is added to the `_subscriptions` arr of outer subscriber's `destination`; when the **inner completes**, it will automatically remove itself from `_subscriptions`
   * this is desired because if the **outer subscriber** completes and there are still **active inner observables**, then the outer one can be unsubscribed from, because if the source completed, there is no way this outer subscriber will receive any other notifications from the source;  
   this does **not** mean that the inner observables must complete, because, apart from their creation, they're **independent from** the **outer observable**, which indicates that they should be kept _alive_, until all of them complete, which will in turn make the entire stream complete, thus unsubscribed.
@@ -836,6 +839,7 @@ merge(
 * internally maintains an `Action` that is scheduled every time an outer value is intercepted; if there is an already scheduled action when such value arrives, it will be cancelled, allowing a new one to be scheduled
 * when an action's callback is invoked(meaning that the scheduled action wasn't cancelled in the meanwhile), it will **send** the last received **value** to the **destination subscriber** and will **NOT** reschedule the action
 * if the source completes, before the action is cancelled, the last stored value will be sent and then the complete notification
+* just as `debounce`, this operator can be associated with `switchMap`
 
 ---
 
@@ -850,6 +854,10 @@ merge(
 ---
 
 ## Questions
+
+* is there a case when the returned value of `call(): Subscription` is not _redundant_? as it's already added as a parent
+
+* `Observable.forEach()`
 
 * what does it mean ? `debounceTime`
   ```ts
@@ -1017,6 +1025,9 @@ merge(
 * illustrate/explain `Observable.pipe(operators, mergeMap(), switchMap()).subscribe()`
 * illustrate/explain `Scheduler`
 * illustrate/explain `unsubscribe()` - the chain 😃
+
+* first linked list(the _build_ phase): `return (source: Observable<T>) => source.lift(new SampleOperator(notifier));`
+* second linked list(the subscribers' one): `.call(parentSubscriber, source)`
 
 * find cases for 🤔
   
