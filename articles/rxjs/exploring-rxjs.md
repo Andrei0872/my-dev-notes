@@ -10,6 +10,24 @@
 * section: `Recreating observables and subscribers chains` 😃
 * show why it is unsubscribed when an error/complete notification occurs
 
+* if `_subscribe` was not provided in the constructor
+  * you can manually set the source: `(new Observable()).source = yourSource` or you could have `class MyObs extends Observable { constructor(mySrc) { super(); this.source = mySrc } }`
+
+  ```ts
+  _subscribe(subscriber: Subscriber<any>): TeardownLogic {
+    const { source } = this;
+    return source && source.subscribe(subscriber);
+  }
+  ```
+
+* the role of the `pipe` method is very important
+  * the obs chain
+    * the `head` is the obs which holds the callback(which can be considered the source of the stream)
+    * the `tail` is the last observable provided in the `pipe`; more specifically, the one which does not represent the source for any other observable
+  * it establishes the relations(connections) between the nodes(the observables), which will eventually be useful when the subscribers chain is created
+  * the `lift` method is what creates a connection between the `source` observable and its `descendant`
+  * the subscribers chain is based on the observable chain
+
 * implements `Subscribable` -> meaning it can be subscribed to
 * `Observe.subscribe()` ->  decides when the `Observable` should become **active**
 
@@ -861,7 +879,100 @@ merge(
 
 * `sampleTime` follows the same approach, except that in this case the notifier is no longer an observable, but a scheduled action; the action, after having its callback invoked, it will re-schedule itself until the outer subscriber(`SampleTimeSubscriber`) completes/errors/unsubscribes; can be thought of as a `setInterval` whose callback function will check if there is a new value stored; if so, it will send it to the parent subscriber
 
---
+---
+
+## Subject
+
+TODO: :D
+* why is it considered to be both an `Observable` and an `Observer` ? 
+
+* what's with `Subject.asObservable()` ?
+  * it will return a **new observable** whose source is the `Subject` itself; what's important to note about this approach is that the `subscriber`(the head of the subscribers chain), will eventually be part of the `Subject`'s list of subscribers(observers);  
+  When the observable resulted from `Subject.asObservable()` is subscribed with the head of the subscribers chain, these lines will be reached, as this observable does **not have** an **operator**(as opposed to those which are created with `Observable.lift()` -> which is what happens inside `pipe()`)
+  ```ts
+  _subscribe(subscriber: Subscriber<any>): TeardownLogic {
+    const { source } = this;
+    return source && source.subscribe(subscriber);
+  }
+  ```
+
+  where `source` in this case points to the `Subject`:
+
+  ```ts
+  asObservable(): Observable<T> {
+    const observable = new Observable<T>();
+    (<any>observable).source = this;
+    return observable;
+  }
+  ```
+
+* diagrams 
+  * sending notification to subscribers ✔️
+  * `Subject.asObservable()` ✔️
+  * `Subject.pipe()` ✔️
+
+* explore these cases! 😃
+  ```ts
+  _subscribe(subscriber: Subscriber<T>): Subscription {
+    if (this.closed) {
+      throw new ObjectUnsubscribedError();
+    } else if (this.hasError) { // errored
+      subscriber.error(this.thrownError);
+      return Subscription.EMPTY;
+    } else if (this.isStopped) { // completed
+      subscriber.complete();
+      return Subscription.EMPTY;
+    } else {
+      this.observers.push(subscriber);
+      return new SubjectSubscription(this, subscriber);
+    }
+  }
+  ```
+
+* inherits from `Observable`, which makes it:
+  * `pipeable` - operators can be added to it; as with `Observable`
+    * with each operator provided in `Subject.pipe()`, a descendant subject is created  
+     more exactly, a descendant subject is an `AnonymousSubject`; `AnonymousSubject` extends the `Subject` because it is not supposed to hold more logic on its own, but to **point** to its source, which is the subject from which it was created;  
+     it extends `Subject` because it has its own implementation of `next`, `error`, `complete`, which all point to the destination(the subject from which it the `AnonymousSubject` was created);
+     additionally, an important trait of `AnonymousSubject` is that it has an `operator` property which maps to the operator that was provided when the `AnonymousSubject` was created
+  * `subscribable` - it can be **subscribed**
+    * `subject.subscribe()` - to an observer is registered
+    * `subject.subscribe(subscriber)` - will return a `SubjectSubscription` instance; with this, when you call `SubjectSubscription.unsubscribe()`, it will remove the `subscriber` associated with it from the `Subject`'s subscribers list
+
+* it can be **unsubscribed**
+
+* it maintains a list of observers(more accurately, `subscribers`)
+  * when a notification(`next`, `error`, `complete`) occurs, it will send it to all of its subscribers; this is why a subscriber must first be registered with `subjectInstance.subscribe(observer)`
+    * if the notification is `error/complete`, the subject won't be able to sent anything else afterwards
+    * it will be marked as `stopped` if a `complete` notification occurs; if you try to register another subscriber after the subject has completed, the subscriber will complete immediately:
+      ```ts
+      else if (this.isStopped) {
+        subscriber.complete();
+        return Subscription.EMPTY;
+      }
+      ``` 
+    * if the subject errors, the `hasError`  will be set to true, therefore when you try to register a subscriber(with `subject.subscribe()`), the subscriber will error immediately, with the error object
+      ```ts
+      else if (this.hasError) {
+        subscriber.error(this.thrownError);
+        return Subscription.EMPTY;
+      }
+      ``` 
+
+* what happens when a `Subject` is unsubscribed ? 
+  * it will null out the subscribers list and will change some flags' value to `true`: 
+   ```ts
+    sbj.unsubscribe();
+    // =====
+    this.isStopped = true;
+    this.closed = true;
+    this.observers = null!;
+    // =====
+
+    sbj.next('hello!'); // 🔥 ERROR
+   ``` 
+
+---
 
 ## Inner Subscriber and Outer Subscriber
 
@@ -874,6 +985,10 @@ merge(
 ---
 
 ## Questions
+
+* how do custom operators fit in? 🤔
+
+* when would `AnonymousSubject.next()/AnonymousSubject._subscribe()` be called ? 🤔
 
 * is there a case when the returned value of `call(): Subscription` is not _redundant_? as it's already added as a parent
 
