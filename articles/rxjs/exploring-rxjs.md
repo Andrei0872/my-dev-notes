@@ -843,6 +843,26 @@ merge(
 
 ---
 
+## sample
+
+* it keeps track of that **last arrived value** and will pass it along when the `notifier$` observable emits/completes
+* if no outer value came in since the last emission and the notifier emits/completes, that value will not be passed along
+
+```ts
+merge(
+  of(1),
+  of(2).pipe(delay(400)),
+  of(3).pipe(delay(901)),
+  of(4).pipe(delay(1000)),
+).pipe(
+  sample(timer(300, 300))
+).subscribe(console.warn) // 1 2
+```
+
+* `sampleTime` follows the same approach, except that in this case the notifier is no longer an observable, but a scheduled action; the action, after having its callback invoked, it will re-schedule itself until the outer subscriber(`SampleTimeSubscriber`) completes/errors/unsubscribes; can be thought of as a `setInterval` whose callback function will check if there is a new value stored; if so, it will send it to the parent subscriber
+
+--
+
 ## Inner Subscriber and Outer Subscriber
 
 * `Inner Subscriber`
