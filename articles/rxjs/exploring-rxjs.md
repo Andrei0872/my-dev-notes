@@ -1016,6 +1016,8 @@ merge(
   }
   ```
 
+* diagram(can extends `Subject`'s one)
+
 ---
 
 ## ReplaySubject
@@ -1053,6 +1055,17 @@ merge(
     ```
   * the `scheduler`
     * if specified, it will use the `ObserveOnSubscriber`, which will **schedule** an **action** for each emitted value; the type of the action depends on the **scheduler** that has been provided to `ReplaySubject`'s constructor
+
+---
+
+## AsyncSubject
+
+* extends `Subject`, which means it has all of its attributes(list of subscribers, can act as an `Observable` and an `Observer`)
+* keeps track of the most recent value and will **send** to its **registered subscribers** when it **completes**s
+* if the subject errors, the error notification will be passed along to its subscribers
+* if the subject **already completed** and another subscriber is about to be registered, it will **not** be **registered** and will be given the latest stored value and the complete notification
+
+* diagram(can extends `Subject`'s one)
 
 ---
 
@@ -1135,6 +1148,8 @@ merge(
 ---
 
 ## To Do
+
+* websockets! 
 
 * schedulers
 
