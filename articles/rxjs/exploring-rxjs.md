@@ -883,8 +883,25 @@ merge(
 
 ## Subject
 
-TODO: :D
 * why is it considered to be both an `Observable` and an `Observer` ? 
+  * it can act as a data producer; all the **registered subscribers** will receive the same data; e.g `subj.next(value)`
+  * it can act as a `subscriber`(`observer`) -> a _sort of_ data consumer, because when it receives data from a child subscriber, it will send it to its registered subscribers; e.g (`src$.subscribe(subj)`)
+  example for diagram (✔️):
+  
+  ```ts
+  const sbj = new Subject<string>()
+
+  // Register subscriber
+  const nextCb = v => console.warn(v);
+  sbj.subscribe(nextCb);
+
+  // Data source
+  const src$ = new Observable(s => s.next('hello'));
+
+  src$.pipe(
+    filter(v => !!v),
+  ).subscribe(sbj);
+  ```
 
 * what's with `Subject.asObservable()` ?
   * it will return a **new observable** whose source is the `Subject` itself; what's important to note about this approach is that the `subscriber`(the head of the subscribers chain), will eventually be part of the `Subject`'s list of subscribers(observers);  
