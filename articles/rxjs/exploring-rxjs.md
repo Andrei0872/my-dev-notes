@@ -902,6 +902,7 @@ merge(
     filter(v => !!v),
   ).subscribe(sbj);
   ```
+  _Note: the diagram fits all the 4 types of subject; what differentiates them is how they handle the process of sending the notifications to their registered subscribers_  
 
 * what's with `Subject.asObservable()` ?
   * it will return a **new observable** whose source is the `Subject` itself; what's important to note about this approach is that the `subscriber`(the head of the subscribers chain), will eventually be part of the `Subject`'s list of subscribers(observers);  
@@ -988,6 +989,32 @@ merge(
 
     sbj.next('hello!'); // 🔥 ERROR
    ``` 
+
+---
+
+## BehaviorSubject
+
+* extends `Subject`, which means it has all of its attributes(list of subscribers, can act as an `Observable` and an `Observer`)
+* keeps track of the latest value sent to its subscribers
+  ```ts
+  // `super.next` - send the value to all the registered subscribers
+  // `this._value = value` - keep track of the latest sent value
+  next(value: T): void {
+    super.next(this._value = value);
+  }
+  ```
+* when a new subscriber is registered, it will send the latest stored value to it
+  ```ts
+  _subscribe(subscriber: Subscriber<T>): Subscription {
+    // `super._subscribe(subscriber)` - register the subscriber
+    const subscription = super._subscribe(subscriber);
+    if (subscription && !(<SubscriptionLike>subscription).closed) {
+      // Send the value to the subscriber right away
+      subscriber.next(this._value);
+    }
+    return subscription;
+  }
+  ```
 
 ---
 
