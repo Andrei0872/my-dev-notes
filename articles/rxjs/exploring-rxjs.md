@@ -1018,6 +1018,44 @@ merge(
 
 ---
 
+## ReplaySubject
+
+* you can specify 
+  * how **many values to keep track of**; when a new subscriber is registered, it will receive the latest N values, where `N` is the `bufferSize`, namely the number of how many values to be tracked
+    * the values stored in a queue so that when the queue's length exceeds the limit imposed by `bufferSize`, it will get rid of the oldest stored value(diagram: ✔️)
+  * how much time a value should be kept in the buffer: `windowTime`
+    example for diagram(✔️)
+    ```ts
+    const sbj = new ReplaySubject(2, 300);
+
+    new Observable(s => {
+      s.next(1);
+      setTimeout(() => { s.next(2); }, 100);
+
+      setTimeout(() => { s.next(3); }, 200);
+
+      setTimeout(() => { s.next(4); }, 400);
+
+      setTimeout(() => { s.next(5); }, 500);
+
+    // timeAxis:0123456789...
+      //        12-|45------------
+      //        |  | -> windowTime = 3units(3 - 0)
+      /*
+        when 4 arrives
+          * 4u - 1u = 3 = 3(windowTime) -> 1 out
+          * 4u - 2u = 2 < 3(windowTime) -> 2 remains
+        when 5 arrives
+          * 5u - 2u = 3 = 3 -> 3 out
+          * 5u - 4u = 1 < 3 -> 4 in
+      */
+    }).subscribe(sbj);
+    ```
+  * the `scheduler`
+    * if specified, it will use the `ObserveOnSubscriber`, which will **schedule** an **action** for each emitted value; the type of the action depends on the **scheduler** that has been provided to `ReplaySubject`'s constructor
+
+---
+
 ## Inner Subscriber and Outer Subscriber
 
 * `Inner Subscriber`
@@ -1097,6 +1135,8 @@ merge(
 ---
 
 ## To Do
+
+* schedulers
 
 * to try :)
   ```ts
