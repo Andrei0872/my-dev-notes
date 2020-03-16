@@ -1069,6 +1069,36 @@ merge(
 
 ---
 
+## observeOn
+
+* every notification(including **error** and **complete**) is turned into an scheduled action
+  * the type of the action depends on the type of the scheduler(defaults to `AsyncScheduler`)
+  * that's also the diff between `delay` and `observeOn`; `delay` won't delay the action, it will immediately pass along the error notification to its destination subscriber
+  
+* takes a second parameter, which indicates how many milliseconds each emission should be emitted
+
+```ts
+const src$ = new Observable(s => {
+  s.next(1);
+}).pipe(observeOn(asyncScheduler, 400));
+
+src$.subscribe(console.log);
+
+setTimeout(() => {
+  console.log('hello!');
+}, 300)
+```
+
+* diagram: ✔️
+
+---
+
+## shareReplay
+
+* before/after an HTTP req
+
+---
+
 ## Inner Subscriber and Outer Subscriber
 
 * `Inner Subscriber`
@@ -1080,6 +1110,10 @@ merge(
 ---
 
 ## Questions
+
+* `pipe()` directly?
+
+* types ! 😃
 
 * how do custom operators fit in? 🤔
 
@@ -1302,3 +1336,5 @@ merge(
 * when creating diagrams: `code` |-> `diagram`
 
 * put operators like `throttle` & `throttleTime` or `debounce` & `debounceTime` in the same section as the difference between `a` and `aTime` is that one makes use of an inner obs and other of a scheduled action
+
+* create a separate section for `rxjs/testing`
