@@ -464,6 +464,8 @@ Note: `concatMap` is `mergeMap` with `concurrent` set to `1`: `mergeMap(projecti
 
 ## Scheduler
 
+* when explaining in detail
+  * illustrate how to iterate over an array using scheduled actions
 * an orchestrator of `actions`(tasks)
 * it has a `flush` method, with the help of which an `action` can be **executed**
 * however, an `Action` _decides_ when it's going to executed by the scheduler
@@ -1095,7 +1097,74 @@ setTimeout(() => {
 
 ## shareReplay
 
+* it's like putting a `ReplaySubject` in front of the data consumers;
+
 * before/after an HTTP req
+
+* if the **source** emits an **error/complete notification**
+  * the `ReplaySubject` will pass along the notification to its registered subscribers, then it will **empty** the list of subscribers
+  * if a new subscriber attempts to register, it will immediately receive the error/complete notification
+
+* `refCount: boolean`
+  * every time the **source** that uses `shareReplay` is subscribed to, a variable (e.g: `subscribersCount`) will be incremented; when it is unsubscribed from, it will be decremented
+  * if `true`: when the source runs out of subscribers(`subscribersCount === 0`), the `ReplaySubject` will be disposed, meaning that if new subscribers register, the **source** will be **subscribed again**
+  * if `false`: when there are no more registered subscribers, the `ReplaySubject` will **not** be **thrown away**, instead it will be there for any new subscribers that are going to register; this means that the **source** will **not** be **resubscribed**, the `ReplaySubject` in use will already have the latests `N` stored values(`N === bufferSize`)
+
+* `bufferSize`, `windowTime`, `scheduler`
+  * parameters for `ReplaySubject` - TODO:(add link)
+
+* without `shareReplay`
+  ```ts
+  const nextCb = v => console.warn(v);
+
+  const src$ = new Observable(s => {
+    console.count('running source cb'); // running source cb: 2
+    s.next(1);
+
+    s.next(2);
+  }).pipe(
+    // shareReplay({
+    //   bufferSize: 2,
+    //   refCount: true,
+    // }),
+  );
+
+  // Subscriber #1
+  const s1 = src$.subscribe(nextCb);
+
+  // Subscriber #2
+  const s2 = src$.subscribe(nextCb);
+  ```
+
+* with `shareReplay`
+  ```ts
+  const nextCb = v => console.warn(v);
+  const src$ = new Observable(s => {
+    console.count('running source cb');
+    s.next(1);
+
+    s.next(2);
+  }).pipe(
+    filter(v => !!v),
+    shareReplay({
+      bufferSize: 2,
+      refCount: false,
+    }),
+  );
+
+  // Subscriber #1
+  const s1 = src$.pipe(filter(v => !!v)).subscribe(nextCb);
+  // console.log(s1);
+  s1.unsubscribe();
+
+  // Subscriber #2
+  const s2 = src$.subscribe(nextCb);
+  ``` 
+
+* diagram: ✔️ + needs a closer look
+  * unsubscription: `refCount` when set to `true` and `false`
+  * `ReplaySubject` as middleman :)
+    * `shareReplay()` will create an observable whose `operator` will be a **closure** -> this is how it keeps track of the current `ReplaySubject` in use
 
 ---
 
