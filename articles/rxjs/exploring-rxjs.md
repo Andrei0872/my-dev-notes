@@ -1259,6 +1259,26 @@ setTimeout(() => {
 
 ## To Do
 
+* illustrate the case when a source has multiple subscribers
+  ```ts
+  const src$ = ...;
+
+  const s1 = src$.pipe(a()).subscribe();
+  const s2 = src$.pipe(b()).subscribe();
+  const s3 = src$.pipe(c()).subscribe();
+  ``` 
+
+  also illustrate the diff between this & `Subject` ! 😃
+
+* take a closer look at some TS nice stuff(e.g: `pipe`)
+
+* why err
+  ```ts
+  const clicks$ = fromEventPattern(
+    handler => document.addEventListener('click', handler),
+  );
+  ``` 
+
 * websockets! 
 
 * schedulers
