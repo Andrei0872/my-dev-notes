@@ -65,3 +65,28 @@
   * action scheduled at every `windowCreationInterval` ms schedules another action that will be closed after `windowTimeSpan`(it is a 1:1 rel. between the action scheduled at every `windowCreationInterval` and the action that it creates)
   * outer value is sent to all the active windows
   * `error`/`complete` notification sent to the windows, then remove window from arr
+
+---
+
+## windowWhen
+
+* accepts a functions that will produce(return) an **observable**
+* can be only **one active window**(`Subject` instance)
+* when the obs. resulted from the factory function `emits`/`completes`
+  * the **current window** will be **closed**(the window will emit a` complete` notification)
+  * the current **observable** will be **unsubscribed** an a **new inner subscriber** will be created, that will inform the outer subscriber(`WindowWhenSubscriber`) the inner obs(created by the factory function) emits
+* the outer value will be sent to the current active window
+* `error`/`complete` notif. from the source
+  * send the notif. through the window
+  * unsubscribe from the inner observable(that one resulted from the factory function)
+  * send the notif. to the destination subscriber
+* diagram
+  * factory
+  * active window sent to the dest. subscriber(`---->`)
+  * when the source emits a value, sent it to the window
+  * when the obs emits/completes
+    * window completes
+    * inner obs. unsubscribe
+    * create new inner obs. & window
+
+---
