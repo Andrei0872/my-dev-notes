@@ -155,7 +155,12 @@ SafeSubscriber.next(v) (2)
 * `unsubscribe()` method
   * not interested anymore in receiving `Observable`'s notifications
   * the `Observable` will stop working(producing anything)
-* `L: 142`: `subscription === this` ❓
+* `L: 142`: `subscription === this`
+  ```ts
+  const s = new Subject();
+
+  s.asObservable().subscribe(console.log);
+  ```
 
 * when does this happen ❓
   
@@ -1179,6 +1184,8 @@ setTimeout(() => {
 ---
 
 ## Questions
+
+* why `takeUntil` should be the last in the chain?
 
 * `pipe()` directly?
 
