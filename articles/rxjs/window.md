@@ -90,3 +90,32 @@
     * create new inner obs. & window
 
 ---
+
+## windowToggle
+
+`windowToggle(openingObs$, (valueOfOpening) => closingObs$)`
+
+[StackBlitz](https://stackblitz.com/edit/windowtoggle?file=index.ts).
+
+* the factory function that creates the `closing observable` can accept that **inner value** that comes from the `opening observable` as an argument
+* the outer value will be sent to all the active windows
+* when `openingObs$` emits
+  * it will create a new window
+  * will use provided **factory function** to create a **closing observable**; the inner value resulted from `openingObs$` will be passed as an argument to the factory function
+  * each **new window** will be **paired** with the **inner subscriber** of the newly created **closing observable**
+* when `closingObs$` `emits`/`completes`
+  * it will be unsubscribed
+  * the window that was paired with its inner subscriber will be closed(will emit a `complete` notification)
+* when `openingObs$` completes -> nothing happens, it simply means that no extra windows can be created
+* if the outer subscriber(`WindowToggleSubscriber`) is unsubscribed, all the stored closing subscriber-window pairs will be iterated through and window will complete and each subscriber will be unsubscribed 
+* when the outer subscriber `errors`/`completes`
+  * the notif. will be sent to all the existing windows
+  * each closing subscriber will be unsubscribed
+
+* diagram
+  * openings obs.
+  * closing obs factory
+  * contexts(array of closing subscriber-window pairs)
+  * active windows sent to the destination subscriber(each with `----->`)
+  * when opening emits -> create pair -> add to contexts -> add `----->`
+  * when closing emits -> remove from pair; remove `----->`
