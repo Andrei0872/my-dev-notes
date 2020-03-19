@@ -119,3 +119,26 @@
   * active windows sent to the destination subscriber(each with `----->`)
   * when opening emits -> create pair -> add to contexts -> add `----->`
   * when closing emits -> remove from pair; remove `----->`
+
+---
+
+## windowCount
+
+`windowCount(windowSize, startWindowEvery = 0)`
+
+* it is similar to `windowTime(windowTimeSpan, windowCreationInterval)`, but instead of specifying time intervals, you specify counters
+* can have **multiple active windows**
+* a window can emit at most `windowSize` items
+* every `startWindowEvery` values, a **new window** will be created
+* an outer value will be sent to all the active values
+
+* diagram (do not need to use real numbers)
+  * active counter
+  * `windowSize`
+  * `startWindowEvery`
+  * show window immediately(`----->`)
+  * when value comes in: increment active counter + send value through window
+  * when `windowSize` is reached: close window(remove arrow)
+  * when `startWindowEvery` is reached: create a new window(add arrow) & emit the current value to it
+
+---
