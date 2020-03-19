@@ -890,6 +890,7 @@ merge(
 
 ## Subject
 
+* an a subscriber's tail(the last destination subscriber) unsubscribes, the subscriber that is part of the `Subject`'s subscribers list will remove itself from it
 * why is it considered to be both an `Observable` and an `Observer` ? 
   * it can act as a data producer; all the **registered subscribers** will receive the same data; e.g `subj.next(value)`
   * it can act as a `subscriber`(`observer`) -> a _sort of_ data consumer, because when it receives data from a child subscriber, it will send it to its registered subscribers; e.g (`src$.subscribe(subj)`)
@@ -1184,6 +1185,17 @@ setTimeout(() => {
 ---
 
 ## Questions
+
+* the diff
+  ```ts
+  const s = new Subject();
+
+  s.pipe(a(), b(), c()).subscribe();
+
+  // VS
+
+  s.asObservable().pipe(a(), b(), c()).subscribe();
+  ``` 
 
 * why `takeUntil` should be the last in the chain?
 
