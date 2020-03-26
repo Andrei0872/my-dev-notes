@@ -18,3 +18,26 @@ zip(
 )
 .subscribe(console.warn)
 ```
+
+## zipWith
+
+```ts
+src$.pipe(
+  a(),
+  zipWith(/* ... */),
+  b(),
+)
+```
+
+* `ZipOperator`'s destination is `bSubscriber`
+* `bSubscriber` is destination for each `ZipBufferIterator`(what's inside `zipWith()`) and for each of their `InnerSubscriber`
+
+```ts
+src$.pipe(
+  zipWith(a$, b$)
+)
+
+// ===
+
+zip(src$, a$, b$);
+```
