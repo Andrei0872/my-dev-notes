@@ -19,6 +19,8 @@ zip(
 .subscribe(console.warn)
 ```
 
+---
+
 ## zipWith
 
 ```ts
@@ -40,4 +42,23 @@ src$.pipe(
 // ===
 
 zip(src$, a$, b$);
+```
+
+---
+
+## zipAll
+
+* must make sure the source completes ❗️
+
+```ts
+new Observable(s => {
+  s.next(of(1));
+
+  s.next(of(2));
+
+  // Nothing will happen without this
+  s.complete();
+}).pipe(
+  zipAll()
+).subscribe(console.log);
 ```
