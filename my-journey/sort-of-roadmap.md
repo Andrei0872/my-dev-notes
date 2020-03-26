@@ -27,5 +27,6 @@
 
   * rxjs marble testing
     * explore `ngrx/effects` & `ngrx/store` tests
+    * `jasmine-marbles`
 
 * angular schematics
