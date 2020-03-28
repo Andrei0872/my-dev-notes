@@ -84,4 +84,32 @@ new Observable(s => {
 
 * differs from `zip` in the way tracked `observable`'s values are used
   * `zip`: each inner obs has its own buffer
-  * `combineLatest`: only the latest emitted value is stored & eventually emitted to the dest subscriber
+  * `combineLatest`: only the **last emitted value** is **stored** & eventually emitted to the dest subscriber
+
+### combineLatestWith
+
+* `combineLatestWith(observables) === from([source, ...observables])`
+
+### combineAll
+
+`combineAll(projectFn)`
+
+* `from(...)` is no longer used
+* it only applies the `CombineLatestOperator(resultSelector?)` to the source -> in order for the observables(/promises/iterables) emitted from source to be subscribed, the **source must complete**
+
+```ts
+new Observable(s => {
+  s.next(of(1));
+  s.next(of(1, 2));
+
+  setTimeout(() => {
+    s.next(of(10));
+  }, 500)
+
+  setTimeout(() => {
+    s.complete();
+  }, 700);
+}).pipe(
+  combineAll()
+).subscribe(console.log)
+```
