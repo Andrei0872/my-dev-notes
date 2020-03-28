@@ -113,3 +113,46 @@ new Observable(s => {
   combineAll()
 ).subscribe(console.log)
 ```
+
+---
+
+## forkJoin
+
+_Note: `Subscribable` = `Observable` | `Iterable` | `Array` | `Promise`_
+
+`forkJoin(arrayOfSubscribables | { [k]: Subscribable })`(_non deprecated_)
+
+* all the observables must complete in order for the `ForkJoinSubscriber` to emit at least the `complete` notification
+  * otherwise, no `value`/`complete notification` will be sent to the destination subscriber
+* assuming all the observables completed
+  * if **at least one** did not emit any values, the destination subscriber will only receive the `complete` notification
+  ```ts
+  if (completed === len || !hasValue) {
+    if (emitted === len) {
+      subscriber.next(keys ?
+        keys.reduce((result, key, i) => ((result as any)[key] = values[i], result), {}) :
+        values);
+    }
+    subscriber.complete();
+  }
+  ```
+  * in order to send an array with the latest arrived values of each observable, then each obs must emit at least once
+  ```ts
+  next: value => {
+    if (!hasValue) {
+      hasValue = true;
+      emitted++;
+    }
+    // Storing the last arrived value
+    values[i] = value;
+  },
+  ```
+
+  after the array has been sent, it would then emit a `complete` notification
+
+```ts
+forkJoin([
+  of(1), of(2), of(3), /* EMPTY, */ /* NEVER */
+])
+  .subscribe(console.log, null, () => console.warn('COMPLETED'))
+```
