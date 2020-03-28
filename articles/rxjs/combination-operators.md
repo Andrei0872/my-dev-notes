@@ -6,6 +6,16 @@
 * the observables store their inner values; when all have emitted at least once, the outer subscriber would receive an array composed of the **oldest values** of each observable
 * when one observable **completes**
   * if its **buffer**(where inner values are stored) is **not empty**, it becomes **inactive**; if there are **no more active** observables, the **outer subscriber** will `complete` as well
+
+  ```ts
+  notifyInactive() {
+    this.active--;
+    if (this.active === 0) {
+      this.destination.complete();
+    }
+  }
+  ```
+
   * if the **buffer** is **empty**, the outer subscriber will emit the `complete` notification to its destination subscriber
 * the input can be an `observable` or any other `iterable`(array, custom iterable structure)
 
@@ -19,9 +29,7 @@ zip(
 .subscribe(console.warn)
 ```
 
----
-
-## zipWith
+### zipWith
 
 ```ts
 src$.pipe(
@@ -44,9 +52,7 @@ src$.pipe(
 zip(src$, a$, b$);
 ```
 
----
-
-## zipAll
+### zipAll
 
 * must make sure the source completes ❗️
 
@@ -62,3 +68,20 @@ new Observable(s => {
   zipAll()
 ).subscribe(console.log);
 ```
+
+---
+
+## combineLatest
+
+* `combineLatest(observables)` === `from(observables).lift(new CombineLatestOperator(resultSelector?))`
+* will keep track of `N` observables and values, where `N = observables.length`
+* will emit an array of values collected from all the stored `observables`; the array will be emitted to the destination subscriber when `toRespond === 0`, where `toRespond` **decreases** when one observable(which is being tracked) **emits** for the **first time**; thus, `toRespond === 0` when all the observables have **emitted** at **least once**
+* if one tracked obs `completes`
+  * if it is the only active observable left, the `complete notification` will be sent to the destination subscriber
+  * its **last emitted value** will **not** be **removed**
+* if one tracked obs `errors`
+  * the `error notif` will be passed along to the destination subscriber
+
+* differs from `zip` in the way tracked `observable`'s values are used
+  * `zip`: each inner obs has its own buffer
+  * `combineLatest`: only the latest emitted value is stored & eventually emitted to the dest subscriber
