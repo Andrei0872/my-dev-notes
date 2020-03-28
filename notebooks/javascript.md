@@ -14,6 +14,7 @@
 - [Blob](#blob)
 - [:sparkles:Cool Stuff :sparkles:](#cool-stuff)
     - [Replacing Strings](#replacing-strings)
+    - [Verifying if an object is a literal object](#verifying-if-an-object-is-a-literal-object)
 - [DOM](#dom)
     - [Script tags](#script-tags)
 - [Closures](#closures)
@@ -1396,6 +1397,13 @@ s.replace('name', '$`[$`]'); // "my my [my ] is andrei"
 const s = 'my name is andrei';
 
 s.replace('name', "$' *$'*"); // "my  is andrei * is andrei* is andrei"
+```
+
+### Verifying if an object is a literal object
+
+```ts
+const o = { a: 'a', b: 'b', };
+Object.getPrototypeOf(o) === Object.prototype // true`
 ```
 
 ---
