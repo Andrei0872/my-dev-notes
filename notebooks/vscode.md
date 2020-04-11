@@ -8,6 +8,7 @@
     - [Trim whitespace from selection](#trim-whitespace-from-selection)
   - [Keybindings](#keybindings)
   - [Debugging](#debugging)
+    - [Knowledge](#knowledge)
     - [Debugging TS](#debugging-ts)
     - [Debugging TS with tests](#debugging-ts-with-tests)
   - [Snippets](#snippets)
@@ -122,6 +123,11 @@ CTRL + K + CTRL + X
 ---
 
 ## Debugging
+
+### Knowledge
+
+* `runtimeArgs` - arguments passed to the **executable** that is used to run the program
+* `args` - arguments passed to the **program you want to run**, not to its executable
 
 ### Debugging TS
 
