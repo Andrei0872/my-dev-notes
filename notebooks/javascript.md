@@ -19,6 +19,7 @@
     - [Script tags](#script-tags)
 - [Closures](#closures)
 - [Scope](#scope)
+- [ES Modules](#es-modules)
 
 ## Concepts
 
@@ -1556,3 +1557,29 @@ obj.foo();
 #### Runtime-augmented scope
 
 * an **activation frame** is **not statically** determined and can be **mutated** by the **callee** itself
+
+---
+
+## ES Modules
+
+ES Modules export **live bindings**, **not values**, meaning that the **values** **can be changed** after they've been exports
+
+```js
+// foo.js
+export let counter = 0;
+
+export function increment () {
+  counter++;
+}
+```
+
+```js
+// main.js
+import { counter as cnt, increment } from './foo';
+
+console.log(cnt); // 0
+increment();
+console.log(cnt); // 1
+
+cnt++; // 🔥 Error
+```
