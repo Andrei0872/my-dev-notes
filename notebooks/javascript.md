@@ -1562,7 +1562,7 @@ obj.foo();
 
 ## ES Modules
 
-ES Modules export **live bindings**, **not values**, meaning that the **values** **can be changed** after they've been exports
+ES Modules export **live bindings**, **not values**, meaning that the **values** **can be changed** after they've been exported:
 
 ```js
 // foo.js
@@ -1582,4 +1582,27 @@ increment();
 console.log(cnt); // 1
 
 cnt++; // 🔥 Error
+```
+
+Meanwhile, when using `CommonJS` modules:
+
+```js
+// foo.js
+let counter = 0;
+
+module.exports.counter = counter;
+
+module.exports.increment = () => counter++;
+```
+
+```js
+// main.js
+let { counter, increment } = require('./foo');
+
+console.log(counter); // 0
+increment();
+console.log(counter); // 0
+
+counter += 10; // Everything fine (as long as `let` is used)
+console.log(counter); // 10
 ```
