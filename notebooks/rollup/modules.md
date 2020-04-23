@@ -62,6 +62,20 @@
 * holds a scope: `ModuleScope`(child scope); it has a local `this`
   * a new variable is added when a `module scope` is created
 
+* `importDescriptions[k] = v`; 
+  `k` - the `local` name of the import
+    ```ts
+    import foo from './foo'; // specifier.local.name = `k` = `foo`
+    import { foo as test } from './foo'; // specifier.local.name = `k` = `test`; specifier.local.imported = 'foo'
+    ```
+  `v` - specifier `{ module, name: 'default' '*', '{ thisName }', source: string, start: number }`
+  
+  filled by `addImport`; in `addModulesToImportDescriptions`, `resolvedIds` are _connected_ with `importDescriptions`
+
+  ❓ `addModulesToImportDescriptions`- where the module from `specifier` is `filled in`(`module: null as any, // filled in later`)
+
+* `Module.traceVariable()` ?
+
 ### Variable
 
 * what is a `declarator`
