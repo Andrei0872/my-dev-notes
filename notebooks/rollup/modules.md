@@ -40,13 +40,15 @@
     ```ts
     this.astContext = { /* ... */ }
     ```
-
+  * the (dynamic/not dynamic)dependencies are fetched: the modules(`Module.sources` -> populated in `addImport`) that the current module depends on will be resolved
 
 * resolving dependencies: `resolvedIds`
 
 ## Internal Modules
 
 ## External Modules
+
+* you can provide an array of `RegExp`/ids(full paths maybe) for the `InputOptions.external` option
 
 ## Other relevant entities
 
@@ -93,3 +95,5 @@
 * `InputOptions.strictDeprecations` - make errors out of warnings
 * `InputOptions.{acornInjectPlugins, acorn}` - custom options for `acorn`
 * `markPureCallExpressions`
+* dynamic dependencies
+* manual chunks
