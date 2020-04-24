@@ -31,3 +31,5 @@
   expectation: if 2 configs are provided, then `config1` will be loaded after `config2` finishes
 
 * `warnForMissingExports` - `importDescriptions`
+
+* what does it mean for a variable to _have effects_
