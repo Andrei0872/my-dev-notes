@@ -49,6 +49,7 @@
 ## External Modules
 
 * you can provide an array of `RegExp`/ids(full paths maybe) for the `InputOptions.external` option
+* it is a module that does not have other dependencies 
 
 ## Other relevant entities
 
@@ -97,3 +98,7 @@
 * `markPureCallExpressions`
 * dynamic dependencies
 * manual chunks
+* `dynamicallyImportedBy`
+* `EntryModule`(provided via **input option**) vs a `Module`(a dependency)
+* how are circular dependencies avoided(`barrel` file ❓)
+* `dynamicImports`
