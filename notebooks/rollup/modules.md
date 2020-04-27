@@ -41,8 +41,13 @@
     this.astContext = { /* ... */ }
     ```
   * the (dynamic/not dynamic)dependencies are fetched: the modules(`Module.sources` -> populated in `addImport`) that the current module depends on will be resolved
+  * during this phase, it also adds variables to their scope -> a tree of scopes
 
 * resolving dependencies: `resolvedIds`
+* linking dependencies & determining circular dependencies
+* `ast.bind`
+
+
 
 ## Internal Modules
 
@@ -102,3 +107,12 @@
 * `EntryModule`(provided via **input option**) vs a `Module`(a dependency)
 * how are circular dependencies avoided(`barrel` file ❓)
 * `dynamicImports`
+* `getPathIfNotComputed`
+  ```ts
+  if (object instanceof Identifier) {} // **console**.log();
+  if (object instanceof MemberExpression) {} // a.b().c()
+  ``` 
+* what kind of expression is `**foo()**.log()` ?
+* `MemberExpression` -> `bind()` -> `if (baseVariable && baseVariable.isNamespace)`
+  -> `getPropertyKey()` `this.propertyKey === null` ? `foo['test']()`
+* `CallExpression` -> `bind()`-> `if (this.callee instanceof Identifier)` foo()
