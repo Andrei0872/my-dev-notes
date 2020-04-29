@@ -82,7 +82,18 @@
 
   ❓ `addModulesToImportDescriptions`- where the module from `specifier` is `filled in`(`module: null as any, // filled in later`)
 
-* `Module.traceVariable()` ?
+* `Module.traceVariable()`
+  `if (name in this.importDescriptions) {}`: during _binding phase_, when the `callee` of the `CallExpression` is an `identifier`(e.g: `foo()`); this is going to set the variable
+
+  a variable can either be in this **module's scope**, on it is **imported from another module**(calling `otherModule.getVariableForExportName`)
+
+* `Module.getVariableForExportName()`
+  * invoked when a dependant module calls for variables that are not declared in the its(dependant's) scope;
+  * checks the local variables; then `export { var } from '...'`; then the variables exported by this module(e.g: `export const foo = 123;`, `export default () => {}`); if still not found, it will try to find it by recursively looking through the `export *` modules ⬇️
+
+  `getVariableForExportNameRecursive()`
+    * search a variable name through `export *` modules(which are kept in `this.exportAllModules`)
+
 
 ### Variable
 
@@ -116,3 +127,4 @@
 * `MemberExpression` -> `bind()` -> `if (baseVariable && baseVariable.isNamespace)`
   -> `getPropertyKey()` `this.propertyKey === null` ? `foo['test']()`
 * `CallExpression` -> `bind()`-> `if (this.callee instanceof Identifier)` foo()
+* `export *` / `import *`
