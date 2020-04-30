@@ -60,6 +60,8 @@
 
 ### Graph
 
+* `includeStatements` > `module.preserveSignature` ❓
+
 ### ModuleLoader
 
 * held by: `Graph`
@@ -94,10 +96,21 @@
   `getVariableForExportNameRecursive()`
     * search a variable name through `export *` modules(which are kept in `this.exportAllModules`)
 
+* `brokenFlow` ❓
 
 ### Variable
 
 * what is a `declarator`
+* `hasEffectsWhenAccessedAtPath` ❓
+* `init`; e.g `ExportDefaultDeclaration` -> `init` = `ExportDefaultDeclaration.declaration`(which can be `ArrowFunctionExpression`)
+
+#### Global Variable
+
+```ts
+function hasEffectsWhenCalledAtPath(path: ObjectPath) {
+  return !isPureGlobal([this.name, ...path]); // !false e.g `console.log`; `log` is not `pure`
+} 
+```
 
 ### AST node
 
