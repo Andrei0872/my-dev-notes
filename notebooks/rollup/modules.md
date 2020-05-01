@@ -47,6 +47,21 @@
 * linking dependencies & determining circular dependencies
 * `ast.bind`
 
+* tree-shaking(_inclusion_) phase; the relevant **nodes** are included; 
+  ```ts
+  import obj from '...';
+  import { fn1, fn2 } from '...';
+
+  obj.prop1(); // `obj.prop2` not used
+
+  fn1(); // `fn2` not used
+  ```
+
+  * how are dynamic dependencies handle (e.g dynamic `import`)
+  * ❓ explore why tree-shaking is _not possible_ when dealing with objects, but possible when dealing with functions; e.g try
+  * when a prop/method is not removed from an object after tree-shaking phase ❓
+  * `needsTreeshakingPass` - `true` when a new variable gets included; ensures that the trees are traversed one more time to make sure everything is included
+
 
 
 ## Internal Modules
@@ -103,6 +118,12 @@
 * what is a `declarator`
 * `hasEffectsWhenAccessedAtPath` ❓
 * `init`; e.g `ExportDefaultDeclaration` -> `init` = `ExportDefaultDeclaration.declaration`(which can be `ArrowFunctionExpression`)
+* each identifier corresponds with a `variable` ❓
+  ```ts
+  import foo from './test';
+  
+  foo(); // `foo` identifier holds the `ExportDefaultVariable` from `./test`
+  ``` 
 
 #### Global Variable
 
@@ -141,3 +162,4 @@ function hasEffectsWhenCalledAtPath(path: ObjectPath) {
   -> `getPropertyKey()` `this.propertyKey === null` ? `foo['test']()`
 * `CallExpression` -> `bind()`-> `if (this.callee instanceof Identifier)` foo()
 * `export *` / `import *`
+* `ParameterScope` > `includeCallArguments`
