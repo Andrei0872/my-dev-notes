@@ -62,7 +62,18 @@
   * when a prop/method is not removed from an object after tree-shaking phase ❓
   * `needsTreeshakingPass` - `true` when a new variable gets included; ensures that the trees are traversed one more time to make sure everything is included
 
+* chunks creation
+  * analyzing the module graph:
+    * `analyzeModuleGraph`: transitive dependencies; `dynamicImports` are treated as `entry modules`
+    * getting relevant dependencies: `imports`; 
+    * `getDependenciesToBeIncluded`: why exports are considered `relevant dependencies` if: `this.isEntryPoint || this.dynamicallyImportedBy.length > 0 || this.graph.preserveModules`
+    * `dependentEntryPointsByModule: Map<K, V>`: `K` - the dependency; `V` - the module which depends on that dependency
+      ```ts
+      // main.js
+      import foo from './foo';
 
+      // dependentEntryPointsByModule = { fooModule: [mainModule] }
+      ``` 
 
 ## Internal Modules
 
@@ -163,3 +174,8 @@ function hasEffectsWhenCalledAtPath(path: ObjectPath) {
 * `CallExpression` -> `bind()`-> `if (this.callee instanceof Identifier)` foo()
 * `export *` / `import *`
 * `ParameterScope` > `includeCallArguments`
+* `inlineDynamicImports`
+* circular dep
+* tree shaking
+* dynamic imports
+* manual chunks: `assignEntryToStaticDependencies`
