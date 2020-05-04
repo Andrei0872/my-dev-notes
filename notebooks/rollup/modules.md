@@ -74,6 +74,9 @@
 
       // dependentEntryPointsByModule = { fooModule: [mainModule] }
       ``` 
+  * `getDependenciesToBeIncluded` where transitive dependencies are resolved ! 😃
+
+* `module.userChunkNames.add(name);`; `module.chunkFileNames.add(fileName);` ❓ 
 
 ## Internal Modules
 
@@ -136,6 +139,8 @@
   foo(); // `foo` identifier holds the `ExportDefaultVariable` from `./test`
   ``` 
 
+* `alwaysRendered`
+
 #### Global Variable
 
 ```ts
@@ -147,6 +152,15 @@ function hasEffectsWhenCalledAtPath(path: ObjectPath) {
 ### AST node
 
 * has a ref to its `parent`, the module's scope(`child scope`)
+
+### Chunk
+
+* `link()`
+  * for each dependency of each of the **chunk's module**, check if the dep should be added to the current **chunk's dependencies**(yes, if the dep's chunk is not identical with the current one / the dep is an external module(e.g a `JSON` file))
+  * setting the `exports` and `imports` for this current chunk ❓
+
+* `canModuleBeFacade` ❓
+* what are facades `generateFacades`
 
 ## To Try
 
