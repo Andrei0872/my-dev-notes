@@ -1,5 +1,18 @@
 # Modules
 
+## Phases
+
+### Bundle creation
+
+* modules are parsed: 
+* chunks are created
+
+### Bundle generation
+
+
+
+---
+
 ## Bundle Creation
 
 * firstly, the bundle is created
@@ -153,6 +166,22 @@ function hasEffectsWhenCalledAtPath(path: ObjectPath) {
 
 * has a ref to its `parent`, the module's scope(`child scope`)
 
+* `VariableDeclaration`
+  ```
+    VD { declarations: [VariableDeclarator] }
+
+    VariableDeclarator { id: Identifier, init: Literal | ArrayExpression }
+  ```
+
+  when initialized, it will add the `declarations` to the current scope(e.g module scope, block scope)
+  if `id === Identifier`: `id.declare`;
+  
+
+* `ArrayExpression`
+  ```
+  AE { elements: [Identifier | Literal] }
+  ```
+
 ### Chunk
 
 * `link()`
@@ -161,6 +190,15 @@ function hasEffectsWhenCalledAtPath(path: ObjectPath) {
 
 * `canModuleBeFacade` ❓
 * what are facades `generateFacades`
+* what are the dependencies of a chunk
+
+---
+
+## Things to cover separately
+
+* `MagicString` - linked lists :)
+
+---
 
 ## To Try
 
@@ -190,6 +228,11 @@ function hasEffectsWhenCalledAtPath(path: ObjectPath) {
 * `ParameterScope` > `includeCallArguments`
 * `inlineDynamicImports`
 * circular dep
-* tree shaking
+* tree shaking: `renderStatementList` -> `treeshakeNode`
 * dynamic imports
 * manual chunks: `assignEntryToStaticDependencies`
+* `const foo = () => {}`
+* `ExportDefaultDeclaration` > `this.variable.getOriginalVariable() !== this.variable`
+* `inputOptions.input` as array
+* when providing `inputOptions.input`, you can also provide an object: `{ name: value }`
+* `InputOptions.cache` - speed up builds in **watch mode**
