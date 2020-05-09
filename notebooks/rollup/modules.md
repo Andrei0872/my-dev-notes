@@ -170,7 +170,7 @@ function hasEffectsWhenCalledAtPath(path: ObjectPath) {
   ```
     VD { declarations: [VariableDeclarator] }
 
-    VariableDeclarator { id: Identifier, init: Literal | ArrayExpression }
+    VariableDeclarator { id: Identifier | ArrayPattern, init: Literal | ArrayExpression }
   ```
 
   when initialized, it will add the `declarations` to the current scope(e.g module scope, block scope)
@@ -181,6 +181,16 @@ function hasEffectsWhenCalledAtPath(path: ObjectPath) {
   ```
   AE { elements: [Identifier | Literal] }
   ```
+
+* ArrayPattern
+  `const [a, b, c] = ...`;
+
+* AssignmentPattern vs AssignmentExpression
+  AssignmentExpression: `a = 123`;
+  AssignmentPattern: `const { a: b = 123 } = ...`; `b = 123`; the `left` node will be added to the (closest ?) scope; `(a = 19) => {}`
+
+* ArrowFunctionExpression
+  when initialized: the params are declared(added to the scope - `ReturnScope`) and their `alwaysRendered` prop is set to `true`
 
 ### Chunk
 
