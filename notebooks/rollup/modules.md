@@ -192,6 +192,29 @@ function hasEffectsWhenCalledAtPath(path: ObjectPath) {
 * ArrowFunctionExpression
   when initialized: the params are declared(added to the scope - `ReturnScope`) and their `alwaysRendered` prop is set to `true`
 
+* BlockStatement: will not create a `BlockScope` if it's the body of a `function/arrow function`
+
+* ClassDeclaration
+  { body: ClassBody; id: Identifier }
+  on init, add the name of the class(`Identifier`) to the module scope
+  * ClassBody - on init, store the constructor separately
+
+* ExportAllDeclaration
+  `exported === null`: `export * from 'foo'`;
+    the source(`foo`) will be added to `Module.sources`
+  `exported !== null`: `export * as test from 'foo';`
+  ```ts
+  Module.reexportDescriptions[test] = { source, module, localName: '*' }
+  ```
+
+* ExportDefaultDeclaration
+  an `ExportDefaultVariable` will be created and then added to the module's scope
+  ```ts
+  Module.exports.default = { identifier: IdentifierOfTheExported, localName: 'default' }
+  ```
+
+  `ExportDefaultVariable`: `export default () => {}`; `variable.declarator` = ExportDefaultDeclaration; `variable.init` = ArrowFunctionExpression
+
 ### Chunk
 
 * `link()`
