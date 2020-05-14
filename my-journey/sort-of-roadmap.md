@@ -6,5 +6,15 @@
     * `jasmine-marbles`
 
 * how does a module bundler works ?
+  * rollup
 
-* angular schematics
+* angular 
+  * schematics
+  * builders
+  * router
+  * internals
+  * material
+
+* nest.js
+* express
+* socket.io
