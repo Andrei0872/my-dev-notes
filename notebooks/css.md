@@ -7,16 +7,16 @@
       - [layout](#layout)
       - [paint](#paint)
       - [compositing](#compositing)
-    - [@import vs &lt;link&gt;](#import-vs-ltlinkgt)
+    - [`@import` vs `<link>`](#import-vs-link)
     - [extrinsic vs intrinsic dimensions](#extrinsic-vs-intrinsic-dimensions)
     - [stacking context](#stacking-context)
-    - [z-index](#z-index)
+    - [`z-index`](#z-index)
     - [replaced element](#replaced-element)
   - [Properties](#properties)
-    - [display](#display)
-    - [visibility](#visibility)
-    - [width](#width)
-    - [backdrop-filter](#backdrop-filter)
+    - [`display`](#display)
+    - [`visibility`](#visibility)
+    - [`width`](#width)
+    - [`backdrop-filter`](#backdrop-filter)
   - [Tricks](#tricks)
     - [Triangle(Arrow)](#trianglearrow)
     - [Checking if an input is empty with CSS](#checking-if-an-input-is-empty-with-css)
@@ -31,15 +31,16 @@
     - [Specificity](#specificity)
       - [Order of priority](#order-of-priority)
   - [CSS Grid](#css-grid)
-    - [fr and auto](#fr-and-auto)
-      - [auto](#auto)
-      - [fr](#fr)
-      - [justify-self vs justify-content vs justify-items](#justify-self-vs-justify-content-vs-justify-items)
+    - [`fr` and `auto`](#fr-and-auto)
+      - [`auto`](#auto)
+      - [`fr`](#fr)
+      - [`justify-self` vs `justify-content` vs `justify-items`](#justify-self-vs-justify-content-vs-justify-items)
   - [Flexbox](#flexbox)
   - [SCSS](#scss)
     - [mixin vs placeholder](#mixin-vs-placeholder)
+    - [box-shadow: list()](#box-shadow-list)
   - [Animations](#animations)
-    - [@keyframes](#keyframes)
+    - [`@keyframes`](#keyframes)
 
 ## Knowledge
 
@@ -383,6 +384,8 @@ __Analogy for `align-{self, content, items}`, but for `rows`__
 
 ## SCSS
 
+* `random() * 1vmin`
+
 ### mixin vs placeholder
 
 * **mixin**: will apply the same set of styles to each selector **individually**, **even if** **multiple selectors** use the **exact same set of styles**
@@ -450,6 +453,18 @@ __Analogy for `align-{self, content, items}`, but for `rows`__
 }
 ```
 </details>
+
+### box-shadow: list()
+
+[*Source*](https://codepen.io/davidkpiano/pen/55cb38a26b9166c41017c6512ea00209)
+
+```scss
+$shadows: ();
+@for $i from 1 through 50 {
+  $shadows: append($shadows, random(90) * 1vmin random(50) * 1vmin 0 white, comma);
+}
+box-shadow: $shadows;
+```
 
 ---
 
