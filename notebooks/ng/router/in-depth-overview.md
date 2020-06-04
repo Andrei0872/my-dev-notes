@@ -18,8 +18,6 @@
   }
   ```
 
-WIP: https://stackblitz.com/edit/exp-routing-apply-redirects-phase?file=src%2Fapp%2Fapp.module.ts
-
 ## Getting to know the `UrlTree`
 
 * introduce `UrlParser`
@@ -124,3 +122,34 @@ WIP: https://stackblitz.com/edit/exp-routing-apply-redirects-phase?file=src%2Fap
   ```ts
   { path, children: [ { path, children: [ { path } ] } ]}
   ```
+* the `data`, `resolve` and `params` properties are inherited(`paramsInheritanceStrategy`)
+  * when `emptyOnly` is used, a route will inherit the above mentioned if
+    the current route has an **empty path**(`path: ''`)
+    ```ts
+    {
+      path: 'foo/:id',
+      component: FooComponent,
+      children: [{ path: '', component: BarComponent }] // { params: { id: X } } will be available in this route's snapshot
+    }
+    ```
+    or the parent route is componentless(e.g when using `loadChildren`)
+    ```ts
+    // main-routing.module.ts
+    {
+      path: 'foo/:id',
+      loadChildren: () => import(/* ... */),
+    }
+
+    // a-routing.module.ts
+    {
+      path: 'test',
+      component: TestComponent // { params: { id: X } } will be available here
+    }
+    ```
+  * when `always` is used, it will inherit everything from the `ActivatedRouteSnapshot` root
+
+* cannot access `ActivatedRouteSnapshot` because the `ROUTE_PROVIDERS` are provided when calling `forRoot`; however, it can be access through `ActivatedRoute.snapshot`
+
+* https://stackblitz.com/edit/exp-routing-apply-recognize-phase?file=src%2Fapp%2Fcomponents%2Fdefault.component.ts
+* TODO: do not forget about diagram on paper
+* when sending **segment parameters**(`;k=v`), they will be found in `ActivatedRouteSnapshot.params` only if the segment they are attached to is that **last consumed one** (example in SB)
