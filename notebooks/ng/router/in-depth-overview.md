@@ -153,3 +153,62 @@
 * https://stackblitz.com/edit/exp-routing-apply-recognize-phase?file=src%2Fapp%2Fcomponents%2Fdefault.component.ts
 * TODO: do not forget about diagram on paper
 * when sending **segment parameters**(`;k=v`), they will be found in `ActivatedRouteSnapshot.params` only if the segment they are attached to is that **last consumed one** (example in SB)
+
+### Preactivation (retrieving the guards)
+
+* https://stackblitz.com/edit/routing-preactivation-diff-trees?file=src%2Fapp%2Ffoo%2Ffoo.module.ts
+
+* collecting `CanActivate` & `CanDeactivate` guards
+* comparing 2 trees: the current `ActivateRouteSnapshot` tree and the future `ActivateRouteSnapshot` tree
+* `Route.runGuardsAndResolvers` -> `shouldRunGuardsAndResolvers`: defines when guards and resolvers should be run
+  todo: explain other options as well :)
+
+```ts
+[
+  { // (1)
+    path: 'foo/:id',
+    loadChildren: () => import('./foo/foo.module').then(m => m.FooModule)
+  }
+]
+
+// foo.module.ts
+[
+ { // (2)
+    path: 'a',
+    component: AComponent,
+  },
+  { // (3)
+    path: 'b',
+    component: BComponent,
+    outlet: 'named',
+  },
+  { // (4)
+    path: 'c',
+    component: CComponent,
+  },
+]
+```
+
+Issued URL: 
+
+```typescript
+this.router.navigateByUlr('foo/123/(a//named:b)');
+```
+
+```html
+<button [routerLink]="['foo/123/', { outlets: { primary: 'a', named: 'b' } }]">foo/123/(a//named:b)</button>
+```
+
+RouterStateSnapshot tree
+```
+(0) - Root
+
+      (0)              (0)
+       |                |
+      (1)              (1)
+      / \              / \
+    (2) (3)          (2) (4)
+
+canActivateChecks: [(4)]
+canDeactivateChecks: [(3)]
+```
