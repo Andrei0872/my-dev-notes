@@ -212,3 +212,25 @@ RouterStateSnapshot tree
 canActivateChecks: [(4)]
 canDeactivateChecks: [(3)]
 ```
+
+### Running Guards
+
+* `canActivate` & `canDeactivate` guards are run here
+* if one guard returns a `UrlTree`, a redirect will happen
+* if at least one `canActivate`(`canActivateChild` (?)) guard returns `false`, the entire navigation will be cancelled
+* `canActivateChild` are run before `canActivate` guards and if at least one returns `false`, the `canActivate` ones won't be run anymore & the current navigation will be cancelled
+* `canActivateChild`
+  * https://stackblitz.com/edit/routing-can-activate-child?file=src%2Fapp%2Ffoochild.guard.ts
+  ```
+        APP
+         |
+         A  <- canActivateChild
+        / \
+       B   C
+  ```
+  * `canActivateChild` will be run **twice**, once for each child
+  * given a node `A`, when reached, it will call all the `canActivateChild` guards from its ancestors: https://stackblitz.com/edit/routing-can-activate-child-all-ancestors?file=src%2Fapp%2Ffoo%2Ffoo.module.ts
+* `prioritizedGuardValue`
+  the problem it solves: you have a list of `N` observables and when any of them emits any other value than `true`, you want to stop everything(e.g `complete`) and pass along that value
+
+  Concretely, you have `N` `canActivate` guards and you want to subscribe to all of them at the same time, but if the third one returns `false`, then everything should stop there, as what other observables emit is irrelevant, as the `false` value will result in cancelling the current navigation.
