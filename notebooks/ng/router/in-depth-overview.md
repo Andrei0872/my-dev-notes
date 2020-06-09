@@ -234,3 +234,10 @@ canDeactivateChecks: [(3)]
   the problem it solves: you have a list of `N` observables and when any of them emits any other value than `true`, you want to stop everything(e.g `complete`) and pass along that value
 
   Concretely, you have `N` `canActivate` guards and you want to subscribe to all of them at the same time, but if the third one returns `false`, then everything should stop there, as what other observables emit is irrelevant, as the `false` value will result in cancelling the current navigation.
+
+### Running Resolvers
+
+* https://stackblitz.com/edit/routing-resolvers?file=src%2Fapp%2Fapp.module.ts
+* the resolvers will be run in parallel
+* each resolver **must complete**
+* if at least one resolver completes, but does not emit a value -> `NavigationCancel`; however, only the `RouterEvent` will be emitted, but the navigation itself will continue
