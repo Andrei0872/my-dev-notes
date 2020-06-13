@@ -33,6 +33,8 @@
 
 ## ActivatedRouteSnapshot and ActivatedRoute
 
+* `ActivatedRouteSnapshot` plays an important role when using `RouteReuseStrategy`
+
 ---
 
 ## Route Guards
@@ -241,3 +243,30 @@ canDeactivateChecks: [(3)]
 * the resolvers will be run in parallel
 * each resolver **must complete**
 * if at least one resolver completes, but does not emit a value -> `NavigationCancel`; however, only the `RouterEvent` will be emitted, but the navigation itself will continue
+
+### Create RouterState
+
+* the `ActivateRoute` tree is created
+* here `RouteReuseStrategy` is used
+* `_futureSnapshot` in `value._futureSnapshot = curr.value;` will be useful in `advanceActivatedRoute`
+* `createNode`
+  comparing the _future_ tree of `ActivatedRouteSnapshot` with the current `ActivatedRoute` tree
+  
+  `routeReuseStrategy.shouldReuseRoute(futureARS, currAR)`
+    if `true`: the current `ActivatedRoute`'s `_futureSnapshot` will va assigned to `futureARS`
+
+* `createOrReuseChildren(routeReuseStrategy, curr, prevState))`
+  at this point: `curr.value.routeConfig === prevState.value.snapshot.routeConfig`
+
+  what's left to do at this point is to iterate over `curr`'s children(because this is represents the newly issued URL) and find if we can **reuse** other `prevState`'s children; 
+  so, for each `curr`'s child we see if `any(prevState.children, prevChild => prevChild.routeConfig === child.routeConfig)`; if `true`, then we should reuse that child; otherwise, we create a new `ActivatedRoute`(out of `child`, which is of `ActivatedRouteSnapshot` type), which will be added to the `curr.children` array. if `child` has any children, then for each of `child.children` a new `ActivatedRoute` will be created. then, the same process is repeated for each child from `child.children` and so on.
+  
+https://stackblitz.com/edit/routing-reuse-strategy?file=src/app/foo/foo.module.ts
+
+### Activate Routes
+
+https://stackblitz.com/edit/routing-activate-routes?file=src/app/foo/foo.module.ts
+
+* `deactivateChildRoutes`
+  comparing the current and previous `Tree<ActivatedRoute>`
+  when a diff is found, `deactivateRouteAndItsChildren`
