@@ -33,7 +33,9 @@
 
 ## ActivatedRouteSnapshot and ActivatedRoute
 
-* `ActivatedRouteSnapshot` plays an important role when using `RouteReuseStrategy`
+* `ActivatedRouteSnapshot` plays an important role 
+  * when using `RouteReuseStrategy`;
+  * when navigating with `RouterLink` directives(`_lastPathIndex`)
 
 ---
 
@@ -561,4 +563,31 @@ https://stackblitz.com/edit/routing-activate-routes?file=src/app/foo/foo.module.
 
 ## Customizable parts of `angular/router`
 
-* 
+* `RouteReuseStrategy`
+  by default, when a route is deactivated, its component is destroyed and recreated when the route is activated again
+  by using a custom strategy, you can _store_ a **subtree** of `ActivatedRouteSnapshot`, without destroying its components when the route is deactivated and **reuse** it when the routes would be reactivated
+
+  `RouteReuseStrategy.detach` - current `ActivatedRouteSnapshot` and its subtree would be detached and **reused** later
+  `RouteReuseStrategy.store`
+    store the detached `ActivatedRouteSnapshot`
+
+    ```typescript
+    // `route` - `TreeNode<ActivatedRoute>`
+    // `componentRef` - the current route's component - from `RouterOutlet.detach()`
+    // `contexts` - the child `router-outlet`s
+    this.routeReuseStrategy.store(route.value.snapshot, {componentRef, route, contexts});
+
+    // Erase the stored routed
+    // this.routeReuseStrategy.store(route.value.snapshot, null)
+    ```
+  `RouteReuseStrategy.shouldAttach(r)` - determines whether `r`(`ActivatedRouteSnapshot`) should be attached
+  `RouteReuseStrategy.retrieve(r)`
+    retrieve the previous `r`(`ActivatedRouteSnapshot`): `{ route, componentRef, contexts }`
+    it also used during the creation of the `ActivatedRoute` tree; that tree is created based on the `ActivatedRouteSnapshot` tree, and what happens here is that the stored `ActivatedRoute`(and its subtree) will have to have its `_futureSnapshot` value updated; this is done through `setFutureSnapshotsOfActivatedRoutes`; any subscriptions to the `ActivatedRoute`'s properties(e.g `params`, `data`, `queryParams`) will be updated
+    also used when the routes are **activated**; it will retrieve the 3 properties and it will use `RouterOutlet.attach(comp)` to insert the component back into the view(this is how it is reused); it will then `advanceActivatedRouteNodeAndItsChildren`(the result of setting `_futureSnapshot`)
+    `RouteReuseStrategy.shouldReuseRoute` - if it should reuse **only** a route(`ActivatedRouteSnapshot`)
+
+  (!) - in `retrieve(route)` and `shouldDetach(route)`, `route` will be a different instance of `ActivatedRouteSnapshot`; the same happens in `shouldAttach(route)` and `shouldDetach(route)`
+
+  https://stackblitz.com/edit/angular-custom-route-reuse-strategy?file=src/app/app.module.ts
+---
