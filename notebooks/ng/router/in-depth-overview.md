@@ -306,12 +306,22 @@ https://stackblitz.com/edit/routing-activate-routes?file=src/app/foo/foo.module.
 
 ---
 
+## RouterLinkWithHref
+
+* 
+
+---
+
 ## Router
 
 * `createUrlTree(commands, navigationExtras)`
   * applies commands to the current URL tree and creates a new URL tree
   * merges query params based on `navigationExtras.queryParamsHandling`
   * removes empty query params -> you can remove query params by assigning `undefined` or `null` to them; https://stackblitz.com/edit/routing-remove-queryparams?file=src/app/app.module.ts
+
+* `NavigationExtras`
+* handling errors
+* accessing the previous URL
 
 --- 
 
@@ -590,4 +600,28 @@ https://stackblitz.com/edit/routing-activate-routes?file=src/app/foo/foo.module.
   (!) - in `retrieve(route)` and `shouldDetach(route)`, `route` will be a different instance of `ActivatedRouteSnapshot`; the same happens in `shouldAttach(route)` and `shouldDetach(route)`
 
   https://stackblitz.com/edit/angular-custom-route-reuse-strategy?file=src/app/app.module.ts
+
+* `UrlHandlingStrategy` - a way to migrate from AngularJs to Angular
+
+---
+
+## RouterModule
+
+* `ExtraOptions`
+  * `useHash` -> `HashLocationStrategy` as `LocationStrategy`
+* how is the router set up
+  * during `APP_BOOTSTRAP_LISTENER` 
+
+---
+
+## The connection between Location and Router
+
+* in `Router.initialNavigation()` - listen to `popstate` and `hashchange` events through `Location`
+* `Location` - the bridge between `Router` and `LocationStrategy`()
+* `Location` - used when setting the browser URL
+
+---
+
+## How does preloading work
+
 ---
