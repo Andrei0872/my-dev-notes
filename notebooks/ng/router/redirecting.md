@@ -58,3 +58,26 @@ https://stackblitz.com/edit/exp-routing-redirect-non-wildcard?file=src%2Fapp%2Fa
   which may lead to `NoMatch` errors in some cases
 
 ---
+
+```ts
+[{path: 'a/:id', redirectTo: 'd/a/:id/e'}, {path: '**', component: ComponentC}],
+  '/a;p1=1/1;p2=2', (t: UrlTree) => {
+    expectTreeToBe(t, '/d/a;p1=1/1;p2=2/e');
+  };
+```
+
+```ts
+checkRedirect(
+  [{
+    path: 'a',
+    children: [
+      {path: 'bb', component: ComponentB}, {path: 'b', redirectTo: 'bb'},
+
+      {path: 'cc', component: ComponentC, outlet: 'aux'},
+      {path: 'b', redirectTo: 'cc', outlet: 'aux'}
+    ]
+  }],
+  'a/(b//aux:b)', (t: UrlTree) => {
+    expectTreeToBe(t, 'a/(bb//aux:cc)');
+  });
+```
