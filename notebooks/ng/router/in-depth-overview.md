@@ -744,3 +744,83 @@ expect(serializer.serialize(t)).toEqual('/a;x=99(left:ap)');
 ```ts
 console.log(r.parseUrl('/q/(a/(c//left:cp)//left:qp)(left:ap)'))
 ```
+
+```ts
+// `state` - available in `router.getCurrentNavigation().extras.state`
+// `state` - will be stored in an history's item
+// can be used, for example, to store the position of the current page, so that on `popstate` event
+// that `state` will be available in the `NavigationStart`
+router.navigateByUrl('/simple', {state: {foo: 'bar'}});
+tick();
+```
+
+`This is a fundamental property of the router: it only cares about its latest state.`
+
+```ts
+// `skipLocationChange === true` - do not call `router.setBrowserUrl`, which means that nothing will be added to the history stack
+// but the router's internal status will be updated accordingly(e.g route params, query params, anything that can be `observed` from `ActivatedRoute`)
+router.navigateByUrl('/team/33', {skipLocationChange: true});
+```
+
+```ts
+// `eager` check
+// beforePreactivation
+// GUARDS
+// afterPreactivation
+// `deferred` check
+const fixture = TestBed.createComponent(RootCmp);
+advance(fixture);
+
+router.resetConfig([{path: 'team/:id', component: TeamCmp}]);
+
+router.navigateByUrl('/team/22');
+advance(fixture);
+expect(location.path()).toEqual('/team/22');
+
+expect(fixture.nativeElement).toHaveText('team 22 [ , right:  ]');
+
+router.urlUpdateStrategy = 'eager';
+(router as any).hooks.beforePreactivation = () => {
+  expect(location.path()).toEqual('/team/33');
+  expect(fixture.nativeElement).toHaveText('team 22 [ , right:  ]');
+  return of(null);
+};
+router.navigateByUrl('/team/33');
+
+advance(fixture);
+expect(fixture.nativeElement).toHaveText('team 33 [ , right:  ]');
+```
+
+---
+
+## Testing practices
+
+`expect(fixture.nativeElement).toHaveText('route');` (`export interface NgMatchers<T = any> extends jasmine.Matchers<T>`)
+
+```ts
+router.resetConfig([
+  {path: '', component: SimpleCmp},
+  {path: 'one', component: RouteCmp},
+]);
+```
+
+```ts
+it('case', inject([Router, Location]), (router, location) => {
+  router.resetConfig(/* ... */);
+
+  expect(location.path()).toBe(/* ... */)
+});
+```
+
+```ts
+router.navigateByUrl('/a', {replaceUrl: true});
+
+tick(); // Since a route transition is an async operation
+```
+
+```ts
+beforeEach(() => {
+  warnings = [];
+  TestBed.overrideProvider(Console, {useValue: new MockConsole()});
+});
+```
