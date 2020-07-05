@@ -622,6 +622,125 @@ https://stackblitz.com/edit/routing-activate-routes?file=src/app/foo/foo.module.
 
 ---
 
-## How does preloading work
+## Relevant test cases
 
----
+```ts
+ [
+    {path: 'a', component: ComponentA},
+    {path: 'b', component: ComponentB, outlet: 'left'},
+    {path: 'c', component: ComponentC, outlet: 'right'}
+  ],
+  
+  'a(left:b//right:c)'
+
+  const c = (state as any).children(state.root);
+  checkActivatedRoute(c[0], ComponentA);
+  checkActivatedRoute(c[1], ComponentB, 'left');
+  checkActivatedRoute(c[2], ComponentC, 'right');
+
+  console.log(r.parseUrl('a(left:b//right:c)'))
+  console.log(r.parseUrl('a/(left:b//right:c)'))
+```
+
+```ts
+// updateSegmentGroupChildren
+
+forEach(outlets, (commands: any, outlet: string) => {
+  if (commands !== null) {
+    children[outlet] = updateSegmentGroup(segmentGroup.children[outlet], startIndex, commands);
+  }
+});
+
+forEach(segmentGroup.children, (child: UrlSegmentGroup, childOutlet: string) => {
+  if (outlets[childOutlet] === undefined) {
+    children[childOutlet] = child;
+  }
+});
+
+// --->
+
+const p = serializer.parse('/a/11/b(right:c)');
+// children: { primary: 'a/11/b', right: 'c' }
+const t = createRoot(p, ['/a', 11, 'd']);
+expect(serializer.serialize(t)).toEqual('/a/11/d(right:c)');
+```
+
+```ts
+const p = serializer.parse('/a(right:b)');
+// children: { primary: 'a', right: 'b' }
+
+const t = createRoot(p, ['/', {outlets: {right: ['c']}}]);
+// commands: = { outlets: { right: ['c'] } }
+
+expect(serializer.serialize(t)).toEqual('/a(right:c)');
+```
+
+```ts
+const p = serializer.parse('/a(right:b)');
+// children: { primary: 'a', right: 'b' }
+
+const t = createRoot(p, [{outlets: {right: ['c', 11, 'd']}}]);
+// `lastPathIndex === -1` -> `updateSegmentGroupChildren` -> replace `right`
+
+expect(serializer.serialize(t)).toEqual('/a(right:c/11/d)');
+```
+
+```ts
+// remove primary segment
+const p = serializer.parse('/a/(b//right:c)');
+// children: { primary: { segm: 'a', children: { primary: b, right: c } } }
+
+const t = createRoot(p, ['a', {outlets: {primary: null, right: 'd'}}]);
+expect(serializer.serialize(t)).toEqual('/a/(right:d)');
+```
+
+```ts
+console.log(r.parseUrl('/a/(c//left:cp)(left:ap)'));
+
+{
+  children: {
+    primary: { segm: a, children: { primary: 'c', left: 'cp' } },
+    left: 'ap'
+  }
+}
+
+// would match something like this:
+
+{
+  { 
+    path: 'a',
+    children: [
+      { path: 'c' },
+      { path: 'cp', outlet: 'left' }
+    ]
+  },
+  { path: 'ap', outlet: 'left', }
+}
+```
+
+```ts
+const p = serializer.parse('/a');
+const t = create(p.root.children[PRIMARY_OUTLET], 0, p, [{k: 99}]);
+expect(serializer.serialize(t)).toEqual('/a;k=99');
+```
+
+```ts
+const p = serializer.parse('/a/(c//left:cp)(left:ap)');
+// children:{ primary: { segm: 'a', children: { primary: `c`, left: `cp` } }, left: 'ap'}
+
+const t = create(p.root.children[PRIMARY_OUTLET], 0, p, ['c2']);
+// `p.root.children[PRIMARY_OUTLET]` === { segm: 'a', children: { primary: `c`, left: `cp` } }
+
+// in `prefixedWith()` -> commandIdx(1) === commands.length ---> updateSegmentGroupChildren
+expect(serializer.serialize(t)).toEqual('/a/(c2//left:cp)(left:ap)');
+```
+
+```ts
+const p = serializer.parse('/a/(c//left:cp)(left:ap)');
+const t = create(p.root.children[PRIMARY_OUTLET], 0, p, [{'x': 99}]);
+expect(serializer.serialize(t)).toEqual('/a;x=99(left:ap)');
+```
+
+```ts
+console.log(r.parseUrl('/q/(a/(c//left:cp)//left:qp)(left:ap)'))
+```
