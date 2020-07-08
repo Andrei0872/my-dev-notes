@@ -791,6 +791,140 @@ advance(fixture);
 expect(fixture.nativeElement).toHaveText('team 33 [ , right:  ]');
 ```
 
+```ts
+/* 
+on `resetConfig`, `navigated` is set to `false`
+*/
+router.navigate(['/a']);
+advance(fixture);
+expect(location.path()).toEqual('/a');
+expect(fixture.nativeElement).toHaveText('simple');
+
+router.resetConfig([{path: 'a', component: RouteCmp}]);
+
+router.navigate(['/a']);
+advance(fixture);
+expect(location.path()).toEqual('/a');
+expect(fixture.nativeElement).toHaveText('route');
+```
+
+```ts
+@Component({selector: 'collect-params-cmp', template: `collect-params`})
+class CollectParamsCmp {
+  private params: any = [];
+  private urls: any = [];
+
+  constructor(private route: ActivatedRoute) {
+    route.params.forEach(p => this.params.push(p));
+    route.url.forEach(u => this.urls.push(u));
+  }
+
+  recordedUrls(): string[] {
+    return this.urls.map((a: any) => a.map((p: any) => p.path).join('/'));
+  }
+}
+```
+
+```ts
+this.router.navigateByUrl().then(booleanVal => /* ... */)
+```
+
+```ts
+router.resetConfig([{
+  path: 'team/:id',
+  component: TeamCmp,
+  children: [
+    {path: 'user/:name', component: UserCmp},
+    {path: 'simple', component: SimpleCmp, outlet: 'right'}
+  ]
+}]);
+
+router.navigateByUrl('/team/22/(user/victor//right:simple)');
+```
+
+```ts
+/* 
+`navigate()` - it will create a new UrlTree according to the current UrlTree; 
+since `relativeTo` is not specified, the root `ActivatedRoute` will be chosen -> it will go through each children and it wll replace where it encounters the `outlet`'s name
+
+`navigateByUrl` - will create a new UrlTree, regardless of the current one
+*/
+router.resetConfig([{
+  path: 'team/:id',
+  component: TeamCmp,
+  children: [
+    {path: 'user/:name', component: UserCmp},
+    {path: 'simple', component: SimpleCmp, outlet: 'right'}
+  ]
+}]);
+
+router.navigateByUrl('/team/22/user/victor');
+advance(fixture);
+router.navigate(['team/22', {outlets: {right: 'simple'}}]);
+advance(fixture);
+
+expect(fixture.nativeElement).toHaveText('team 22 [ user victor, right: simple ]');
+```
+
+```ts
+/* 
+non-cancellable
+when you know that the observable completes/errors
+https://github.com/ReactiveX/rxjs/blob/master/src/internal/Observable.ts#L312
+*/
+Observable.forEach()
+```
+
+```ts
+/* 
+{ path: 'foo/:id', comp: FooComp }
+
+inside `FooComp`
+
+route.params.subscribe(() => ....)
+
+on `foo/1` -> we'd get { id: 1 }
+on `foo/1` -> nothing
+on `foo/2` -> we'd get { id: 2 }
+
+create_router_state/createNode()
+
+const value = prevState.value;
+value._futureSnapshot = curr.value;
+const children = createOrReuseChildren(routeReuseStrategy, curr, prevState);
+return new TreeNode<ActivatedRoute>(value, children);
+
+setting `_futureSnapshot` is very imp for the comparison
+*/
+export function advanceActivatedRoute(route: ActivatedRoute): void {
+  if (route.snapshot) {
+    const currentSnapshot = route.snapshot;
+    const nextSnapshot = route._futureSnapshot;
+    route.snapshot = nextSnapshot;
+    if (!shallowEqual(currentSnapshot.queryParams, nextSnapshot.queryParams)) {
+      (<any>route.queryParams).next(nextSnapshot.queryParams);
+    }
+    if (currentSnapshot.fragment !== nextSnapshot.fragment) {
+      (<any>route.fragment).next(nextSnapshot.fragment);
+    }
+    if (!shallowEqual(currentSnapshot.params, nextSnapshot.params)) {
+      (<any>route.params).next(nextSnapshot.params);
+    }
+    if (!shallowEqualArrays(currentSnapshot.url, nextSnapshot.url)) {
+      (<any>route.url).next(nextSnapshot.url);
+    }
+    if (!shallowEqual(currentSnapshot.data, nextSnapshot.data)) {
+      (<any>route.data).next(nextSnapshot.data);
+    }
+  } else {
+    route.snapshot = route._futureSnapshot;
+
+    // this is for resolved data
+    (<any>route.data).next(route._futureSnapshot.data);
+  }
+}
+```
+
 ---
 
 ## Testing practices
@@ -823,4 +957,10 @@ beforeEach(() => {
   warnings = [];
   TestBed.overrideProvider(Console, {useValue: new MockConsole()});
 });
+```
+
+```ts
+expect(() => router.navigate([
+  undefined, 'query'
+])).toThrowError(`The requested path contains undefined segment at index 0`);
 ```
