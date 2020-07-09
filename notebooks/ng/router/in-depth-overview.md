@@ -925,6 +925,82 @@ export function advanceActivatedRoute(route: ActivatedRoute): void {
 }
 ```
 
+```ts
+/* 
+if no route is matched, it will be thrown an error(by default) (it uses `throw error`)
+
+this can be avoided, by providing a custom `errorHandler`
+*/
+export type ErrorHandler = (error: any) => any;
+
+// setUpRouter()
+if (opts.errorHandler) {
+  router.errorHandler = opts.errorHandler;
+}
+
+try {
+  t.resolve(this.errorHandler(e));
+  } catch (ee) {
+  t.reject(ee);
+}
+```
+
+```ts
+router.malformedUriErrorHandler
+
+router.navigateByUrl('/invalid/url%with%percent');
+advance(fixture);
+expect(location.path()).toEqual('/');
+```
+
+```ts
+// you can have a componentless route, although the `children` property is present
+{
+  path: 'parent/:id',
+  children: [
+    {path: 'simple', component: SimpleCmp},
+    {path: 'user/:name', component: UserCmp, outlet: 'right'}
+  ]
+},
+{path: 'user/:name', component: UserCmp}
+```
+
+```html
+<router-outlet (activate)="recordActivate($event)" (deactivate)="recordDeactivate($event)"></router-outlet>
+```
+
+```ts
+/* 
+`paramsInheritanceStrategy: 'emptyOnly'|'always' = 'emptyOnly';`
+
+if route config obj has `path: ''` | the parent route has a componentless route -> it will inherit `data` and `params` from the parent 
+*/
+const fixture = createRoot(router, RootCmpWithTwoOutlets);
+router.resetConfig([{
+  path: 'parent/:id',
+  data: {one: 1},
+  resolve: {two: 'resolveTwo'},
+  children: [
+    {path: '', data: {three: 3}, resolve: {four: 'resolveFour'}, component: RouteCmp}, {
+      path: '',
+      data: {five: 5},
+      resolve: {six: 'resolveSix'},
+      component: RouteCmp,
+      outlet: 'right'
+    }
+  ]
+}]);
+
+router.navigateByUrl('/parent/1');
+advance(fixture);
+
+const primaryCmp = fixture.debugElement.children[1].componentInstance;
+const rightCmp = fixture.debugElement.children[3].componentInstance;
+
+expect(primaryCmp.route.snapshot.data).toEqual({one: 1, two: 2, three: 3, four: 4});
+expect(rightCmp.route.snapshot.data).toEqual({one: 1, two: 2, five: 5, six: 6});
+```
+
 ---
 
 ## Testing practices
