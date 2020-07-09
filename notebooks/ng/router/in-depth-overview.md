@@ -1001,6 +1001,91 @@ expect(primaryCmp.route.snapshot.data).toEqual({one: 1, two: 2, three: 3, four: 
 expect(rightCmp.route.snapshot.data).toEqual({one: 1, two: 2, five: 5, six: 6});
 ```
 
+```ts
+// worth a visualization! :)
+// + `inheritedParamsDataResolve`
+inheritParamsAndData(routeNode: TreeNode<ActivatedRouteSnapshot>): void {
+  const route = routeNode.value;
+
+  const i = inheritedParamsDataResolve(route, this.paramsInheritanceStrategy);
+  route.params = Object.freeze(i.params);
+  route.data = Object.freeze(i.data);
+
+  routeNode.children.forEach(n => this.inheritParamsAndData(n));
+}
+```
+
+```ts
+it('should update hrefs when query params or fragment change', fakeAsync(() => {
+      @Component({
+        selector: 'someRoot',
+        template:
+            `<router-outlet></router-outlet><a routerLink="/home" preserveQueryParams preserveFragment>Link</a>`
+      })
+      class RootCmpWithLink {
+      }
+      TestBed.configureTestingModule({declarations: [RootCmpWithLink]});
+      const router: Router = TestBed.inject(Router);
+      const fixture = createRoot(router, RootCmpWithLink);
+
+      router.resetConfig([{path: 'home', component: SimpleCmp}]);
+
+      const native = fixture.nativeElement.querySelector('a');
+
+      router.navigateByUrl('/home?q=123');
+      advance(fixture);
+      expect(native.getAttribute('href')).toEqual('/home?q=123');
+
+      router.navigateByUrl('/home?q=456');
+      advance(fixture);
+      expect(native.getAttribute('href')).toEqual('/home?q=456');
+
+      router.navigateByUrl('/home?q=456#1');
+      advance(fixture);
+      expect(native.getAttribute('href')).toEqual('/home?q=456#1');
+    }));
+
+// `merge` strategy
+@Component({
+  selector: 'someRoot',
+  template:
+    `<router-outlet></router-outlet><a routerLink="/home" [queryParams]="{removeMe: null, q: 456}" queryParamsHandling="merge">Link</a>`
+})
+class RootCmpWithLink {
+}
+TestBed.configureTestingModule({declarations: [RootCmpWithLink]});
+const router: Router = TestBed.inject(Router);
+const fixture = createRoot(router, RootCmpWithLink);
+
+router.resetConfig([{path: 'home', component: SimpleCmp}]);
+
+const native = fixture.nativeElement.querySelector('a');
+
+router.navigateByUrl('/home?a=123&removeMe=123');
+advance(fixture);
+expect(native.getAttribute('href')).toEqual('/home?a=123&q=456');
+```
+
+```ts
+router.resetConfig([{
+  path: 'team/:id',
+  component: TeamCmp,
+  children:
+      [{path: 'link', component: RelativeLinkCmp}, {path: 'simple', component: SimpleCmp}]
+}]);
+
+router.navigateByUrl('/team/22/link');
+advance(fixture);
+expect(fixture.nativeElement).toHaveText('team 22 [ link, right:  ]');
+
+const native = fixture.nativeElement.querySelector('a');
+expect(native.getAttribute('href')).toEqual('/team/22/simple');
+native.click();
+advance(fixture);
+
+expect(fixture.nativeElement).toHaveText('team 22 [ simple, right:  ]');
+```
+
 ---
 
 ## Testing practices
@@ -1039,4 +1124,10 @@ beforeEach(() => {
 expect(() => router.navigate([
   undefined, 'query'
 ])).toThrowError(`The requested path contains undefined segment at index 0`);
+```
+
+```ts
+router.resetConfig([{path: 'lazy', loadChildren: 'expected1'}]);
+
+loader.stubbedModules = { expected1: LazyLoadedComp }
 ```
