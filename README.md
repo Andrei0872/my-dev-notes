@@ -13,6 +13,7 @@
 * [GraphQL](https://github.com/Andrei0872/my-dev-notes/blob/master/notebooks/graphql.md)
 * [JavaScript](https://github.com/Andrei0872/my-dev-notes/blob/master/notebooks/javascript.md)
 * [Mongoose](https://github.com/Andrei0872/my-dev-notes/blob/master/notebooks/mongoose.md)
+* [Networking](https://github.com/Andrei0872/my-dev-notes/blob/master/notebooks/networking.md)
 * [Node](https://github.com/Andrei0872/my-dev-notes/blob/master/notebooks/node.md)
 * [Regex](https://github.com/Andrei0872/my-dev-notes/blob/master/notebooks/regex.md)
 * [RxJS](https://github.com/Andrei0872/my-dev-notes/blob/master/notebooks/rxjs.md)
