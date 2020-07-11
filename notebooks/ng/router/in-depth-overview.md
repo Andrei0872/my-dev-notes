@@ -1324,6 +1324,69 @@ expect(logger.logs).toEqual([
 ]);
 ```
 
+```ts
+/* 
+`RouterLinkActive`
+
+* setting the class: `routerLinkActive='cls1 cls2'`; `[routerLinkActive]="['cls1', 'cls2']"`
+* `routerLinkActiveOptions: { exact: true }`
+
+* `exact = true` -> the link's UrlTree, that is crtUrlTree + commands applied(from `routerLink`), is contained _exactly_ by the current url tree
+*/
+
+// A class can be set based on these conditions:
+// `this.link` - <button routerLink="/path" routerLinkActive="cls"></button>
+// `this.linkWithHref` - <a routerLink="/path" routerLinkActive="cls"></a>
+// `links` | `linksWithHrefs` -> @ContentChildren
+return this.link && isActiveCheckFn(this.link) ||
+        this.linkWithHref && isActiveCheckFn(this.linkWithHref) ||
+        this.links.some(isActiveCheckFn) || this.linksWithHrefs.some(isActiveCheckFn);
+
+// exposes an `isActive` property
+
+// Example
+@Component({
+  selector: 'link-cmp',
+  template: `<router-outlet></router-outlet>
+             <div id="link-parent" routerLinkActive="active" [routerLinkActiveOptions]="{exact: exact}">
+               <div ngClass="{one: 'true'}"><a [routerLink]="['./']">link</a></div>
+             </div>`
+})
+class DummyLinkWithParentCmp {
+  private exact: boolean;
+  constructor(route: ActivatedRoute) {
+    this.exact = (<any>route.snapshot.params).exact === 'true';
+  }
+}
+it('should set the class on a parent element when the link is active',
+    fakeAsync(inject([Router, Location], (router: Router, location: Location) => {
+      const fixture = createRoot(router, RootCmp);
+
+      router.resetConfig([{
+        path: 'team/:id',
+        component: TeamCmp,
+        children: [{
+          path: 'link',
+          component: DummyLinkWithParentCmp,
+          children: [{path: 'simple', component: SimpleCmp}, {path: '', component: BlankCmp}]
+        }]
+      }]);
+
+      router.navigateByUrl('/team/22/link;exact=true');
+      advance(fixture);
+      advance(fixture);
+      expect(location.path()).toEqual('/team/22/link;exact=true');
+
+      const native = fixture.nativeElement.querySelector('#link-parent');
+      expect(native.className).toEqual('active');
+
+      router.navigateByUrl('/team/22/link/simple');
+      advance(fixture);
+      expect(location.path()).toEqual('/team/22/link/simple');
+      expect(native.className).toEqual('');
+    })));
+```
+
 ---
 
 ## Testing practices
