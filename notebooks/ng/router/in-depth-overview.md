@@ -1241,6 +1241,49 @@ expect(recordedData).toEqual([{data: 0}, {data: 1}]);
 'a/:id' -> 'a/123;k1=v1;k2=v2' --> route.snapshot.paramsMap = { a, k1, k2 }
 ```
 
+```ts
+{
+  provide: 'RecordingDeactivate',
+  useValue: (c: any, a: ActivatedRouteSnapshot, b: RouterStateSnapshot) => {
+    log.push({path: a.routeConfig!.path, component: c});
+    return true;
+  }
+},
+
+router.resetConfig([
+  {
+    path: 'grandparent',
+    canDeactivate: ['RecordingDeactivate'],
+    children: [{
+      path: 'parent',
+      canDeactivate: ['RecordingDeactivate'],
+      children: [{
+        path: 'child',
+        canDeactivate: ['RecordingDeactivate'],
+        children: [{
+          path: 'simple',
+          component: SimpleCmp,
+          canDeactivate: ['RecordingDeactivate']
+        }]
+      }]
+    }]
+  },
+  {path: 'simple', component: SimpleCmp}
+]);
+
+router.navigateByUrl('/grandparent/parent/child/simple');
+advance(fixture);
+expect(location.path()).toEqual('/grandparent/parent/child/simple');
+
+router.navigateByUrl('/simple');
+advance(fixture);
+
+const child = fixture.debugElement.children[1].componentInstance;
+
+expect(log.map((a: any) => a.path)).toEqual([
+  'simple', 'child', 'parent', 'grandparent'
+]);
+```
 
 ---
 
