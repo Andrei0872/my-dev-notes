@@ -82,25 +82,3 @@ iptables -A INPUT -p tcp -m tcp --dport 22 -j foo-chain
 
 https://www.youtube.com/playlist?list=PLQnljOFTspQXOkIpdwjsMlVqkIffdqZ2K
 https://www.youtube.com/watch?v=ueVnSz_lXEs&list=PL6gx4Cwl9DGBpuvPW0aHa7mKdn_k9SPKO
-
-## up next
-linux what is eth
-linux network interfaces
-linux networking
-what is ethernet network
-
-linux loopback interface
-
-https://www.tecmint.com/difference-between-su-and-su-commands-in-linux/
-https://www.howtogeek.com/111479/htg-explains-whats-the-difference-between-sudo-su/
-
-### iptables
-
-iptables permission denied although root
-iptables: Permission denied (you must be root).
-iptables input vs nat
-iptables what is conntrack
-iptables snat
-iptables what is snat
-iptables custom chain
-linux network stack
