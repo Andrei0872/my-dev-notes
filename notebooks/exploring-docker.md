@@ -59,6 +59,19 @@ func (o buildOptions) dockerfileFromStdin() bool {
 * linux service
 * linux  .conf files
 
+---
+
 ## Learnings
 
 * cli sends a compressed file to the daemon server
+* `/var/lib/docker` - where docker keeps containers
+
+---
+
+## References
+
+### Privileged containers
+
+* https://blog.trendmicro.com/trendlabs-security-intelligence/why-running-a-privileged-container-in-docker-is-a-bad-idea/
+* https://www.linux.com/audience/devops/lazy-privileged-docker-containers/
+* https://jpetazzo.github.io/2015/09/03/do-not-use-docker-in-docker-for-ci/
