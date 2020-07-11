@@ -1387,6 +1387,23 @@ it('should set the class on a parent element when the link is active',
     })));
 ```
 
+```ts
+shouldReuseRoute(future: ActivatedRouteSnapshot, curr: ActivatedRouteSnapshot): boolean {
+  if (future.routeConfig !== curr.routeConfig) {
+    return false;
+  }
+
+  if (Object.keys(future.params).length !== Object.keys(curr.params).length) {
+    return false;
+  }
+
+  return Object.keys(future.params).every(k => future.params[k] === curr.params[k]);
+}
+
+// an attached tree will also receive params -> from `_futureSnapshot`
+router.navigateByUrl('/a;p=1/b;p=2');
+```
+
 ---
 
 ## Testing practices
