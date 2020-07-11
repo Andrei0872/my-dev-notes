@@ -1086,6 +1086,162 @@ advance(fixture);
 expect(fixture.nativeElement).toHaveText('team 22 [ simple, right:  ]');
 ```
 
+```ts
+/* 
+if the guard checks do not pass, the route navigation will simply return false and the current URL will remain intact
+
+`this.resetUrlToCurrentUrlTree();`
+*/
+const fixture = createRoot(router, RootCmp);
+
+router.resetConfig([
+  {path: 'one', component: SimpleCmp},
+  {path: 'two', component: SimpleCmp, canActivate: ['alwaysFalse']}
+]);
+
+router.navigateByUrl('/one');
+advance(fixture);
+expect(location.path()).toEqual('/one');
+
+location.go('/two');
+advance(fixture);
+expect(location.path()).toEqual('/one');
+```
+
+```ts
+/* 
+if `canActivate` returns `false` -> redirect
+*/
+checkGuards(this.ngModule.injector, (evt: Event) => this.triggerEvent(evt)),
+tap(t => {
+  if (isUrlTree(t.guardsResult)) {
+    const error: Error&{url?: UrlTree} = navigationCancelingError(
+        `Redirecting to "${this.serializeUrl(t.guardsResult)}"`);
+    error.url = t.guardsResult;
+    throw error;
+  }
+})
+
+/* ... */
+if (isNavigationCancelingError(e)) { /* ... */ }
+
+{
+  provide: 'returnUrlTree',
+  useFactory: (router: Router) => () => {
+    return router.parseUrl('/redirected');
+  },
+  deps: [Router]
+},
+```
+
+```ts
+function configureRouter(router: Router, runGuardsAndResolvers: RunGuardsAndResolvers):
+    ComponentFixture<RootCmpWithTwoOutlets> {
+  const fixture = createRoot(router, RootCmpWithTwoOutlets);
+
+  router.resetConfig([
+    {
+      path: 'a',
+      runGuardsAndResolvers,
+      component: RouteCmp,
+      canActivate: ['guard'],
+      resolve: {data: 'resolver'}
+    },
+    {path: 'b', component: SimpleCmp, outlet: 'right'}, {
+      path: 'c/:param',
+      runGuardsAndResolvers,
+      component: RouteCmp,
+      canActivate: ['guard'],
+      resolve: {data: 'resolver'}
+    },
+    {
+      path: 'd/:param',
+      component: WrapperCmp,
+      runGuardsAndResolvers,
+      children: [
+        {
+          path: 'e/:param',
+          component: SimpleCmp,
+          canActivate: ['guard'],
+          resolve: {data: 'resolver'},
+        },
+      ]
+    }
+  ]);
+
+  router.navigateByUrl('/a');
+  advance(fixture);
+  return fixture;
+}
+
+export type RunGuardsAndResolvers =
+    'pathParamsChange'|'pathParamsOrQueryParamsChange'|'paramsChange'|'paramsOrQueryParamsChange'|
+    'always'|((from: ActivatedRouteSnapshot, to: ActivatedRouteSnapshot) => boolean);
+
+// `paramsChange` - matrix params changed (default)
+ const fixture = configureRouter(router, 'paramsChange');
+
+const cmp: RouteCmp = fixture.debugElement.children[1].componentInstance;
+const recordedData: any[] = [];
+cmp.route.data.subscribe((data: any) => recordedData.push(data));
+
+expect(guardRunCount).toEqual(1);
+expect(recordedData).toEqual([{data: 0}]);
+
+router.navigateByUrl('/a;p=1');
+advance(fixture);
+expect(guardRunCount).toEqual(2);
+expect(recordedData).toEqual([{data: 0}, {data: 1}]);
+
+router.navigateByUrl('/a;p=2');
+advance(fixture);
+expect(guardRunCount).toEqual(3);
+expect(recordedData).toEqual([{data: 0}, {data: 1}, {data: 2}]);
+
+// would've changed if `paramsOrQueryParamsChange`
+router.navigateByUrl('/a;p=2?q=1');
+advance(fixture);
+expect(guardRunCount).toEqual(3);
+expect(recordedData).toEqual([{data: 0}, {data: 1}, {data: 2}]);
+
+// `pathParamsChange` - a/1 !== a/2
+// Changing any optional params will not result in running guards or resolvers
+router.navigateByUrl('/a;p=1');
+advance(fixture);
+expect(guardRunCount).toEqual(1);
+expect(recordedData).toEqual([{data: 0}]);
+
+router.navigateByUrl('/a;p=2');
+advance(fixture);
+expect(guardRunCount).toEqual(1);
+expect(recordedData).toEqual([{data: 0}]);
+
+// `pathParamsOrQueryParamsChange`
+// Changing matrix params will not result in running guards or resolvers
+router.navigateByUrl('/a;p=1');
+advance(fixture);
+expect(guardRunCount).toEqual(1);
+expect(recordedData).toEqual([{data: 0}]);
+
+router.navigateByUrl('/a;p=2');
+advance(fixture);
+expect(guardRunCount).toEqual(1);
+expect(recordedData).toEqual([{data: 0}]);
+
+// Adding query params will re-run guards/resolvers
+router.navigateByUrl('/a;p=2?q=1');
+advance(fixture);
+expect(guardRunCount).toEqual(2);
+expect(recordedData).toEqual([{data: 0}, {data: 1}]);
+
+// `(from, to) => to.paramMap.get('p') === '2'` - a predicate fn
+```
+
+```ts
+'a/:id' -> 'a/123;k1=v1;k2=v2' --> route.snapshot.paramsMap = { a, k1, k2 }
+```
+
+
 ---
 
 ## Testing practices
@@ -1130,4 +1286,26 @@ expect(() => router.navigate([
 router.resetConfig([{path: 'lazy', loadChildren: 'expected1'}]);
 
 loader.stubbedModules = { expected1: LazyLoadedComp }
+```
+
+```ts
+it('replaces URL when URL is updated eagerly so back button can still work',
+  fakeAsync(inject([Router, Location], (router: Router, location: SpyLocation) => {
+    router.urlUpdateStrategy = 'eager';
+    router.resetConfig([
+      {path: '', component: SimpleCmp},
+      {path: 'one', component: RouteCmp, canActivate: ['returnUrlTree']},
+      {path: 'redirected', component: SimpleCmp}
+    ]);
+    const fixture = createRoot(router, RootCmp);
+    router.navigateByUrl('/one');
+
+    tick();
+
+    expect(location.path()).toEqual('/redirected');
+
+    // `LocationMock.urlChanges`
+    // 'replace: /redirected' - because `urlUpdateStrategy` is set to `eager` (replaceUrl: this.urlUpdateStrategy === 'eager')
+    expect(location.urlChanges).toEqual(['replace: /', '/one', 'replace: /redirected']);
+  })));
 ```
