@@ -1285,6 +1285,45 @@ expect(log.map((a: any) => a.path)).toEqual([
 ]);
 ```
 
+```ts
+// `CanActivateChild` is run **before** `CanActivate`
+from([
+  fireChildActivationStart(check.route.parent, forwardEvent),
+  fireActivationStart(check.route, forwardEvent),
+  runCanActivateChild(futureSnapshot, check.path, moduleInjector),
+  runCanActivate(futureSnapshot, check.route, moduleInjector)
+])
+```
+
+```ts
+// Deactivate: from child to parent
+// CanActivate: from parent to child (CanActivateChild called **before** CanActivate)
+const fixture = createRoot(router, RootCmp);
+
+router.resetConfig([{
+  path: '',
+  canActivateChild: ['canActivateChild_parent'],
+  children: [{
+    path: 'team/:id',
+    canActivate: ['canActivate_team'],
+    canDeactivate: ['canDeactivate_team'],
+    component: TeamCmp
+  }]
+}]);
+
+router.navigateByUrl('/team/22');
+advance(fixture);
+
+router.navigateByUrl('/team/33');
+advance(fixture);
+
+expect(logger.logs).toEqual([
+  'canActivateChild_parent', 'canActivate_team',
+
+  'canDeactivate_team', 'canActivateChild_parent', 'canActivate_team'
+]);
+```
+
 ---
 
 ## Testing practices
