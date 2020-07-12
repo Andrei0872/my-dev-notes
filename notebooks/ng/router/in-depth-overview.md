@@ -1536,6 +1536,86 @@ it('should inherit params', () => {
             '', {p: '1'}, ComponentC);
       });
 });
+
+checkRecognize(
+[{
+  path: 'p/:id',
+  children: [{
+    path: 'a/:name',
+    children: [
+      {path: 'b', component: ComponentB, children: [{path: 'c', component: ComponentC}]}
+    ]
+  }]
+}],
+'p/11/a/victor/b/c', (s: RouterStateSnapshot) => {
+  const p = (s as any).firstChild(s.root)!;
+  checkActivatedRoute(p, 'p/11', {id: '11'}, undefined!);
+
+  const a = (s as any).firstChild(p)!;
+  checkActivatedRoute(a, 'a/victor', {id: '11', name: 'victor'}, undefined!);
+
+  const b = (s as any).firstChild(a)!;
+  checkActivatedRoute(b, 'b', {id: '11', name: 'victor'}, ComponentB);
+
+  const c = (s as any).firstChild(b)!;
+  checkActivatedRoute(c, 'c', {}, ComponentC);
+});
+```
+
+```ts
+// named outlets + empty paths
+// (!) might add in the `features` section
+// (!) might also add the diff between `/()` and `()`
+
+checkRecognize(
+[{
+  path: 'a',
+  component: ComponentA,
+  children: [
+    {path: 'b', component: ComponentB}, {path: '', component: ComponentC, outlet: 'aux' /* pathMatch: 'full' // would change things */}
+  ]
+}],
+'a/b', (s: RouterStateSnapshot) => {
+  checkActivatedRoute((s as any).firstChild(s.root)!, 'a', {}, ComponentA);
+
+  const c = (s as any).children((s as any).firstChild(s.root)!);
+  checkActivatedRoute(c[0], 'b', {}, ComponentB);
+  checkActivatedRoute(c[1], '', {}, ComponentC, 'aux');
+});
+
+checkRecognize(
+[{
+  path: 'a',
+  component: ComponentA,
+  children: [
+    {path: '', component: ComponentB},
+    {path: 'c', component: ComponentC, outlet: 'aux'},
+  ]
+}],
+'a/(aux:c)', (s: RouterStateSnapshot) => {
+  checkActivatedRoute((s as any).firstChild(s.root)!, 'a', {}, ComponentA);
+
+  const c = (s as any).children((s as any).firstChild(s.root)!);
+  checkActivatedRoute(c[0], '', {}, ComponentB);
+  checkActivatedRoute(c[1], 'c', {}, ComponentC, 'aux');
+});
+
+// (!) might also mention params (matrix vs pos)
+ checkRecognize(
+[{
+  path: 'p/:id',
+  children: [
+    {path: 'a', component: ComponentA}, {path: 'b', component: ComponentB, outlet: 'aux'}
+  ]
+}],
+'p/11;pp=22/(a;pa=33//aux:b;pb=44)', (s: RouterStateSnapshot) => {
+  const p = (s as any).firstChild(s.root)!;
+  checkActivatedRoute(p, 'p/11', {id: '11', pp: '22'}, undefined!);
+
+  const c = (s as any).children(p);
+  checkActivatedRoute(c[0], 'a', {id: '11', pp: '22', pa: '33'}, ComponentA);
+  checkActivatedRoute(c[1], 'b', {id: '11', pp: '22', pb: '44'}, ComponentB, 'aux');
+});
 ```
 
 ---
