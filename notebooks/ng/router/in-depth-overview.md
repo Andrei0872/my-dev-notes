@@ -1486,6 +1486,58 @@ checkRecognize(
 });
 ```
 
+```ts
+// `data`
+// `paramsInheritanceStrategy`
+// (!) could include such comparison in `features of angular/router`
+ checkRecognize(
+[{
+  path: 'a',
+  data: {one: 1},
+  children: [{path: 'b', data: {two: 2}, component: ComponentB}]
+}],
+'a/b', (s: RouterStateSnapshot) => {
+  const r: ActivatedRouteSnapshot =
+      (s as any).firstChild(<any>(s as any).firstChild(s.root))!;
+  // because the parent is a componentless route
+  expect(r.data).toEqual({one: 1, two: 2});
+});
+
+// example where the parent is **not** a componentless route
+// assuming `paramsInheritanceStrategy: 'empty'`
+// if set on `always` - it will inherit from the parent as well
+checkRecognize(
+[{
+  path: 'a',
+  component: ComponentA,
+  data: {one: 1},
+  children: [{path: 'b', data: {two: 2}, component: ComponentB}]
+}],
+'a/b', (s: any /* RouterStateSnapshot */) => {
+  const r: ActivatedRouteSnapshot = s.firstChild(<any>s.firstChild(s.root))!;
+  expect(r.data).toEqual({two: 2});
+});
+
+// could also include this in `params` section
+it('should inherit params', () => {
+  checkRecognize(
+      [{
+        path: 'a',
+        component: ComponentA,
+        children:
+            [{path: '', component: ComponentB, children: [{path: '', component: ComponentC}]}]
+      }],
+      '/a;p=1', (s: RouterStateSnapshot) => {
+        checkActivatedRoute((s as any).firstChild(s.root)!, 'a', {p: '1'}, ComponentA);
+        checkActivatedRoute(
+            (s as any).firstChild((s as any).firstChild(s.root)!)!, '', {p: '1'}, ComponentB);
+        checkActivatedRoute(
+            (s as any).firstChild((s as any).firstChild((s as any).firstChild(s.root)!)!)!,
+            '', {p: '1'}, ComponentC);
+      });
+});
+```
+
 ---
 
 ## Testing practices
