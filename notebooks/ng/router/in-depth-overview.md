@@ -1404,6 +1404,88 @@ shouldReuseRoute(future: ActivatedRouteSnapshot, curr: ActivatedRouteSnapshot): 
 router.navigateByUrl('/a;p=1/b;p=2');
 ```
 
+```ts
+// when explaining `UrlTree` or `UrlParser`
+
+checkRecognize(
+  [
+    {path: 'a', component: ComponentA}, {path: 'b', component: ComponentB, outlet: 'left'},
+    {path: 'c', component: ComponentC, outlet: 'right'}
+  ],
+  'a(left:b//right:c)', (s: RouterStateSnapshot) => {
+    const c = (s as any).children(s.root);
+    checkActivatedRoute(c[0], 'a', {}, ComponentA);
+    checkActivatedRoute(c[1], 'b', {}, ComponentB, 'left');
+    checkActivatedRoute(c[2], 'c', {}, ComponentC, 'right');
+  }
+);
+
+it('should match routes in the depth first order', () => {
+  checkRecognize(
+      [
+        {path: 'a', component: ComponentA, children: [{path: ':id', component: ComponentB}]},
+        {path: 'a/:id', component: ComponentC}
+      ],
+      'a/paramA', (s: RouterStateSnapshot) => {
+        checkActivatedRoute(s.root, '', {}, RootComponent);
+        checkActivatedRoute((s as any).firstChild(s.root)!, 'a', {}, ComponentA);
+        checkActivatedRoute(
+            (s as any).firstChild(<any>(s as any).firstChild(s.root))!, 'paramA', {id: 'paramA'},
+            ComponentB);
+      });
+
+  checkRecognize(
+      [{path: 'a', component: ComponentA}, {path: 'a/:id', component: ComponentC}], 'a/paramA',
+      (s: RouterStateSnapshot) => {
+        checkActivatedRoute(s.root, '', {}, RootComponent);
+        checkActivatedRoute(
+            (s as any).firstChild(s.root)!, 'a/paramA', {id: 'paramA'}, ComponentC);
+      });
+});
+
+it('should work (nested case)', () => {
+checkRecognize(
+    [{path: '', component: ComponentA, children: [{path: '', component: ComponentB}]}], '',
+    (s: RouterStateSnapshot) => {
+      checkActivatedRoute((s as any).firstChild(s.root)!, '', {}, ComponentA);
+      checkActivatedRoute(
+          (s as any).firstChild(<any>(s as any).firstChild(s.root))!, '', {}, ComponentB);
+    });
+});
+
+// compare this with the first snippet!
+checkRecognize(
+[
+  {
+    path: 'a',
+    component: ComponentA,
+    children: [
+      {path: 'b', component: ComponentB}, {path: 'c', component: ComponentC, outlet: 'left'}
+    ]
+  },
+],
+'a/(b//left:c)', (s: RouterStateSnapshot) => {
+  const c = (s as any).children(<any>(s as any).firstChild(s.root));
+  checkActivatedRoute(c[0], 'b', {}, ComponentB, PRIMARY_OUTLET);
+  checkActivatedRoute(c[1], 'c', {}, ComponentC, 'left');
+});
+
+// (!) matrix params (could compare with positional params)
+// (!) could include such comparison in `features of angular/router`
+checkRecognize(
+[
+  {path: 'a', component: ComponentA, children: [{path: 'b', component: ComponentB}]},
+  {path: 'c', component: ComponentC, outlet: 'left'}
+],
+'a;a1=11;a2=22/b;b1=111;b2=222(left:c;c1=1111;c2=2222)', (s: RouterStateSnapshot) => {
+  const c = (s as any).children(s.root);
+  checkActivatedRoute(c[0], 'a', {a1: '11', a2: '22'}, ComponentA);
+  checkActivatedRoute(
+      (s as any).firstChild(<any>c[0])!, 'b', {b1: '111', b2: '222'}, ComponentB);
+  checkActivatedRoute(c[1], 'c', {c1: '1111', c2: '2222'}, ComponentC, 'left');
+});
+```
+
 ---
 
 ## Testing practices
