@@ -1,11 +1,5 @@
 # Demystifying Angular Router
 
-## Frequent and not so frequent asked questions
-
-### How is the URL set ?
-
-`Router.setBrowserUrl`
-
 ---
 
 ## `UrlSerializer`
