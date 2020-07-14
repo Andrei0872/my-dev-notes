@@ -2,3 +2,4 @@ vendor
 .vscode
 
 algos.js
+main.go
