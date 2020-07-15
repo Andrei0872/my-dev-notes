@@ -1,112 +1,269 @@
 # Demystifying angular/router: Getting to know UrlTree, ActivatedRouteSnapshot and ActivatedRoute
 
+
+
 ## What is UrlParser and why it is important
 
-* (!) might also add the diff between `/()` and `()` (url_serializer.spec.ts)
+*Note: You can find each example [here](https://ng-run.com/edit/mzWif1S1fotcDGdwlnEA).*
 
-```ts
- [
-    {path: 'a', component: ComponentA},
-    {path: 'b', component: ComponentB, outlet: 'left'},
-    {path: 'c', component: ComponentC, outlet: 'right'}
-  ],
-  
-  'a(left:b//right:c)'
+As we'll see in the following sections, an URL is a **serialized** version of an `UrlTree`. As a result, an `UrlTree` is the **deserialized** version of an `URL`. 
 
-  const c = (state as any).children(state.root);
-  checkActivatedRoute(c[0], ComponentA);
-  checkActivatedRoute(c[1], ComponentB, 'left');
-  checkActivatedRoute(c[2], ComponentC, 'right');
+What an `UrlParser` does it to convert a URL into an `UrlTree` and it is primarily used by `DefaultUrlSerializer`. `DefaultUrlSerializer` is the default implementation of `UrlSerializer` and it's used, for instance, by `Router.parseUrl()` method:
 
-  console.log(r.parseUrl('a(left:b//right:c)'))
-  console.log(r.parseUrl('a/(left:b//right:c)'))
+```typescript
+parseUrl(url: string): UrlTree {
+  let urlTree: UrlTree;
+  try {
+    urlTree = this.urlSerializer.parse(url);
+  } catch (e) {
+    urlTree = this.malformedUriErrorHandler(e, this.urlSerializer, url);
+  }
+  return urlTree;
+}
 ```
+
+This also means that, if needed, we can use our **custom** implementation of `UrlSerializer`:
+
+```typescript
+// In `providers` array
+{ provide: UrlSerializer, useClass: DefaultUrlSerializer },
+```
+
+An URL can have this structure: `segments?queryParams#fragment`; but, before diving into some examples, let's first define what are the main components of an `UrlTree`:
+
+```typescript
+export class UrlTree {
+  constructor(
+    public root: UrlSegmentGroup,
+    public queryParams: Params, // Params -> {}
+    public fragment: string|null
+  ) { }
+  /* ... */
+}
+```
+
+From the aforementioned URL structure, we can already see that `queryParams` and `fragment` have found their pair. However, in which way does the `segments` part correspond with `UrlSegmentsGroup`?
+
+An example of an URL would be `a/b/c`. Here, we have no *explicit* groups, only two _implicit_ groups and its **segments**(we'll see why a bit later). Groups are delimited by `()` and are very useful when we're dealing with multiple **router outlets**(e.g **named** outlets).
+
+Let's see the structure of an `UrlSegmentGroup`:
+
+```typescript
+export class UrlSegmentGroup {
+  parent: UrlSegmentGroup|null = null;
+
+  constructor(
+    public segments: UrlSegment[],
+    public children: {[key: string]: UrlSegmentGroup}
+  ) { }
+```
+
+As stated earlier, there are 2 _implicit_ groups. The first one is the **root** `UrlSegmentGroup`, which does not have any segments, only child `UrlSegmentGroup`. The reason behind this is that it should correspond to the root of the component tree, e.g `AppComponent`, which is inherently not included in any route configuration. As we'll discover in the next articles from this series, the way Angular resolves route transitions is based on traversing the `UrlTree`, while taking into account the `Routes` configuration. The second `UrlSegmentGroup`, whose parent is the first one, is the one that actually contains the segments. We'll see what an `UrlSegment` looks in a minute.
+
+We might have a more complex URL, such as `foo/123/(a//named:b)`. The resulted `UrlSegmentGroup` will be this:
+
+```typescript
+{
+  segments: [], // The root UrlSegmentGroup never has any segments
+  children: {
+    primary: {
+      segments: [{ path: 'foo', parameters: {} }, { path: '123', parameters: {} }],
+      children: {
+        primary: { segments: [{ path: 'a', parameters: {} }], children: {} },
+        named: { segments: [{ path: 'b', parameters: {} }], children: {} },
+      },
+    },
+  },
+}
+```
+
+which would match a route configuration like this:
+
+```typescript
+{
+  {
+    path: 'foo/:id',
+    loadChildren: () => import('./foo/foo.module').then(m => m.FooModule)
+  },
+
+  // foo.module.ts
+  {
+    path: 'a',
+    component: AComponent,
+  },
+  {
+    path: 'b',
+    component: BComponent,
+    outlet: 'named',
+  },
+}
+```
+
+*You can experiment with this example in this [StackBlitz](https://stackblitz.com/edit/routing-base-url-parser?file=src%2Fapp%2Ffoo%2Ffoo.module.ts).*
+
+As seen from above, `UrlSegmentGroup`'s children are delimited by `()`. The names of these children are the **router outlet**.
+
+In `/(a//named:b)`, because it uses a `/` before `(`(the could also be `x/y/z(foo:path)`), `a` will be segment of the **primary outlet**. `//` is the separator for router outlets. Finally, `named:b` follows this structure: `outletName:segmentPath`.
+
+Another thing that should be mentioned is the `UrlSegment`'s `parameters` property:
+
+```typescript
+export class UrlSegment {
+  constructor(
+    public path: string,
+    /** The matrix parameters associated with a segment */
+    public parameters: {[name: string]: string}) {}
+}
+```
+
+Besides **positional parameters**(e.g `foo/:a/:b`), segments can have parameters declared like this: `segment/path;k1=v1;k2=v2`.
+
+So, an `UrlTree` can be summarized in: the `root` `UrlSegmentGroup`, the `queryParams` object and the `fragment` of the issued URL.
+
+### What is the difference `/()` and `()`?
+
+Let's begin with a question, what URL would match such configuration?
+
+```typescript
+const routes = [
+  {
+    path: 'foo',
+    component: FooComponent,
+  },
+  {
+    path: 'bar',
+    component: BarComponent,
+    outlet: 'special'
+  }
+]
+```
+
+*You can find a working example [here](https://ng-run.com/edit/dszYKzt8Azuai9VNaUsD).*
+
+It's worth mentioning that in this entire process of resolving the _next_ route, the routes array will be iterated over once for each `UrlSegmentGroup` child. This applies to the nested arrays too(e.g `children`, `loadChildren`).
+
+So, an URL that matches the above configuration would be: `foo(special:bar)`. This is because the root `UrlSegmentGroup`'s child `UrlSegmentGroup`s are:
+
+```typescript
+{
+  // root's children
+
+  primary: { segments: [{ path: 'foo', /* ... */ }], children: {} },
+  special: { segments: [{ path: 'bar', /* ... */ }], children: {} },
+}
+```
+
+As specified before, for each child(in this case `primary` and `special`) it will try to find a match in the `routes` array.  
+If the URL was `foo/(special:bar)`, then the root `UrlSegmentGroup` would have only one child: 
+
+```typescript
+{
+  // root child
+
+  primary: {
+    segments: [{ path: 'foo', /* ... */ }],
+    children: {
+      special: { segments: [{ path: 'bar', /* ... */ }], children: {} }
+    }
+  }
+}
+```
+
+Which would match this configuration:
+
+```typescript
+const routes: Routes = [
+  {
+    path: 'foo',
+    component: FooComponent,
+    children: [
+      {
+        path: 'bar',
+        component: BarComponent,
+        outlet: 'special'
+      }
+    ],
+  },
+];
+```
+
+*You can find a working example [here](https://ng-run.com/edit/S2lkjjUkVpbM6z5RCHjs?open=app%2Fapp.module.ts).*
+
+Additionally, along the `special` `UrlSegmentGroup`, you can have another primary `UrlSegmentGroup`: `foo/(a/path/primary//special:bar)`. Note that `a/path/primary` is _automatically_ assigned to a `primary` `UrlSegmentGroup` child only if the `/()` syntax is used.
+
+### Exercises
+
+In this section, we're going to go over some exercises in order to get a better understanding of how the `UrlParser` works.
+
+**What URL would match with this configuration ? (to match all of them)**
+
+```typescript
+[
+  {path: 'a', component: ComponentA},
+  {path: 'b', component: ComponentB, outlet: 'left'},
+  {path: 'c', component: ComponentC, outlet: 'right'}
+],
+```
+
+<details>
+	<summary>solution</summary>
+
+`a(left:b//right:c)`
+
+The root `UrlSegmentGroup`'s children are:
+
+```typescript
+{
+  primary: 'a',
+  left: 'b',
+  right: 'c'
+}
+```
+</details>
+
+**What would the `UrlTree` look like is this case?**
 
 ```ts
 console.log(r.parseUrl('/q/(a/(c//left:cp)//left:qp)(left:ap)'))
 ```
 
-```ts
-// when explaining `UrlTree` or `UrlParser`
+<details>
+	<summary>solution</summary>
 
-checkRecognize(
-  [
-    {path: 'a', component: ComponentA}, {path: 'b', component: ComponentB, outlet: 'left'},
-    {path: 'c', component: ComponentC, outlet: 'right'}
-  ],
-  'a(left:b//right:c)', (s: RouterStateSnapshot) => {
-    const c = (s as any).children(s.root);
-    checkActivatedRoute(c[0], 'a', {}, ComponentA);
-    checkActivatedRoute(c[1], 'b', {}, ComponentB, 'left');
-    checkActivatedRoute(c[2], 'c', {}, ComponentC, 'right');
-  }
-);
+```typescript
+{
+  // root's children
 
-it('should match routes in the depth first order', () => {
-  checkRecognize(
-      [
-        {path: 'a', component: ComponentA, children: [{path: ':id', component: ComponentB}]},
-        {path: 'a/:id', component: ComponentC}
-      ],
-      'a/paramA', (s: RouterStateSnapshot) => {
-        checkActivatedRoute(s.root, '', {}, RootComponent);
-        checkActivatedRoute((s as any).firstChild(s.root)!, 'a', {}, ComponentA);
-        checkActivatedRoute(
-            (s as any).firstChild(<any>(s as any).firstChild(s.root))!, 'paramA', {id: 'paramA'},
-            ComponentB);
-      });
-
-  checkRecognize(
-      [{path: 'a', component: ComponentA}, {path: 'a/:id', component: ComponentC}], 'a/paramA',
-      (s: RouterStateSnapshot) => {
-        checkActivatedRoute(s.root, '', {}, RootComponent);
-        checkActivatedRoute(
-            (s as any).firstChild(s.root)!, 'a/paramA', {id: 'paramA'}, ComponentC);
-      });
-});
-
-it('should work (nested case)', () => {
-checkRecognize(
-    [{path: '', component: ComponentA, children: [{path: '', component: ComponentB}]}], '',
-    (s: RouterStateSnapshot) => {
-      checkActivatedRoute((s as any).firstChild(s.root)!, '', {}, ComponentA);
-      checkActivatedRoute(
-          (s as any).firstChild(<any>(s as any).firstChild(s.root))!, '', {}, ComponentB);
-    });
-});
-
-// compare this with the first snippet!
-checkRecognize(
-[
-  {
-    path: 'a',
-    component: ComponentA,
-    children: [
-      {path: 'b', component: ComponentB}, {path: 'c', component: ComponentC, outlet: 'left'}
-    ]
+  // #1
+  primary: {
+    segments: ['q'],
+    children: {
+      // #2
+      primary: {
+        segments: ['a'],
+        children: {
+          // #3
+          primary: { segments: ['c'] },
+          left: { segments: ['cp'] }
+        }
+      },
+      left: {
+        segments: ['qp']
+      }
+    }
   },
-],
-'a/(b//left:c)', (s: RouterStateSnapshot) => {
-  const c = (s as any).children(<any>(s as any).firstChild(s.root));
-  checkActivatedRoute(c[0], 'b', {}, ComponentB, PRIMARY_OUTLET);
-  checkActivatedRoute(c[1], 'c', {}, ComponentC, 'left');
-});
-
-// (!) matrix params (could compare with positional params)
-// (!) could include such comparison in `features of angular/router`
-checkRecognize(
-[
-  {path: 'a', component: ComponentA, children: [{path: 'b', component: ComponentB}]},
-  {path: 'c', component: ComponentC, outlet: 'left'}
-],
-'a;a1=11;a2=22/b;b1=111;b2=222(left:c;c1=1111;c2=2222)', (s: RouterStateSnapshot) => {
-  const c = (s as any).children(s.root);
-  checkActivatedRoute(c[0], 'a', {a1: '11', a2: '22'}, ComponentA);
-  checkActivatedRoute(
-      (s as any).firstChild(<any>c[0])!, 'b', {b1: '111', b2: '222'}, ComponentB);
-  checkActivatedRoute(c[1], 'c', {c1: '1111', c2: '2222'}, ComponentC, 'left');
-});
+  left: {
+    segments: ['ap']
+  }
+}
 ```
+
+*You can find this example [here](https://ng-run.com/edit/mzWif1S1fotcDGdwlnEA) as well.*
+
+* `/q/(...)(left:ap)`: `#1`
+* `/q/(a/(...)//left:qp)...`: `#2`
+* `/q/(a/(c//left:cp)//...)...`: `#3`
+</details>
 
 ---
 
@@ -118,7 +275,7 @@ checkRecognize(
 
 ---
 
-## When is UrlTree used
+## When is UrlTree used ?
 
 * based for `ActivatedRouteSnapshot`, which is base for `ActivatedRoute`
 * when returned from a guard, it will result in a redirect operation
