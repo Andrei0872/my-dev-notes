@@ -120,7 +120,7 @@ Besides **positional parameters**(e.g `foo/:a/:b`), segments can have parameters
 
 So, an `UrlTree` can be summarized in: the `root` `UrlSegmentGroup`, the `queryParams` object and the `fragment` of the issued URL.
 
-### What is the difference `/()` and `()`?
+### What is the difference between `/()` and `()`?
 
 Let's begin with a question, what URL would match such configuration?
 
@@ -267,17 +267,185 @@ console.log(r.parseUrl('/q/(a/(c//left:cp)//left:qp)(left:ap)'))
 
 ---
 
-## UrlTree
+## UrlTree, ActivatedRouteSnapshot and ActivatedRoute
 
-* diff between this tree and the one created from `RouterState` or `RouterStateSnapshot`
-  * in a `UrlTree` tree only outlets(named or `primary` by default) are considered children(child = `UrlSegmentGroup`)
-  * in a `RouterStateSnapshot` tree, each matched path of a `Route` object determines a `RouterStateSnapshot` child
+As we've seen from the previous section, an `UrlTree` contains the `fragment`, `queryParams` and the `UrlSegmentGroup`s that create the URL segments. At the same time, there are other important units that make up the process of resolving the next route: `ActivatedRouteSnapshot` and `ActivatedRoute`. This process also consists of multiple **phrases**, e.g: running guards, running resolvers, activating the routes(i.e updating the view accordingly); these phases will operate on 2 other _tree structures_: a tree of `ActivatedRouteSnapshot`s(also named `RouterStateSnapshot`) and a tree of `ActivatedRoute`s(also named `RouterState`).
+
+The `ActivatedRouteSnapshot` tree will be immediately created after the `UrlTree` has been built. One significant difference between these two tree structures is that in an `UrlTree` only outlets(named or `primary` ,by default) are considered children(child = `UrlSegmentGroup`), whereas in `RouterStateSnapshot`, each matched path of a `Route` object determines an `ActivatedRouteSnapshot` child.
+
+Let's see an example. For this route configuration:
+
+```typescript
+const routes: Routes = [
+  {
+    path: 'foo',
+    component: FooComponent,
+    children: [
+      {
+        path: 'bar',
+        component: BarComponent,
+        outlet: 'special'
+      }
+    ],
+  },
+];
+```
+
+and the next URL `foo/(special:bar)`, the `ActivatedRouteSnapshot` tree would look like this:
+
+```typescript
+{
+  // root
+  url: 'foo/(special:bar)',
+  outlet: 'primary',
+  /* ... */
+  children: [
+    {
+      url: 'foo',
+      outlet: 'primary',
+      /* ... */
+      children: [
+        { url: 'bar', outlet: 'special', children: [], /* ... */ }
+      ]
+    }
+  ]
+}
+```
+
+This tree is constructed by iterating through the route configuration array, while also using the previously created `UrlTree`. For example,
+
+```typescript
+{
+  path: 'foo',
+  component: FooComponent,
+  children: [/* ... */],
+}
+```
+
+will match with this `UrlSegmentGroup`:
+
+```typescript
+{
+  segments: [{ path: 'foo' }]
+  children: { special: /* ... */ }
+}
+```
+
+Then, the resulted `ActivatedRouteSnapshot` from above will have a child `ActivatedRouteSnapshot`, because the **matched path**(i.e `foo`) belongs to a route configuration object which also has the `children` property(the same would've happened if there was `loadChildren`).
+
+Based on the `RouterStateSnapshot`, Angular will determine which guards and which resolvers should run, and also how to create the `ActivatedRoute` tree. `RouterState` will essentially have the same structure as `RouterStateSnapshot`, except that, instead of `ActivatedRouteSnapshot` nodes, it will contain `ActivatedRoute` nodes. This step is necessary because the developer has the opportunity to opt for a custom `RouteReuseStrategy`, which is a way to _store_ a subtree of `ActivatedRouteSnapshot` nodes and can be useful if we don't want do recreate components if the same navigation occurs multiple times.
+
+Furthermore, we can also highlight the difference between `ActivatedRoute` and `ActivatedRouteSnapshot`. The `ActivatedRouteSnapshot` tree will always be **recreated**(from the `UrlTree`), but some nodes of the `ActivatedRoute` tree can be **reused**, which explains how it's possible to be notified when **positional params**(e.g `foo/:id/:param`) change, by subscribing to `ActivatedRoute`'s observable properties(`params`, `data`, `queryParams`, `url` etc...).  
+This is achieved by comparing the current `RouterState`(before the navigation) and the next `RouterState`(after the navigation). An `ActivatedRoute` node can be reused if `current.routeConfig === next.routeConfig`, where `routeConfig` is the object we place inside the `routes` array.
+
+To illustrate that, let's consider this route configuration:
+
+```typescript
+const routes: Routes = [
+  {
+    path: 'empty/:id',
+    component: EmptyComponent,
+    children: [
+      {
+        path: 'foo',
+        component: FooComponent,
+      },
+      {
+        path: 'bar',
+        component: BarComponent,
+        outlet: 'special'
+      },
+      {
+        path: 'beer',
+        component: BeerComponent,
+        outlet: 'special',
+      },
+    ]
+  }
+];
+```
+
+and this initial issued URL: `'empty/123/(foo//special:bar)'`. If we would now navigate to `empty/999/(foo//special:beer)`, then we could visualize the comparison between `RouterState` trees like this:
+
+<div style="text-align: center;">
+  <img src="https://raw.githubusercontent.com/Andrei0872/my-dev-notes/master/screenshots/routerstate.jpg">
+</div>
+
+As you can see, the `Empty` node(which corresponds to `path: 'empty/:id'`) is reused, because this expression evaluates to `true`: `current.routeConfig === next.routeConfig`, where `routeConfig` is:
+
+```typescript
+{
+  path: 'empty/:id',
+  children: [/* ... */]
+}
+```
+
+We can also see these lines from `EmptyComponent`:
+
+```typescript
+export class EmptyComponent {
+  constructor (activatedRoute: ActivatedRoute) {
+    console.warn('[EmptyComponent]: constructor');
+
+    activatedRoute.params.subscribe(console.log);
+  }
+}
+```
+
+and also from clicking these buttons:
+
+```html
+<button (click)="router.navigateByUrl('empty/123/(foo//special:bar)')">empty/123/(foo//special:bar)</button>
+
+<br><br>
+
+<button (click)="router.navigateByUrl('empty/999/(foo//special:beer)')">empty/123/(foo//special:beer)</button>
+```
+
+The same logic can be applied for each of `ActivatedRoute`'s observable properties:
+
+```typescript
+url: Observable<UrlSegment[]>,
+/** An observable of the matrix parameters scoped to this route. */
+params: Observable<Params>,
+/** An observable of the query parameters shared by all the routes. */
+queryParams: Observable<Params>,
+/** An observable of the URL fragment shared by all the routes. */
+fragment: Observable<string>,
+/** An observable of the static and resolved data of this route. */
+data: Observable<Data>,
+
+/**
+ * An Observable that contains a map of the required and optional parameters
+  * specific to the route.
+  * The map supports retrieving single and multiple values from the same parameter.
+  */
+get paramMap(): Observable<ParamMap> {
+  if (!this._paramMap) {
+    this._paramMap = this.params.pipe(map((p: Params): ParamMap => convertToParamMap(p)));
+  }
+  return this._paramMap;
+}
+
+/**
+ * An Observable that contains a map of the query parameters available to all routes.
+ * The map supports retrieving single and multiple values from the query parameter.
+ */
+get queryParamMap(): Observable<ParamMap> {
+  if (!this._queryParamMap) {
+    this._queryParamMap =
+        this.queryParams.pipe(map((p: Params): ParamMap => convertToParamMap(p)));
+  }
+  return this._queryParamMap;
+}
+```
+
+*A working example can be found [here](https://ng-run.com/edit/45kL9ml80w1K8i81EzTk?open=app%2Fapp.component.html).*
 
 ---
 
 ## When is UrlTree used ?
 
-* based for `ActivatedRouteSnapshot`, which is base for `ActivatedRoute`
 * when returned from a guard, it will result in a redirect operation
   ```ts
   /* 
