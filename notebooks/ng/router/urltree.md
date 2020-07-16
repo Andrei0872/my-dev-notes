@@ -1,6 +1,6 @@
-# Demystifying angular/router: Getting to know UrlTree, ActivatedRouteSnapshot and ActivatedRoute
+# Demystifying angular/router: Getting to know UrlTree, ActivatedRouteSnapshot and ActivatedRoute - Part 1
 
-
+In this part, we're going to cover why `UrlTree` is the foundation of a route transition and how `ActivatedRouteSnapshot` and `ActivatedRoute` provide a way to achieve features like **guards**, **resolvers**, or how an `ActivatedRoute` can be _updated_.
 
 ## What is UrlParser and why it is important
 
@@ -58,7 +58,7 @@ export class UrlSegmentGroup {
   ) { }
 ```
 
-As stated earlier, there are 2 _implicit_ groups. The first one is the **root** `UrlSegmentGroup`, which does not have any segments, only child `UrlSegmentGroup`. The reason behind this is that it should correspond to the root of the component tree, e.g `AppComponent`, which is inherently not included in any route configuration. As we'll discover in the next articles from this series, the way Angular resolves route transitions is based on traversing the `UrlTree`, while taking into account the `Routes` configuration. The second `UrlSegmentGroup`, whose parent is the first one, is the one that actually contains the segments. We'll see what an `UrlSegment` looks in a minute.
+As stated earlier, there are 2 _implicit_ groups. The first one is the **root** `UrlSegmentGroup`, which does not have any segments, only one child `UrlSegmentGroup`. The reason behind this is that it should correspond to the root of the component tree, e.g `AppComponent`, which is inherently not included in any route configuration. As we'll discover in the next articles from this series, the way Angular resolves route transitions is based on traversing the `UrlTree`, while taking into account the `Routes` configuration. The second `UrlSegmentGroup`, whose parent is the first one, is the one that actually contains the segments. We'll see how an `UrlSegment` looks in a minute.
 
 We might have a more complex URL, such as `foo/123/(a//named:b)`. The resulted `UrlSegmentGroup` will be this:
 
@@ -140,7 +140,7 @@ const routes = [
 
 *You can find a working example [here](https://ng-run.com/edit/dszYKzt8Azuai9VNaUsD).*
 
-It's worth mentioning that in this entire process of resolving the _next_ route, the routes array will be iterated over once for each `UrlSegmentGroup` child. This applies to the nested arrays too(e.g `children`, `loadChildren`).
+It's worth mentioning that in this entire process of resolving the _next_ route, the routes array will be iterated over once for each `UrlSegmentGroup` child at a certain level. This applies to the nested arrays too(e.g `children`, `loadChildren`).
 
 So, an URL that matches the above configuration would be: `foo(special:bar)`. This is because the root `UrlSegmentGroup`'s child `UrlSegmentGroup`s are:
 
@@ -335,7 +335,7 @@ Then, the resulted `ActivatedRouteSnapshot` from above will have a child `Activa
 
 Based on the `RouterStateSnapshot`, Angular will determine which guards and which resolvers should run, and also how to create the `ActivatedRoute` tree. `RouterState` will essentially have the same structure as `RouterStateSnapshot`, except that, instead of `ActivatedRouteSnapshot` nodes, it will contain `ActivatedRoute` nodes. This step is necessary because the developer has the opportunity to opt for a custom `RouteReuseStrategy`, which is a way to _store_ a subtree of `ActivatedRouteSnapshot` nodes and can be useful if we don't want do recreate components if the same navigation occurs multiple times.
 
-Furthermore, we can also highlight the difference between `ActivatedRoute` and `ActivatedRouteSnapshot`. The `ActivatedRouteSnapshot` tree will always be **recreated**(from the `UrlTree`), but some nodes of the `ActivatedRoute` tree can be **reused**, which explains how it's possible to be notified when **positional params**(e.g `foo/:id/:param`) change, by subscribing to `ActivatedRoute`'s observable properties(`params`, `data`, `queryParams`, `url` etc...).  
+Furthermore, we can also highlight the difference between `ActivatedRoute` and `ActivatedRouteSnapshot`. The `ActivatedRouteSnapshot` tree will always be **recreated**(from the `UrlTree`), but some nodes of the `ActivatedRoute` tree can be **reused**, which explains how it's possible to be notified, for example, when **positional params**(e.g `foo/:id/:param`) change, by subscribing to `ActivatedRoute`'s observable properties(`params`, `data`, `queryParams`, `url` etc...).  
 This is achieved by comparing the current `RouterState`(before the navigation) and the next `RouterState`(after the navigation). An `ActivatedRoute` node can be reused if `current.routeConfig === next.routeConfig`, where `routeConfig` is the object we place inside the `routes` array.
 
 To illustrate that, let's consider this route configuration:
