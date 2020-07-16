@@ -446,44 +446,85 @@ get queryParamMap(): Observable<ParamMap> {
 
 ## When is UrlTree used ?
 
-* when returned from a guard, it will result in a redirect operation
-  ```ts
-  /* 
-  if `canActivate` returns `UrlTree` -> redirect
-  */
-  checkGuards(this.ngModule.injector, (evt: Event) => this.triggerEvent(evt)),
-  tap(t => {
-    if (isUrlTree(t.guardsResult)) {
-      const error: Error&{url?: UrlTree} = navigationCancelingError(
-          `Redirecting to "${this.serializeUrl(t.guardsResult)}"`);
-      error.url = t.guardsResult;
-      throw error;
-    }
-  })
+Now that we've understood what an `UrlTree` is, we can explore a few use cases.
 
-  /* ... */
-  if (isNavigationCancelingError(e)) { /* ... */ }
+### When an `UrlTree` is returned from a guard, it will result in a redirect operation
 
+As we can see from the [source code](https://github.com/angular/angular/blob/master/packages/router/src/router.ts#L617-L625):
+
+```typescript
+/* 
+if `canActivate` returns `UrlTree` -> redirect
+*/
+checkGuards(this.ngModule.injector, (evt: Event) => this.triggerEvent(evt)),
+tap(t => {
+  if (isUrlTree(t.guardsResult)) {
+    const error: Error&{url?: UrlTree} = navigationCancelingError(
+        `Redirecting to "${this.serializeUrl(t.guardsResult)}"`);
+    error.url = t.guardsResult;
+    throw error;
+  }
+})
+```
+
+For example:
+
+```typescript
+const routes = [
   {
-    provide: 'returnUrlTree',
-    useFactory: (router: Router) => () => {
-      return router.parseUrl('/redirected');
+    path: 'foo/:id',
+    component: FooComponent,
+    canActivate: ['fooGuard']
+  },
+  {
+    path: 'bar',
+    component: BarComponent
+  }
+];
+
+// `providers` array
+[
+  {
+    provide: 'fooGuard',
+    
+    // `futureARS` - future `ActivatedRouteSnapshot`
+    useFactory: (router: Router) => (futureARS) => {
+      return +futureARS.paramMap.get('id') === 1 ? router.parseUrl('/bar') : true;
     },
     deps: [Router]
   },
-  ``` 
-* when resolving the next `UrlTree` in `RouterLink` directive
-* based on `UrlTree`s, the `RouterLinkActive` directive will apply the classes accordingly
-* `Router.navigateByUrL()`
-  ```ts
-  router.resetConfig([{
-    path: 'team/:id',
-    component: TeamCmp,
-    children: [
-      {path: 'user/:name', component: UserCmp},
-      {path: 'simple', component: SimpleCmp, outlet: 'right'}
-    ]
-  }]);
+]
+```
 
-  router.navigateByUrl('/team/22/(user/victor//right:simple)');
-  ```
+*An example can be found [here](https://ng-run.com/edit/0MKTWXshcBEd49BH1be7?open=app%2Fapp.module.ts).*
+
+### `Router.navigateByUrl()`
+
+The [`Router.navigateByUrl(url)`](https://github.com/angular/angular/blob/master/packages/router/src/router.ts#L1080-L1091) method converts the provided `url` into an `UrlTree`:
+
+```typescript
+navigateByUrl(url: string|UrlTree, extras: NavigationExtras = {skipLocationChange: false}):
+    Promise<boolean> {
+  /* ... */
+
+  // `parseUrl` -> create `UrlTree`
+  const urlTree = isUrlTree(url) ? url : this.parseUrl(url);
+  const mergedTree = this.urlHandlingStrategy.merge(urlTree, this.rawUrlTree);
+
+  return this.scheduleNavigation(mergedTree, 'imperative', null, extras);
+}
+```
+
+### Router Directives
+
+`RouterLink` and `RouterLinkActive` rely on `UrlTree`s in order to achieve their functionality.
+
+`RouterLinkActive` will compare the current `UrlTree` with the one resulted from `RouterLink`'s commands and, based on the results, will add/remove classes accordingly.
+
+`RouterLink` will create a new `UrlTree`, based on the current `UrlTree` and the provided commands.
+
+We will explore them in detail in future articles from this series, as they are pretty complex.
+
+---
+
+**Thanks for reading!**
