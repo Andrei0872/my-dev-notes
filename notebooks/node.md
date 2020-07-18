@@ -107,9 +107,10 @@ bar
 
 * when the microtask queue is empty: a pending macrotask handler can be run
 
-### `setImmediate()`
+### `setImmediate()` and `nextTick()`
 
-* puts the callback function **ahead** of the **job queue**
+* https://dev.to/jinoantony/setimmediate-vs-process-nexttick-in-nodejs-37i2
+* https://stackoverflow.com/questions/15349733/setimmediate-vs-nexttick
 
 <details>
 <summary>Example</summary>
@@ -118,79 +119,46 @@ bar
 
 ```typescript
 
+// At the beginning of the iteration or between phrases
+// Thus, **before** I/O polling, so `nextTick`, called recursively, can block the ev loop
+process.nextTick(() => console.log('nextTick 1'));
 
-const p = (time = 1000) => new Promise(r => setTimeout(r, time, 'result from promise ' + time));
+// Fires in the `check` phases (after I/O polling), so the ev. loop can continue normally
+setImmediate(() => console.log('setImmediate'));
 
-p()
-    .then(console.log)
+// Added in the microtask queue - run after the crt script has finished, at the end of the crt iteration
+Promise.resolve('1').then(console.log);
 
-p(0)
-    .then(console.log)
+// Added in the macrotask queue - run at the beginning of the next iteration(after microtask queue becomes empty)
+setTimeout(() => console.log('timeout'), 0);
 
-setTimeout(() => {
-    console.log('timeout 1')
-    setImmediate(() => {
-        console.log('immediate 1')
-    });
-}, 0);
-
-setTimeout(() => {
-    console.log('timeout 2')
-    setImmediate(() => {
-        console.log('immediate 2')
-    });
-}, 0);
-
-setTimeout(() => {
-    console.log('timeout 3')
-}, 0);
-
-setImmediate(() => {
-    console.log('immediate first!');
-});
-/*
---->
-immediate first!
-result from promise 0
-timeout 1
-timeout 2
-timeout 3
-immediate 1
-immediate 2
-result from promise 1000
+/* 
+nextTick 1
+1
+timeout
+setImmediate
 */
 ```
-</details>
-
-
-### `process.nextTick()`
-
-* puts its callback at the **front** of the job queue
-
-<details>
-<summary>Example</summary>
-<br>
-
 
 ```typescript
-const p = (time = 1000) => new Promise(r => setTimeout(r, time, 'result from promise ' + time));
-
-p(0)
-    .then(console.log)
-
-setTimeout(() => console.log('setTimeout'), 0);
+process.nextTick(() => console.log('nextTick 1'));
 
 setImmediate(() => console.log('setImmediate'));
 
-process.nextTick(() => console.log('nextTick!'))
+Promise.resolve('1').then(console.log);
 
+setTimeout(() => console.log('timeout'), 0);
+
+Promise.resolve('2').then(() => process.nextTick(() => console.log('nextTick 2')));
+Promise.resolve('3').then(() => Promise.resolve(4).then(console.log));
 
 /* 
---> 
-nextTick! ​​​​​
-setImmediate ​​​​​
-result from promise 0 
-setTimeout ​​​​​
+nextTick 1
+1
+4
+nextTick 2
+timeout
+setImmediate
 */
 ```
 </details>
