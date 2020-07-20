@@ -55,3 +55,72 @@ value received 4
 END
 */
 ```
+
+```go
+package main
+
+import (
+	"fmt"
+	"io/ioutil"
+	"net/http"
+	"sync"
+	"time"
+)
+
+const url = "https://jsonplaceholder.typicode.com/todos/"
+
+func fetch(id int) (string, error) {
+	time.Sleep(time.Second)
+
+	resp, err := http.Get(fmt.Sprint(url, id))
+
+	if err != nil {
+		return "", err
+	}
+
+	defer resp.Body.Close()
+
+	body, err := ioutil.ReadAll(resp.Body)
+
+	if err != nil {
+		return "", err
+	}
+
+	return string(body), nil
+}
+
+func main() {
+	todoIds := [...]int{1, 2, 3, 4, 5, 6, 7, 8, 9, 10}
+	responses := []string{}
+	var wg sync.WaitGroup
+	sem := make(chan int, 4)
+
+	wg.Add(len(todoIds))
+
+	for _, id := range todoIds {
+		go func(id int) {
+
+			// if `sem` channel is full, then subsequent iterations will be blocked until it frees up some space(e.g <-sem)
+			sem <- 1
+			// fmt.Println("START WORK")
+			defer wg.Done()
+
+			resp, err := fetch(id)
+
+			if err != nil {
+				return
+			}
+
+			responses = append(responses, resp)
+
+			// fmt.Println("RELEASE")
+			<-sem
+		}(id)
+	}
+
+	wg.Wait()
+
+	fmt.Println("READY")
+	// fmt.Println(responses)
+}
+```
