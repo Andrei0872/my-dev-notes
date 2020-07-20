@@ -176,3 +176,20 @@ func main() {
 	fmt.Printf("%s", s) // {"foo":{"name":"andrei","age":"19"}}
 }
 ```
+
+```go
+data := []byte(`
+	{
+		"bar": "true"
+	}
+`)
+
+// without defining the container type
+var i interface{}
+
+json.Unmarshal(data, &i)
+
+// extract the concrete values
+barData := i.(map[string]interface{})
+fmt.Println(barData["bar"])
+```
