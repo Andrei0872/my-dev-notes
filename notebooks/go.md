@@ -124,3 +124,55 @@ func main() {
 	// fmt.Println(responses)
 }
 ```
+
+---
+
+## Encoding/Decoding
+
+* https://medium.com/rungo/working-with-json-in-go-7e3a37c5a07b
+
+```go
+package main
+
+import (
+	"encoding/json"
+	"fmt"
+)
+
+// when using a struct, non-exported fields will be ignored
+type Person struct {
+	Name string `json:"name"`
+	Age  int    `json:"age,string"`
+}
+
+func main() {
+	p := Person{
+		Name: "andrei",
+		Age:  19,
+	}
+
+	s, err := json.Marshal(p)
+
+	if err != nil {
+		return
+	}
+
+	fmt.Printf("%s \n", s) // {"name":"andrei","age":"19"}
+
+	// When using maps, non-exported fields will **not** be ignored
+	m := make(map[string]interface{})
+
+	m["foo"] = Person{
+		Name: "andrei",
+		Age:  19,
+	}
+
+	s, err = json.Marshal(m)
+
+	if err != nil {
+		return
+	}
+
+	fmt.Printf("%s", s) // {"foo":{"name":"andrei","age":"19"}}
+}
+```
