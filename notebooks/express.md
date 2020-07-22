@@ -2,6 +2,7 @@
 
 ## Findings
 
+### `next`'s arguments
 ```ts
 next(err);
 
@@ -12,6 +13,9 @@ err
 */
 ```
 
+#### calling `next` from a route handler
+
+### traversing the _stack_
 ```ts
 router.handle = () => {
   
@@ -40,6 +44,7 @@ router.handle = () => {
 }
 ```
 
+### initialization
 ```ts
 // lazyrouter();
 
@@ -54,6 +59,40 @@ this._router.use(middleware.init(this));
 
 res.locals = res.locals || Object.create(null);
 ```
+
+### applying middlewares
+
+* `app.get('path', [...middlewares], cb)`
+
+### params
+
+* `layer.params` populated in `matchLayer`
+  `req.params` are populated afterwards
+  ```js
+  // Capture one-time layer values
+  req.params = self.mergeParams
+    ? mergeParams(layer.params, parentParams)
+    : layer.params;
+  var layerPath = layer.path;
+  ```
+
+### `Router`
+
+* `mergeParams`
+
+### Providing the path
+
+*e.g `app.get(path)`*
+
+* `pathtoRegexp` package
+* `new RegExp('\\d+').source`
+
+* `path`
+  * a `RegExp` instance
+  * a `string` and will then get converted into a `RegExp` instance
+  * an array of strings or `RegExp` instances
+
+* `*` -> `(.*)`
 
 ---
 
@@ -73,3 +112,7 @@ if (route) {
 * `app.param([name], cb)` -> `router.param(name, cb)`
   * https://discuss.codecademy.com/t/how-many-ways-can-app-param-be-used/384590
   * tied to `layer.kys`
+
+* what happens when a middleware returns `false`
+
+* streams
