@@ -3,9 +3,9 @@
 - [Regex Notebook](#regex-notebook)
   - [Knowledge](#knowledge)
     - [Shorthands](#shorthands)
-      - [+](#)
-      - [*](#)
-      - [?](#)
+      - [`+`](#ulliliul)
+      - [`*`](#ulliliul-1)
+      - [`?`](#)
   - [Named Capture Groups](#named-capture-groups)
   - [Lookbehind](#lookbehind)
   - [Lookahead](#lookahead)
@@ -150,6 +150,27 @@ console.log(re.exec('€199.30')) // ​​​​​​​​​​[ '199.30', '
 let str = "andr3eeee1"
 console.log(str.replace(/((?!\d))/g, '*')) // "*a*n*d*r3*e*e*e*e1*"
 console.log(str.replace(/((?=\d))/g, '*')) // "andr*3eeee*1"
+```
+</details>
+
+<details>
+<summary>Negative lookahead</summary>
+<br>
+
+```typescript
+const re = /\((?!(.*[?]))/;
+
+re.test('(abcd)') // true
+re.test('(ab?cd)') // false
+```
+
+```typescript
+// without `.*`, it would only be `false` if `?` comes first after `(`
+const re = /\((?!(.*[?]))/;
+
+re.test('(abcd)') // true
+re.test('(?abcd)') // false
+re.test('(ab?cd)') // true
 ```
 </details>
 
