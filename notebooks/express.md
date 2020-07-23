@@ -76,6 +76,57 @@ res.locals = res.locals || Object.create(null);
   var layerPath = layer.path;
   ```
 
+```js
+// the first arg can be an array which contains multiple `params`
+app.param(['id'], () => {
+  console.log('[id] matched! #1');
+});
+
+app.param('id', (req, res, next, idValue) => {
+  console.log('[id] matched! #2');
+});
+
+// the router will keep track of these param's callbacks this way:
+{
+  'id': [cb1, cb2, /* ... */],
+  'otherParam': [/* ... */]
+}
+```
+
+* the callbacks will be called **before** the `route handler`
+* the `next` cb passed in, when invoked, it will go to the next callback of the currently processed `param`, or if there are no other callbacks, it will go to the next `param` which has any registered callbacks
+
+```js
+app.get('/test/:foo/:bar', (req, res) => {
+  console.log('[ROUTE HANDLER]');
+  const { foo, bar } = req.params;
+
+  res.json({ foo, bar });
+});
+
+app.param(['foo', 'bar'], (req, res, next, value, param) => {
+  console.log(`param cb (${param}), value: ${value}`);
+
+  next();
+});
+
+app.param('foo', (req, res, next, value) => {
+  console.log('[foo] param handler', value);
+
+  next();
+});
+
+/* 
+param cb (foo), value: foo-val
+foo.js:26
+[foo] param handler foo-val
+foo.js:32
+param cb (bar), value: bar-val
+foo.js:26
+[ROUTE HANDLER]
+*/
+```
+
 ### `Router`
 
 * `mergeParams`
@@ -93,6 +144,44 @@ res.locals = res.locals || Object.create(null);
   * an array of strings or `RegExp` instances
 
 * `*` -> `(.*)`
+
+```js
+const re = /(\\\/)?(\\\.)?:(\w+)(\(.*?\))?(\*)?(\?)?/;
+
+app.get('/test/:id(\\d+)', () => {}); // -> new RegExp('^\/test\/(?:(\d+))\/?$')
+
+// the entire (/:id..) is optional
+// meaning that `curl http://localhost:8001/test/sadsa` would **not** match this route
+// but `curl http://localhost:8001/test/` will
+app.get('/test/:id(\\d+)?', () => {}); // -> '^\/test(?:\/(\d+))?\/?$'
+
+
+/* 
+params: {
+  0:'/2abdsa' // unnamed group
+  id:'123'
+}
+*/
+// what's after the `*`, it will become an unnamed group
+app.get('/test/:id(\\d+)*?', () => {});
+
+/* 
+{
+  keys: [
+    { name: 0 },  // because `*` becomes `(.*)`, which represents an unnamed group
+    { name: id },
+  ],
+}
+*/
+/* 
+on `curl http://localhost:8001/abcdef/123`
+params: {
+  0: 'abcdef',
+  id: 123,
+}
+*/
+app.get('/*/:id(\\d+)', () => {});
+```
 
 ---
 
