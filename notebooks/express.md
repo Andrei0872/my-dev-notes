@@ -1,8 +1,6 @@
 # Express Notebook
 
-## Findings
-
-### `next`'s arguments
+## `next`'s arguments
 ```ts
 next(err);
 
@@ -13,9 +11,11 @@ err
 */
 ```
 
-#### calling `next` from a route handler
+* calling `next` from a route handler
 
-### traversing the _stack_
+---
+
+## traversing the _stack_
 ```ts
 router.handle = () => {
   
@@ -44,7 +44,9 @@ router.handle = () => {
 }
 ```
 
-### initialization
+---
+
+## initialization
 ```ts
 // lazyrouter();
 
@@ -60,11 +62,15 @@ this._router.use(middleware.init(this));
 res.locals = res.locals || Object.create(null);
 ```
 
-### applying middlewares
+---
+
+## middlewares
 
 * `app.get('path', [...middlewares], cb)`
 
-### params
+---
+
+## params
 
 * `layer.params` populated in `matchLayer`
   `req.params` are populated afterwards
@@ -127,11 +133,15 @@ foo.js:26
 */
 ```
 
-### `Router`
+---
+
+## `Router`
 
 * `mergeParams`
 
-### Providing the path
+---
+
+## Providing the path
 
 *e.g `app.get(path)`*
 
