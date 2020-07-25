@@ -65,6 +65,9 @@ func (o buildOptions) dockerfileFromStdin() bool {
 
 * cli sends a compressed file to the daemon server
 * `/var/lib/docker` - where docker keeps containers
+* default daemon config file: `/etc/docker/daemon.json`
+* `/run/containerd/containerd.sock` - `containerd`
+* channels; context package
 
 ---
 
