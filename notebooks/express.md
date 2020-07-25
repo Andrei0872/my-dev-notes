@@ -15,7 +15,47 @@
   app.use('/admin', adminApp)
   ```
 
-  however, before processing the stack of a **sub-app**, there will be a copy of the current app, so that whatever happens inside the sub-app's stack won't affect the layers in the outer stack (?)
+passing data between apps
+```js
+// curl http://localhost:8001/foo/1
+
+const adminApp = express();
+
+adminApp.use((req, res, next) => {
+  res.foo = 'CUSTOM PROPERTY';
+
+  next();
+});
+
+adminApp.use((req, res, next) => {
+  console.log('[ADMIN]: custom prop', res.foo)
+
+  next();
+});
+
+adminApp.get('/test/:id', (req, res, next) => {
+  res.json({
+    adminRoute: req.params.id
+  });
+});
+
+const app = express();
+
+// `/admin`
+app.use('/', adminApp);
+
+app.use((req, res, next) => {
+  console.log('[HOST APP]: custom prop', res.foo)
+
+  next();
+});
+
+app.get('/foo/:id', (req, res) => {
+  console.log('test');
+
+  res.json({ msg: 'hello' });
+});
+```
 
 ```js
 // added as `router.use` --> middleware for routes
