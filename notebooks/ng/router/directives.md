@@ -1,4 +1,248 @@
-# Demystifying angular/router: an in-depth look at `RouterLink`, `RouterLinkActive` and `RouterOutlet` directives
+# Demystifying angular/router: an in depth look at `RouterLink`, `RouterLinkActive` and `RouterOutlet` directives
+
+<!-- INTRO -->
+
+## RouterOutlet directive
+
+* can be notified when the `router-outlet` is activated/deactivated
+  ```ts
+  @Output('activate') activateEvents = new EventEmitter<any>();
+  @Output('deactivate') deactivateEvents = new EventEmitter<any>(); // You can receive the component here
+  ```
+
+  ```html
+  <router-outlet (activate)="recordActivate($event)" (deactivate)="recordDeactivate($event)"></router-outlet>
+  ```
+
+* how everything is organized
+  ```ts
+  // #1
+  {
+    path: '',
+    component: A,
+    children: []
+  }
+  ``` 
+
+  differs from
+
+  ```ts
+  // #2
+  {
+    path: '',
+    loadChildren: () => import(/* ... */)
+  }
+  ```
+
+  ```ts
+  {
+    path: 'foo',
+    loadChildren: () => Promise.resolve({}),
+    component: Foo,
+  }
+  ```
+
+  the information about a **router outlet** has this shape:
+
+  ```ts
+  export class OutletContext {
+    outlet: RouterOutlet|null = null;
+    route: ActivatedRoute|null = null;
+    resolver: ComponentFactoryResolver|null = null;
+    children = new ChildrenOutletContexts();
+    attachRef: ComponentRef<any>|null = null;
+  }
+  ```
+
+  The router outlets hierarchy is achieved with `ChildrenOutletContexts`:
+
+  ```ts
+  export class ChildrenOutletContexts {
+    // contexts for child outlets, by name.
+    private contexts = new Map<string, OutletContext>();
+  }
+  ```
+
+  After adding the first `router-outlet` to the page, here's how the structure would look like:
+
+  ```typescript
+  {
+    contexts: { primary: OutletContext }
+  }
+  ```
+
+  In `#1`'s scenario, the `component` used will also have to include at least one `router-outlet`, each of each will be added to the corresponding `context`, as children.
+
+  For example:
+
+  ```ts
+  {
+    path: '',
+    component: A,
+    children: [{ path: 'foo', component: Foo }, { path: 'bar', component: Bar, outlet: 'special' }]
+  }
+  ```
+
+  If `A` component declares `<router-outlet>` and `<router-outlet name="special">`, then the hierarchy would look as follows:
+
+  ```typescript
+  {
+    contexts: {
+      primary: { // A
+        context: {
+          primary: OutletContext, // Foo
+          special: OutletContext, // Bar
+        }
+      }
+    }
+  }
+  ```
+
+  And the same pattern would be applied if, for instance, `bar`'s route would have a `children` property.
+
+  In `#2`'s scenario, since the route configuration does not have a component declared in it, and hence no others `router-outlet`s, the initial `router-outlet` will contain the first component from the loaded module which belongs to a route configuration whose `path` matches the current issued URL.
+
+  ```ts
+  {
+    path: 'test',
+    loadChildren: () => import(/* ... */)
+  }
+
+  // Inside module
+  {
+    path: 'foo',
+    component: Foo,
+  }
+  ```
+
+  then, the `router-outlet`s would be organized like this:
+
+  ```ts
+  {
+    context: {
+      primary: OutletContext // Foo
+    }
+  }
+  ```
+
+  If `Foo`'s route configuration contained the `children` property, then it would resemble `#1`.
+
+  https://stackblitz.com/edit/routing-router-outlet?file=src%2Fapp%2Fapp.component.ts
+
+* `RouterOutlet.activateWith`
+  inserting the route's component into the view; everything is based on the `ViewContainerRef`'s API(`private location: ViewContainerRef`) 
+  when it adds a new component into the view, in order to properly organize the child `router-outlet`'s, the newly added component will also specify a **custom injector**, `OutletInjector`:
+
+  ```ts
+  // Called when a route is activated
+  activateWith(activatedRoute: ActivatedRoute, resolver: ComponentFactoryResolver|null) {
+    if (this.isActivated) {
+      throw new Error('Cannot activate an already activated outlet');
+    }
+    this._activatedRoute = activatedRoute;
+    const snapshot = activatedRoute._futureSnapshot;
+    const component = <any>snapshot.routeConfig!.component;
+    resolver = resolver || this.resolver;
+    const factory = resolver.resolveComponentFactory(component);
+    const childContexts = this.parentContexts.getOrCreateContext(this.name).children;
+    const injector = new OutletInjector(activatedRoute, childContexts, this.location.injector);
+    this.activated = this.location.createComponent(factory, this.location.length, injector);
+    // Calling `markForCheck` to make sure we will run the change detection when the
+    // `RouterOutlet` is inside a `ChangeDetectionStrategy.OnPush` component.
+    this.changeDetector.markForCheck();
+    this.activateEvents.emit(this.activated.instance);
+  }
+
+  class OutletInjector implements Injector {
+    constructor(
+        private route: ActivatedRoute, private childContexts: ChildrenOutletContexts,
+        private parent: Injector) {}
+
+    get(token: any, notFoundValue?: any): any {
+      // This is how a routed component is able to inject the right `ActivatedRoute`
+      if (token === ActivatedRoute) {
+        return this.route;
+      }
+
+      // This is an essential piece of logic to properly creating the above mentioned hierarchy
+      // A child router-outlet would be added to the current child context's children
+      // this.childContexts = this.parentContexts.getOrCreateContext(this.name).children;
+      if (token === ChildrenOutletContexts) {
+        return this.childContexts;
+      }
+
+      return this.parent.get(token, notFoundValue);
+    }
+  }
+  ```
+
+* deactivating vs destroying a `router-outlet`
+  `<router-outlet *ngIf="condition"></router-outlet>` - destroying the `router-outlet` doesn't remove the `OutletContext` from the `contexts` Map
+
+  ```ts
+  ngOnDestroy(): void {
+    this.parentContexts.onChildOutletDestroyed(this.name);
+  }
+
+  onChildOutletDestroyed(childName: string): void {
+    const context = this.getContext(childName);
+    if (context) {
+      context.outlet = null;
+    }
+  }
+  ```
+
+  And it will be **re-created** when the `condition` becomes `true` again:
+
+  ```ts
+  ngOnInit(): void {
+    if (!this.activated) {
+      // If the outlet was not instantiated at the time the route got activated we need to populate
+      // the outlet when it is initialized (ie inside a NgIf)
+      const context = this.parentContexts.getContext(this.name);
+      if (context && context.route) { // Already created before; set in `activateRoutes`
+        if (context.attachRef) {
+          // `attachRef` is populated when there is an existing component to mount
+          this.attach(context.attachRef, context.route);
+        } else {
+          // otherwise the component defined in the configuration is created
+          this.activateWith(context.route, context.resolver || null);
+        }
+      }
+    }
+  }
+  ```
+
+  the `RouterOutlet` is deactivated when there is a new URL tree:
+
+  ```ts
+   private deactivateRouteAndOutlet(
+      route: TreeNode<ActivatedRoute>, parentContexts: ChildrenOutletContexts): void {
+    const context = parentContexts.getContext(route.value.outlet);
+
+    if (context) {
+      const children: {[outletName: string]: any} = nodeChildrenAsMap(route);
+      const contexts = route.value.component ? context.children : parentContexts;
+
+      // First, deactivate the children
+      forEach(children, (v: any, k: string) => this.deactivateRouteAndItsChildren(v, contexts));
+
+      if (context.outlet) {
+        // Destroy the component (by destroying the current view)
+        // And emit the destroyed component through `this.deactivateEvents.emit(c);`
+        context.outlet.deactivate();
+
+        // Destroy the contexts for all the outlets that were in the component
+        context.children.onOutletDeactivated();
+      }
+    }
+  }
+  ```
+
+  https://stackblitz.com/edit/routing-router-outlet-destroy-vs-deactivate?file=src%2Fapp%2Fapp.component.html
+
+
+---
 
 ## RouterLink directive
 
@@ -202,236 +446,3 @@ it('should set the class on a parent element when the link is active',
       expect(native.className).toEqual('');
     })));
 ```
-
----
-
-## RouterOutlet directive
-
-* can be notified when the `router-outlet` is activated/deactivated
-  ```ts
-  @Output('activate') activateEvents = new EventEmitter<any>();
-  @Output('deactivate') deactivateEvents = new EventEmitter<any>(); // You can receive the component here
-  ```
-
-  ```html
-  <router-outlet (activate)="recordActivate($event)" (deactivate)="recordDeactivate($event)"></router-outlet>
-  ```
-
-* how everything is organized
-  ```ts
-  // #1
-  {
-    path: '',
-    component: A,
-    children: []
-  }
-  ``` 
-
-  differs from
-
-  ```ts
-  // #2
-  {
-    path: '',
-    loadChildren: () => import(/* ... */)
-  }
-  ```
-
-  the information about a **router outlet** has this shape:
-
-  ```ts
-  export class OutletContext {
-    outlet: RouterOutlet|null = null;
-    route: ActivatedRoute|null = null;
-    resolver: ComponentFactoryResolver|null = null;
-    children = new ChildrenOutletContexts();
-    attachRef: ComponentRef<any>|null = null;
-  }
-  ```
-
-  The router outlets hierarchy is achieved with `ChildrenOutletContexts`:
-
-  ```ts
-  export class ChildrenOutletContexts {
-    // contexts for child outlets, by name.
-    private contexts = new Map<string, OutletContext>();
-  }
-  ```
-
-  After adding the first `router-outlet` to the page, here's how the structure would look like:
-
-  ```typescript
-  {
-    contexts: { primary: OutletContext }
-  }
-  ```
-
-  In `#1`'s scenario, the `component` used will also have to include at least one `router-outlet`, each of each will be added to the corresponding `context`, as children.
-
-  For example:
-
-  ```ts
-  {
-    path: '',
-    component: A,
-    children: [{ path: 'foo', component: Foo }, { path: 'bar', component: Bar, outlet: 'special' }]
-  }
-  ```
-
-  If `A` component declares `<router-outlet>` and `<router-outlet name="special">`, then the hierarchy would look as follows:
-
-  ```typescript
-  {
-    contexts: {
-      primary: { // A
-        context: {
-          primary: OutletContext, // Foo
-          special: OutletContext, // Bar
-        }
-      }
-    }
-  }
-  ```
-
-  And the same pattern would be applied if, for instance, `bar`'s route would have a `children` property.
-
-  In `#2`'s scenario, since the route configuration does not have a component declared in it, and hence no others `router-outlet`s, the initial `router-outlet` will contain the first component from the loaded module which belongs to a route configuration whose `path` matches the current issued URL.
-
-  ```ts
-  {
-    path: 'test',
-    loadChildren: () => import(/* ... */)
-  }
-
-  // Inside module
-  {
-    path: 'foo',
-    component: Foo,
-  }
-  ```
-
-  then, the `router-outlet`s would be organized like this:
-
-  ```ts
-  {
-    context: {
-      primary: OutletContext // Foo
-    }
-  }
-  ```
-
-  If `Foo`'s route configuration contained the `children` property, then it would resemble `#1`.
-
-  https://stackblitz.com/edit/routing-router-outlet?file=src%2Fapp%2Fapp.component.ts
-
-* `RouterOutlet.activateWith`
-  inserting the route's component into the view; everything is based on the `ViewContainerRef`'s API(`private location: ViewContainerRef`) 
-  when it adds a new component into the view, in order to properly organize the child `router-outlet`'s, the newly added component will also specify a **custom injector**, `OutletInjector`:
-
-  ```ts
-  // Called when a route is activated
-  activateWith(activatedRoute: ActivatedRoute, resolver: ComponentFactoryResolver|null) {
-    if (this.isActivated) {
-      throw new Error('Cannot activate an already activated outlet');
-    }
-    this._activatedRoute = activatedRoute;
-    const snapshot = activatedRoute._futureSnapshot;
-    const component = <any>snapshot.routeConfig!.component;
-    resolver = resolver || this.resolver;
-    const factory = resolver.resolveComponentFactory(component);
-    const childContexts = this.parentContexts.getOrCreateContext(this.name).children;
-    const injector = new OutletInjector(activatedRoute, childContexts, this.location.injector);
-    this.activated = this.location.createComponent(factory, this.location.length, injector);
-    // Calling `markForCheck` to make sure we will run the change detection when the
-    // `RouterOutlet` is inside a `ChangeDetectionStrategy.OnPush` component.
-    this.changeDetector.markForCheck();
-    this.activateEvents.emit(this.activated.instance);
-  }
-
-  class OutletInjector implements Injector {
-    constructor(
-        private route: ActivatedRoute, private childContexts: ChildrenOutletContexts,
-        private parent: Injector) {}
-
-    get(token: any, notFoundValue?: any): any {
-      // This is how a routed component is able to inject the right `ActivatedRoute`
-      if (token === ActivatedRoute) {
-        return this.route;
-      }
-
-      // This is an essential piece of logic to properly creating the above mentioned hierarchy
-      // A child router-outlet would be added to the current child context's children
-      // this.childContexts = this.parentContexts.getOrCreateContext(this.name).children;
-      if (token === ChildrenOutletContexts) {
-        return this.childContexts;
-      }
-
-      return this.parent.get(token, notFoundValue);
-    }
-  }
-  ```
-
-* deactivating vs destroying a `router-outlet`
-  `<router-outlet *ngIf="condition"></router-outlet>` - destroying the `router-outlet` doesn't remove the `OutletContext` from the `contexts` Map
-
-  ```ts
-  ngOnDestroy(): void {
-    this.parentContexts.onChildOutletDestroyed(this.name);
-  }
-
-  onChildOutletDestroyed(childName: string): void {
-    const context = this.getContext(childName);
-    if (context) {
-      context.outlet = null;
-    }
-  }
-  ```
-
-  And it will be **re-created** when the `condition` becomes `true` again:
-
-  ```ts
-  ngOnInit(): void {
-    if (!this.activated) {
-      // If the outlet was not instantiated at the time the route got activated we need to populate
-      // the outlet when it is initialized (ie inside a NgIf)
-      const context = this.parentContexts.getContext(this.name);
-      if (context && context.route) { // Already created before; set in `activateRoutes`
-        if (context.attachRef) {
-          // `attachRef` is populated when there is an existing component to mount
-          this.attach(context.attachRef, context.route);
-        } else {
-          // otherwise the component defined in the configuration is created
-          this.activateWith(context.route, context.resolver || null);
-        }
-      }
-    }
-  }
-  ```
-
-  the `RouterOutlet` is deactivated when there is a new URL tree:
-
-  ```ts
-   private deactivateRouteAndOutlet(
-      route: TreeNode<ActivatedRoute>, parentContexts: ChildrenOutletContexts): void {
-    const context = parentContexts.getContext(route.value.outlet);
-
-    if (context) {
-      const children: {[outletName: string]: any} = nodeChildrenAsMap(route);
-      const contexts = route.value.component ? context.children : parentContexts;
-
-      // First, deactivate the children
-      forEach(children, (v: any, k: string) => this.deactivateRouteAndItsChildren(v, contexts));
-
-      if (context.outlet) {
-        // Destroy the component (by destroying the current view)
-        // And emit the destroyed component through `this.deactivateEvents.emit(c);`
-        context.outlet.deactivate();
-
-        // Destroy the contexts for all the outlets that were in the component
-        context.children.onOutletDeactivated();
-      }
-    }
-  }
-  ```
-
-  https://stackblitz.com/edit/routing-router-outlet-destroy-vs-deactivate?file=src%2Fapp%2Fapp.component.html
