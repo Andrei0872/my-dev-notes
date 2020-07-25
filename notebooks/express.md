@@ -1,5 +1,54 @@
 # Express Notebook
 
+* building blocks
+  * app: `req`, `res`
+  * router
+  * route
+  * layer
+
+## app
+
+* you can register **sub-apps**
+  ```ts
+  const adminApp = express();
+  // setting routes and all necessary stuff for `app`
+  app.use('/admin', adminApp)
+  ```
+
+  however, before processing the stack of a **sub-app**, there will be a copy of the current app, so that whatever happens inside the sub-app's stack won't affect the layers in the outer stack (?)
+
+```js
+// added as `router.use` --> middleware for routes
+app.use((req, res, next) => {
+  req.user = { name: 'andrei' };
+  next();
+});
+```
+
+example:
+```js
+const adminApp = express();
+
+adminApp.get('/test/:id', (req, res, next) => {
+  res.json({
+    adminRoute: req.params.id
+  });
+});
+
+const app = express();
+
+// `/admin`
+app.use('/', adminApp);
+
+app.get('/test/:id', (req, res) => {
+  console.log('test');
+
+  res.json({ msg: 'hello' });
+});
+```
+
+---
+
 ## `next`'s arguments
 ```ts
 next(err);
