@@ -35,6 +35,7 @@
   - [Structural and Nominal typing](#structural-and-nominal-typing)
     - [Structural typing](#structural-typing)
     - [Nominal typing](#nominal-typing)
+  - [The `declare` keyword](#the-declare-keyword)
     
 
 ## Knowledge
@@ -908,3 +909,30 @@ const g: GreenApple = r; // ERROR
 ```
 
 ---
+
+## The `declare` keyword
+
+[TypeScript Playground](https://www.typescriptlang.org/play/?ssl=1&ssc=1&pln=20&pc=2#code/MYGwhgzhAEAKCmAnCB7AdtA3tAvgKD1EhgEEB3eVAW3gWXSz2megAcBXAIxAEthoAJinKUUNAMoAXdgDMZACgCUALmgA3FDwFZcefIXBRoAFQAW8GoxbR2EJBFV1UaANoBdaAF5o7gNx6CIiMAETBEAGszC3hoeAAPSXg0ARgoy0wmFgB6LOgAK1tJaAhWeGAeGQBPHjQAc2hJUzAixp4YVkQUUsRJSugmmAEKmSQklsrSmBqG0zboYHREhMzmATLwRBjbe1URalp7dD8Caw5uPkEUKVkFRStrFhkURGh5NTCbOxeUGRm2gDptsg7hkHmDPkh-kI9mJ4Nc5Ep-ODdNZ8DggA).
+
+```typescript
+class Person { }
+
+class AwesomePerson {
+  public doAwesomeStuff(): void { }
+}
+
+class Theme {
+  users: Person[] = [];
+}
+
+class DarkTheme extends Theme {
+  // just specifying that this property has different types in this context
+  declare users: AwesomePerson[];
+
+  public doStuff() {
+    for (var user of this.users) {
+        user.doAwesomeStuff();
+    }
+  }
+}
+```
