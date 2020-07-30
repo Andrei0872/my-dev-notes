@@ -1606,3 +1606,27 @@ console.log(counter); // 0
 counter += 10; // Everything fine (as long as `let` is used)
 console.log(counter); // 10
 ```
+
+---
+
+## `__proto__` and `prototype`
+
+* `prototype` - only available on **functions**, so that `__proto__` can be created on instances when using `new`
+
+```js
+class Foo { fooProp = 'a-foo-prop'; fooMethod() {} }
+
+// properties and methods in this object will be shared across all instances
+Foo.prototype // {constructor: ƒ, fooMethod: ƒ}
+
+// points to the object that will construct this object
+Foo.__proto__
+
+// Function.__proto__ === Object.__proto__ - Object is actually a function(that's why it has the `.prototype` property)
+Foo.__proto__ === Function.__proto__ && Function.__proto__ === Object.__proto__
+
+// creating a new instance; will follow the `__proto__` chain
+const f = new Foo()
+
+f.__proto__ === Foo.prototype
+```
