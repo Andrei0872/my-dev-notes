@@ -3,13 +3,14 @@
 - [Regex Notebook](#regex-notebook)
   - [Knowledge](#knowledge)
     - [Shorthands](#shorthands)
-      - [`+`](#ulliliul)
-      - [`*`](#ulliliul-1)
-      - [`?`](#)
+      - [`+`](#)
+      - [`*`](#-1)
+      - [`?`](#-2)
   - [Named Capture Groups](#named-capture-groups)
   - [Lookbehind](#lookbehind)
   - [Lookahead](#lookahead)
   - [Quantifiers](#quantifiers)
+  - [`s` flag](#s-flag)
 
 ## Knowledge
 
@@ -191,3 +192,22 @@ re.test('(ab?cd)') // true
     /s.+?o/.exec('stackoverflow')
     // stacko
     ```
+---
+
+## `s` flag
+
+* `.` does not match line terminators
+
+```js
+/^.$/.test('\n') // false
+
+// `[^]` - matches any character, including newline
+/^[^]$/.test('\n') // true
+
+// `/s` - match newline characters as well
+/^.$/s.test('\n') // true
+
+// this flag can be verified with the `dotAll` read-only property
+/^.$/s.dotAll // true
+/^.$/.dotAll // false
+```
