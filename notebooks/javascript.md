@@ -1630,3 +1630,27 @@ const f = new Foo()
 
 f.__proto__ === Foo.prototype
 ```
+
+---
+
+## `Object.keys` vs `Object.getOwnPropertyNames`
+
+* `Object.getOwnPropertyNames` will yield **non-enumerable properties** as well
+* neither of the two yields inherited properties
+
+```js
+obj = {
+ name: 'andrei',
+ age: 19
+};
+
+Object.defineProperty(obj, 'name', { enumerable: false });
+
+// `name` is **not** enumerable
+x = {...obj} // {age: 19}
+
+Object.setPrototypeOf(obj, { inherited: 'foo' })
+
+Object.keys(obj) // ["age"]
+Object.getOwnPropertyNames(obj) // ["name", "age"]
+```
