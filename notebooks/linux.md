@@ -1,15 +1,16 @@
-# Bash Scripting Notebook
+# Linux Notebook
 
-- [Bash Scripting Notebook](#bash-scripting-notebook)
+- [Linux Notebook](#linux-notebook)
   - [Concepts](#concepts)
-    - [2&gt;&amp;1](#2gtamp1)
+    - [2>&1](#21)
   - [Useful Commands](#useful-commands)
     - [Move multiple files to another location](#move-multiple-files-to-another-location)
     - [Delete everything that is not a directory](#delete-everything-that-is-not-a-directory)
-    - [Move content from subdirectory x to subdirectory y](#move-content-from-subdirectory-x-to-subdirectory-y)
+    - [Move content from subdirectory `x` to subdirectory `y`](#move-content-from-subdirectory-x-to-subdirectory-y)
     - [Create a directory and cd into id immediately](#create-a-directory-and-cd-into-id-immediately)
     - [Update multiple npm packages](#update-multiple-npm-packages)
     - [List only files in a directory](#list-only-files-in-a-directory)
+  - [Send a file over SSH](#send-a-file-over-ssh)
 
 ## Concepts
 
@@ -65,4 +66,16 @@ npm i $(npm outdated | grep @angular | cut -d ' ' -f1 | xargs -I $ echo '$@lates
 ```bash
 # -p - append `/` to directories
 ls -p | grep -v /
+```
+
+---
+
+## Send a file over SSH
+
+```bash
+ssh foo@bar 'cat > foo-cpy.ts' < foo.ts
+
+# or
+
+cat foo.ts | ssh foo@bar 'cat > foo-cpy.ts'
 ```

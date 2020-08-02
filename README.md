@@ -3,7 +3,6 @@
 ## Notebooks
 
 * [Angular](https://github.com/Andrei0872/my-dev-notes/blob/master/notebooks/angular.md)
-* [Bash Scripting](https://github.com/Andrei0872/my-dev-notes/blob/master/notebooks/bash-scripting.md)
 * [Concepts](https://github.com/Andrei0872/my-dev-notes/blob/master/notebooks/concepts.md)
 * [CSS](https://github.com/Andrei0872/my-dev-notes/blob/master/notebooks/css.md)
 * [Database](https://github.com/Andrei0872/my-dev-notes/blob/master/notebooks/db.md)
@@ -12,6 +11,7 @@
 * [Go](https://github.com/Andrei0872/my-dev-notes/blob/master/notebooks/go.md)
 * [GraphQL](https://github.com/Andrei0872/my-dev-notes/blob/master/notebooks/graphql.md)
 * [JavaScript](https://github.com/Andrei0872/my-dev-notes/blob/master/notebooks/javascript.md)
+* [Linux](https://github.com/Andrei0872/my-dev-notes/blob/master/notebooks/linux.md)
 * [Mongoose](https://github.com/Andrei0872/my-dev-notes/blob/master/notebooks/mongoose.md)
 * [Networking](https://github.com/Andrei0872/my-dev-notes/blob/master/notebooks/networking.md)
 * [Node](https://github.com/Andrei0872/my-dev-notes/blob/master/notebooks/node.md)
