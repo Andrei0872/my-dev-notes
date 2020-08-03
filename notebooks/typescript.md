@@ -36,6 +36,7 @@
     - [Structural typing](#structural-typing)
     - [Nominal typing](#nominal-typing)
   - [The `declare` keyword](#the-declare-keyword)
+  - [`ThisParameterType<F>`](#thisparametertypef)
     
 
 ## Knowledge
@@ -935,4 +936,23 @@ class DarkTheme extends Theme {
     }
   }
 }
+```
+
+---
+
+## `ThisParameterType<F>`
+
+* extracts the `this` type of a function type
+
+```ts
+// `--strictFunctionTypes` must be enabled
+
+interface Person {
+  name: string;
+  age: number;
+}
+
+function foo(this: Person) { }
+
+type R = ThisParameterType<typeof foo> extends Person ? true : false; // true
 ```
