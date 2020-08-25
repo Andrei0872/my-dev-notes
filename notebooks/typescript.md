@@ -37,6 +37,7 @@
     - [Nominal typing](#nominal-typing)
   - [The `declare` keyword](#the-declare-keyword)
   - [`ThisParameterType<F>`](#thisparametertypef)
+  - [`Array[number]`](#arraynumber)
     
 
 ## Knowledge
@@ -955,4 +956,29 @@ interface Person {
 function foo(this: Person) { }
 
 type R = ThisParameterType<typeof foo> extends Person ? true : false; // true
+```
+
+---
+
+## `Array[number]`
+
+[*TypeScript Playground*](https://www.typescriptlang.org/play?#code/FAMwrgdgxgLglgewgAhAhAeAKsgpgDxlwgBMBnZAJVwEMSkAbATwEEAnNmpjAb2Tdr0IzVHFwMSAORoBbXAC5kZGGzgQA5sgC+APh0AKGoqwBKRdSgI2JbAG0IYGQCNcbALq2A5CDETpczzcAGmQndAZaCB1kHmBkeORLCGVkBABeGK1kGgoaCCYAbmA4hIEYMDYUGgA6ARIwKFx9QygoEKg2GBNkNOjYhIHs1tsOmC8fcSlZXEC3HuQVMFwiksH+XHLKoagiga0QhBMirWKklJp52z4Jv2nFb3RPbRDr3ym5e6caNietOZzEkhlCszjB+PM0AhDEdimxql82MA4ZCgA)
+
+```typescript
+function foo<T extends ReadonlyArray<{ readonly fieldName: string }>>(a: T): Record<T[number]['fieldName'], boolean> {
+    const o= {} as any;
+
+    return a.reduce((acc, crt) => {
+        acc[crt['fieldName']] = true;
+
+        return acc;
+    }, o);
+}
+
+const a = [{ fieldName: 'foo' }, { fieldName: 'bar' }] as const;
+
+const r = foo(a);
+
+r.bar
+r.foo
 ```
