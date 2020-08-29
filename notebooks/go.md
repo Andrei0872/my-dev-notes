@@ -1,5 +1,10 @@
 # Go Notebook
 
+- [Go Notebook](#go-notebook)
+	- [Goroutines](#goroutines)
+	- [Encoding/Decoding](#encodingdecoding)
+	- [Interfaces and Structs](#interfaces-and-structs)
+
 ## Goroutines
 
 * send and receives are **blocking** operations; the channel that **sends** must have some **available receivers** and a **receiver** must have a receiver
@@ -192,4 +197,54 @@ json.Unmarshal(data, &i)
 // extract the concrete values
 barData := i.(map[string]interface{})
 fmt.Println(barData["bar"])
+```
+
+---
+
+## Interfaces and Structs
+
+```go
+package main
+
+import "fmt"
+
+type Value interface {
+	String() string
+	Type() string
+}
+
+type StructB struct {
+	names []string
+}
+
+// implementing the interface
+
+func (s *StructB) String() string {
+	return "toString"
+}
+
+func (s *StructB) Type() string {
+	return "the type is string"
+}
+
+type StructA struct {
+	name string
+	StructB
+}
+
+func foo(value Value) string {
+	return value.String() + value.Type()
+}
+
+func main() {
+	fmt.Println("test")
+	val := &StructA{
+		name: "andrei",
+		StructB: StructB{
+			names: []string{"andrei", "foo"},
+		},
+	}
+
+	foo(val)
+}
 ```
