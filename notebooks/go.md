@@ -248,3 +248,39 @@ func main() {
 	foo(val)
 }
 ```
+
+[Go Playground](https://play.golang.org/p/Cr-D8rS0EhI)
+
+```go
+package main
+
+import (
+	"fmt"
+)
+
+// func (param Interface) && foo(&entityThatImplementsInterface)
+
+type customInt int
+func (c *customInt) Test () string { return "a custom string" }
+
+type anotherCustomInt int
+func (a anotherCustomInt) Test () string { return "another custom string" }
+
+type Int interface {
+ Test() string
+}
+
+func foo (p Int) {
+ fmt.Println(p.Test())
+}
+
+func main() {
+	fmt.Println("Hello, playground")
+	
+	p := customInt(19)
+	foo(&p)
+	
+	a := anotherCustomInt(4)
+	foo(a)
+}
+```
