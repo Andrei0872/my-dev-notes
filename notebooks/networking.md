@@ -1,6 +1,17 @@
-# Networking Notebook
+****# Networking Notebook
 
 **iptables** - a _stateful_ firewall
+
+* chain - the state at which a packet is manipulated
+
+* built-in: INPUT, OUTPUT< FORWARD
+
+* forwarded packets - network traffic that is to be forwarded from the firewall to its destination node
+
+* block incoming packets
+iptables -P INPUT DROP
+
+* FORWARD policty - control where packets can be routed within a LAN
 
 ## Examples
 
@@ -72,6 +83,14 @@ iptables -A foo-chain -j DROP # drop everything else
 
 iptables -A INPUT -p tcp -m tcp --dport 22 -j foo-chain
 ```
+
+---
+
+## Differences between filter's table chains
+
+* INPUT - incoming traffic to firewall for the **local server**
+* OUTPUT - outgoing traffic from the firewall, going out of the **local server**
+* FORWARD - for packets routed through the local server
 
 ---
 
