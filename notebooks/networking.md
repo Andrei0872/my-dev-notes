@@ -13,6 +13,8 @@ iptables -P INPUT DROP
 
 * FORWARD policty - control where packets can be routed within a LAN
 
+* nexthop - an IP address entry a routing table which specifies the closest router in its routing path
+
 ## Examples
 
 ### Change the policy of a chain
