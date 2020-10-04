@@ -15,6 +15,30 @@ iptables -P INPUT DROP
 
 * nexthop - an IP address entry a routing table which specifies the closest router in its routing path
 
+* default gateway - node that serves as the **forwarding** host
+
+* virtual network interface - a **virtualized representation** of a **computer network interface** that may or my not correspond directly to a **network interface controller**
+
+* network interface controller - what connects a **computer** to a **computer network**(Ethernet, Wi-Fi)
+
+* network interface - what connects a computer and a private/public network(e.g enp5s0)
+
+* longest path prefix 
+  * when looking for a routing table entry for a given **destination address**, choose the one with the **longest prefix** that matches **the destination prefix**; the route uses this algorithm to determine the egress interface and the address of the device to which to send the packet
+  * prefix length = the number of bits set in the subnet mask
+  * the way it works is that when a destination IP address arrives, it is checked against the information stored in the routing table; for each row(until it finds the correct match), it will perform and `AND` bitwise operation between the destination IP address and the netmask at the current row; it will then check if the result corresponds to the IP address at the current row
+    ```
+    Row 1: Network 10.0.0.0 / 255.255.255.0
+    Row 2: Network 10.0.0.0 / 255.255.0.0
+    Row 3: Network 10.0.0.0 / 255.0.0.0
+    ```
+
+    If a packet destined to `10.10.10.10` arrives, the 3rd row will be selected.
+
+  * [resource 1](https://www.juniper.net/documentation/en_US/junos/topics/reference/configuration-statement/longest-match-next-hop-edit-static-routing-options.html); [resource 2](https://community.cisco.com/t5/switching/please-explain-how-the-longest-prefix-matching-works/td-p/2891235); [resource 3](https://unix.stackexchange.com/a/101523); [resource 4](https://www.thegeekstuff.com/2012/04/route-examples/)
+
+* ARP - translates IP address into machine's physical address
+
 ## Examples
 
 ### Change the policy of a chain
