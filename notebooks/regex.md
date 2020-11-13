@@ -11,6 +11,7 @@
   - [Lookahead](#lookahead)
   - [Quantifiers](#quantifiers)
   - [`s` flag](#s-flag)
+  - [`RegExp.exec` vs `String.match` vs `String.matchAll`](#regexpexec-vs-stringmatch-vs-stringmatchall)
 
 ## Knowledge
 
@@ -210,4 +211,91 @@ re.test('(ab?cd)') // true
 // this flag can be verified with the `dotAll` read-only property
 /^.$/s.dotAll // true
 /^.$/.dotAll // false
+```
+
+---
+
+## `RegExp.exec` vs `String.match` vs `String.matchAll`
+
+* `RegExp.exec` can be used when capturing - gives the match, followed by the captures(named or unnamed)
+
+* with `RegExp.exec`, you can get access to `regexpObject.lastIndex`
+
+* `String.match` will ignore **capture groups** (if the `g` modifier is used)
+
+```js
+re = /(\w+)\-\w+-(?<foo>\w+)/g
+s = "abc-xyz-www"
+
+s.match(re) // [ "abc-xyz-www" ]
+re.exec(s) // [ "abc-xyz-www", "abc", "www" ]
+
+// when the global modifier is not used
+re = /(\w+)\-\w+-(?<foo>\w+)/
+s.match(re)
+/* 
+// the same is returned with `re.exec(s)`
+{
+  0: "abc-xyz-www",
+  1: "abc",
+  2: "www",
+  groups: Object { foo: "www" },
+  index: 0,
+  input: "abc-xyz-www",
+  length: 3,
+}
+*/
+```
+
+* when the global modifier is used, `String.match` will return all the matches(without capture groups), whereas `Regexp.exec` will return all the matches if using `while(re.exec(s))`, on each iteration is returned the match along with its captured groups; in this case `String.matchAll()` returns the same values as `while(re.exec(s))`, but all of them at once
+
+```js
+re = /(\w+)\-\w+\-(?<foo>\w+)/g
+s = "a-b-c x-y-z"
+
+s.match(re) // [ "a-b-c", "x-y-z" ]
+
+console.log(re.exec(s))
+/* 
+0: "a-b-c"
+1: "a"
+2: "c"
+groups: {foo: "c"}
+index: 0
+input: "a-b-c x-y-z"
+length: 3
+*/
+
+console.log(re.exec(s))
+/* 
+0: "x-y-z"
+1: "x"
+2: "z"
+groups: {foo: "z"}
+index: 6
+input: "a-b-c x-y-z"
+length: 3
+*/
+
+console.log(re.exec(s)) // null
+
+[...s.matchAll(re)]
+/* 
+0: Array(3)
+  0: "a-b-c"
+  1: "a"
+  2: "c"
+  groups: {foo: "c"}
+  index: 0
+  input: "a-b-c x-y-z"
+  length: 3
+1: Array(3)
+  0: "x-y-z"
+  1: "x"
+  2: "z"
+  groups: {foo: "z"}
+  index: 6
+  input: "a-b-c x-y-z"
+  length: 3
+*/
 ```
