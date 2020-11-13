@@ -11,6 +11,7 @@
   - [Lookahead](#lookahead)
   - [Quantifiers](#quantifiers)
   - [`s` flag](#s-flag)
+  - [Backreferences](#backreferences)
   - [`RegExp.exec` vs `String.match` vs `String.matchAll`](#regexpexec-vs-stringmatch-vs-stringmatchall)
 
 ## Knowledge
@@ -67,6 +68,8 @@
 * **capture phase**: `(?<name-of-group>)`
 
 * **using phase**: `$<name-of-group>`
+
+* reference a Named Captured Group: `\k<name>`
 
 <details>
 <summary>Example</summary>
@@ -211,6 +214,17 @@ re.test('(ab?cd)') // true
 // this flag can be verified with the `dotAll` read-only property
 /^.$/s.dotAll // true
 /^.$/.dotAll // false
+```
+
+---
+
+## Backreferences
+
+```js
+const re = /(\w+)\.(\w+).\1/
+const s = "abcd.xyz.abcd"
+
+s.match(re) // [ "abcd.xyz.abcd", "abcd", "xyz" ]
 ```
 
 ---
