@@ -62,6 +62,17 @@
 
 * same as `{0, 1}`
 
+```js
+s = "April 2020"
+
+re = /(\w+?)\w+\s\d+/
+s.match(re) // ["April 2020", "A", index: 0, input: "April 2020", groups: undefined]
+
+// optional group
+re = /(\w+)?\w+\s\d+/
+s.match(re) // ["April 2020", "Apri", index: 0, input: "April 2020", groups: undefined]
+```
+
 ---
 
 ## Named Capture Groups
