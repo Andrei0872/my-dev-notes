@@ -10,9 +10,10 @@
   - [Lookbehind](#lookbehind)
   - [Lookahead](#lookahead)
   - [Quantifiers](#quantifiers)
-  - [`s` flag](#s-flag)
+  - [The `s` flag](#the-s-flag)
   - [Backreferences](#backreferences)
   - [`RegExp.exec` vs `String.match` vs `String.matchAll`](#regexpexec-vs-stringmatch-vs-stringmatchall)
+  - [The `m` flag](#the-m-flag)
 
 ## Knowledge
 
@@ -198,7 +199,7 @@ re.test('(ab?cd)') // true
     ```
 ---
 
-## `s` flag
+## The `s` flag
 
 * `.` does not match line terminators
 
@@ -312,4 +313,23 @@ console.log(re.exec(s)) // null
   input: "a-b-c x-y-z"
   length: 3
 */
+```
+
+---
+
+## The `m` flag
+
+* a multiline string should be treated as multiple lines; as a result, the `^` and `$` anchors will match the start or the end of **each** line in the string, instead of the start or the end of the **entire string**
+
+```js
+re = /(\w+)\s*$/g
+
+s.match(re) // ["eeee"]
+
+re = /(\w+)\s*$/gm
+s = `aaaa bbbb
+cccc
+dddd eeee`
+
+s.match(re) // ["bbbb", "cccc", "eeee"]
 ```
