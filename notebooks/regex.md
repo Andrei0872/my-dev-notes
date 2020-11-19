@@ -14,6 +14,7 @@
   - [Backreferences](#backreferences)
   - [`RegExp.exec` vs `String.match` vs `String.matchAll`](#regexpexec-vs-stringmatch-vs-stringmatchall)
   - [The `m` flag](#the-m-flag)
+  - [Non-word boundary - `\B`](#non-word-boundary---b)
 
 ## Knowledge
 
@@ -343,4 +344,16 @@ cccc
 dddd eeee`
 
 s.match(re) // ["bbbb", "cccc", "eeee"]
+```
+
+---
+
+## Non-word boundary - `\B`
+
+```js
+// search a pattern which is surrounded by word characters
+re = /\Babc\B/g
+s = "ab abc abcc babcd"
+
+s.match(re) // ["abc"]
 ```
