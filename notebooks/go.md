@@ -4,6 +4,7 @@
 	- [Goroutines](#goroutines)
 	- [Encoding/Decoding](#encodingdecoding)
 	- [Interfaces and Structs](#interfaces-and-structs)
+	- [Passing slices as arguments](#passing-slices-as-arguments)
 
 ## Goroutines
 
@@ -283,4 +284,67 @@ func main() {
 	a := anotherCustomInt(4)
 	foo(a)
 }
+```
+
+--
+
+## Passing slices as arguments
+
+[Go Playground](https://play.golang.org/p/hykJGry8xjy)
+
+```go
+func foo(s []int) {
+	s[0] = 111111
+	s = append(s, 100)
+	s = append(s, 200)
+	s[1] = 22222
+}
+
+func bar(s *[]int) {
+	temp := *s
+
+	temp = append(temp, 1, 2, 3)
+
+	*s = temp
+}
+
+func beer(s []int) {
+	s = s[1:4]
+	s[0] = 11111
+}
+
+func main() {
+	// 2: when cap is trumped & when not - without pointer
+	// [111111 22222 3] 3 5
+	// s := make([]int, 0, 5)
+	// s = append(s, 1, 2, 3)
+	// foo(s)
+
+	// fmt.Println(cap(s)) after `s[1]=...` -> 6 - its cap has been doubled
+	// [111111 2 3] 3 3
+	// the s[1] hasn't been set because the array had been reallocated
+	// s := make([]int, 0, 3)
+	// s = append(s, 1, 2, 3)
+	// foo(s)
+
+	// 2: when using pointers
+	// [1 2 3 1 2 3] 6 6
+	// s := []int{1, 2, 3}
+	// bar(&s)
+
+	// [2 3] 2 4
+	// cap(s) - the number of elements that are in the
+	// underlying array starting at the first element
+	// from the current slice
+	// s1 := []int{1, 2, 3, 4, 5}
+	// s := s1[1:3]
+
+	// [1 11111 3] 3 5
+	s := make([]int, 0, 5)
+	s = append(s, 1, 2, 3)
+	beer(s)
+
+	fmt.Println(s, len(s), cap(s))
+}
+
 ```
